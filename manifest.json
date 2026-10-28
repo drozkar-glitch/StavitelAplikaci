@@ -1,0 +1,16 @@
+{
+  "name": "Stavitel Aplikací (Disk + GitHub Actions)",
+  "short_name": "Stavitel Aplikací",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#162032",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
