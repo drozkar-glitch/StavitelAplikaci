@@ -380,7 +380,7 @@
             <div class="vault-box">
                 <div class="vault-title">
                     <span style="color: #34d399;">🤖 1. Android Keystore (.jks / .keystore)</span>
-                    <span id="statusAndroidKey" class="status-pill pill-ok">✔ Výchozí klíč v ios-keys</span>
+                    <span id="statusAndroidKey" class="status-pill pill-ok">✔ Vlastní klíč (WaveCal)</span>
                 </div>
                 <div class="form-group" style="margin-bottom: 8px;">
                     <label>Soubor Android klíče (uloží se pro vybraný projekt i jako výchozí):</label>
@@ -471,7 +471,7 @@
             <div class="form-group" style="flex: 2.2;">
                 <label>Vyber existující projekt nebo založ nový:</label>
                 <div style="display: flex; gap: 8px;">
-                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="PdfStudio">📁 PdfStudio</option><option value="Sudoku">📁 Sudoku</option><option value="Humorradio">📁 Humorradio</option><option value="Tetrisek">📁 Tetrisek</option><option value="WaveCal">📁 WaveCal</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
+                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="Humorradio">📁 Humorradio</option><option value="PdfStudio">📁 PdfStudio</option><option value="Sudoku">📁 Sudoku</option><option value="Tetrisek">📁 Tetrisek</option><option value="WaveCal">📁 WaveCal</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
                     <button class="btn-secondary" style="white-space: nowrap;" title="Načte aktuální seznam tvých repozitářů přímo z GitHubu" onclick="fetchGitHubRepos(false)">🔄 Obnovit z GitHubu</button>
                     <button id="btnRemoveProject" class="btn-danger" style="white-space: nowrap;" title="Odebere vybraný název projektu z roletky (na GitHubu nic nemaže)" onclick="removeSelectedProjectFromList()">🗑️ Odebrat</button>
                 </div>
@@ -896,20 +896,20 @@ jobs:
               try:
                   service.edits().tracks().update(
                       editId=edit_id,
-                      track="production",
+                      track="internal",
                       packageName=package_name,
                       body={"releases": [{"versionCodes": [str(version_code)], "status": "completed"}]}
                   ).execute(num_retries=5)
-                  print("Prirazeno do kanalu production (completed).")
+                  print("Prirazeno do kanalu internal (completed).")
               except Exception as track_err:
                   print(f"Upozorneni (pravdepodobne draft aplikace): {track_err}. Ukladam jako draft...")
                   service.edits().tracks().update(
                       editId=edit_id,
-                      track="production",
+                      track="internal",
                       packageName=package_name,
                       body={"releases": [{"versionCodes": [str(version_code)], "status": "draft"}]}
                   ).execute(num_retries=5)
-                  print("Prirazeno do kanalu production jako draft.")
+                  print("Prirazeno do kanalu internal jako draft.")
 
               try:
                   service.edits().commit(editId=edit_id, packageName=package_name).execute(num_retries=5)
