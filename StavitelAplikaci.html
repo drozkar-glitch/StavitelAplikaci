@@ -471,7 +471,7 @@
             <div class="form-group" style="flex: 2.2;">
                 <label>Vyber existující projekt nebo založ nový:</label>
                 <div style="display: flex; gap: 8px;">
-                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="Humorradio">📁 Humorradio</option><option value="PdfStudio">📁 PdfStudio</option><option value="Sudoku">📁 Sudoku</option><option value="Tetrisek">📁 Tetrisek</option><option value="WaveCal">📁 WaveCal</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
+                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="WaveCal">📁 WaveCal</option><option value="Humorradio">📁 Humorradio</option><option value="PdfStudio">📁 PdfStudio</option><option value="Sudoku">📁 Sudoku</option><option value="Tetrisek">📁 Tetrisek</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
                     <button class="btn-secondary" style="white-space: nowrap;" title="Načte aktuální seznam tvých repozitářů přímo z GitHubu" onclick="fetchGitHubRepos(false)">🔄 Obnovit z GitHubu</button>
                     <button id="btnRemoveProject" class="btn-danger" style="white-space: nowrap;" title="Odebere vybraný název projektu z roletky (na GitHubu nic nemaže)" onclick="removeSelectedProjectFromList()">🗑️ Odebrat</button>
                 </div>
@@ -525,20 +525,20 @@
                 </div>
             </div>
 
-            <div id="modeCard_build_only" class="mode-card active" onclick="selectBuildMode('build_only')">
+            <div id="modeCard_build_only" class="mode-card" onclick="selectBuildMode('build_only')">
                 <div class="mode-card-title">
                     <span>🛠️ Android + iOS (bez obchodů)</span>
-                    <span class="mode-check" id="modeCheck_build_only">✔ Aktivní</span>
+                    <span class="mode-check" id="modeCheck_build_only">Vybrat</span>
                 </div>
                 <div class="mode-card-desc">
                     Sestaví <code>.apk</code>, <code>.aab</code> i podepsané iOS <code>.ipa</code> ke stažení v GitHub Actions, bez nahrávání do obchodů.
                 </div>
             </div>
 
-            <div id="modeCard_publish" class="mode-card" onclick="selectBuildMode('publish')">
+            <div id="modeCard_publish" class="mode-card active-publish" onclick="selectBuildMode('publish')">
                 <div class="mode-card-title">
                     <span>🚀 Publikovat (Google Play + iOS)</span>
-                    <span class="mode-check" id="modeCheck_publish">Vybrat</span>
+                    <span class="mode-check" id="modeCheck_publish">✔ Aktivní</span>
                 </div>
                 <div class="mode-card-desc">
                     Sestaví obě platformy a rovnou je odešle do <strong>Google Play Console</strong> a <strong>Apple App Store / TestFlightu</strong>.
