@@ -380,7 +380,7 @@
             <div class="vault-box">
                 <div class="vault-title">
                     <span style="color: #34d399;">🤖 1. Android Keystore (.jks / .keystore)</span>
-                    <span id="statusAndroidKey" class="status-pill pill-ok">✔ Výchozí klíč v ios-keys</span>
+                    <span id="statusAndroidKey" class="status-pill pill-ok">✔ Vlastní klíč (Humorradio)</span>
                 </div>
                 <div class="form-group" style="margin-bottom: 8px;">
                     <label>Soubor Android klíče (uloží se pro vybraný projekt i jako výchozí):</label>
@@ -482,7 +482,7 @@
             <div class="form-group" style="flex: 2.2;">
                 <label>Vyber existující projekt nebo založ nový:</label>
                 <div style="display: flex; gap: 8px;">
-                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="DrPilulka">📁 DrPilulka</option><option value="Humorradio">📁 Humorradio</option><option value="StavitelAplikaci">📁 StavitelAplikaci</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="WaveCal">📁 WaveCal</option><option value="Sudoku">📁 Sudoku</option><option value="Tetrisek">📁 Tetrisek</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
+                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="Humorradio">📁 Humorradio</option><option value="DrPilulka">📁 DrPilulka</option><option value="StavitelAplikaci">📁 StavitelAplikaci</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="WaveCal">📁 WaveCal</option><option value="Sudoku">📁 Sudoku</option><option value="Tetrisek">📁 Tetrisek</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
                     <button class="btn-secondary" style="white-space: nowrap;" title="Načte aktuální seznam tvých repozitářů přímo z GitHubu" onclick="fetchGitHubRepos(false)">🔄 Obnovit z GitHubu</button>
                     <button id="btnRemoveProject" class="btn-danger" style="white-space: nowrap;" title="Odebere vybraný název projektu z roletky (na GitHubu nic nemaže)" onclick="removeSelectedProjectFromList()">🗑️ Odebrat</button>
                 </div>
@@ -616,7 +616,7 @@
     </div>
 
     <!-- VÝPIS PRŮBĚHU (LOG) -->
-    <div id="logBox" class="log-box" style="display: block;"><div class="log-line log-ok" style="color: rgb(74, 222, 128);">[3:29:14] ✔ Nastavení GitHubu bylo uloženo do prohlížeče.</div><div class="log-line ">[3:29:14] 🔄 Načítám seznam repozitářů z GitHubu...</div><div class="log-line log-ok" style="color: rgb(96, 165, 250);">[3:29:15] 🔐 Stav trezoru ios-keys: Android=výchozí, Google Play=OK, Huawei=OK, iOS .p12=OK, Apple .p8=OK</div><div class="log-line log-ok" style="color: rgb(74, 222, 128);">[3:29:15] ✔ Seznam projektů synchronizován (9 repozitářů).</div><div class="log-line log-warn" style="color: rgb(96, 165, 250);">[3:40:58] ⚡ Spouštím vloženou jednorázovou opravu (STAVITEL_RUN)...</div><div class="log-line log-info" style="color: rgb(96, 165, 250);">[3:40:58] 🔧 Spouštím bezpečnou opravu a trvalý zápis přímo do GitHubu (index.html + StavitelAplikaci.html + DrPilulka)...</div></div>
+    <div id="logBox" class="log-box" style="display: none;"></div>
 </div>
 
 <script>
@@ -3598,7 +3598,7 @@ jobs:
 
         let htmlStr = null;
         for (const file of ["index.html", "StavitelAplikaci.html"]) {
-          const r = await fetch("https://api.github.com/repos/" + ownerVal + "/StavitelAplikaci/contents/" + file, { headers: hdrs });
+          const r = await fetch("https://api.github.com/repos/" + ownerVal + "/StavitelAplikaci/contents/" + file + "?_cb=" + Date.now(), { headers: hdrs, cache: "no-store" });
           if (r.ok) {
             htmlStr = await r.text();
             break;
@@ -3855,7 +3855,7 @@ jobs:
         '            echo "Google Play klic nebyl nalezen, preskakuji Google Play upload."',
         '          fi',
         '',
-        '      - name: Publish Android APK to Huawei AppGallery Connect',
+        '      - name: Publish Android APK to Huawei AppGallery',
         '        run: |',
         '          if [ "$PUBLISH_TO_STORES" != "true" ]; then',
         '            echo "Publikace do obchodu je vypnuta (PUBLISH_TO_STORES=false). Preskakuji Huawei AppGallery upload."',
@@ -4297,4 +4297,53 @@ jobs:
       window.fetch = wrappedFetch;
     }
   })();
+
+
+/* === HUAWEI_JWT_FIX_V10 === */
+(function applyHuaweiJwtFixV10() {
+  if (typeof window.injectHuaweiIntoBuildYml === 'function') {
+    var origInject = window.injectHuaweiIntoBuildYml;
+    window.injectHuaweiIntoBuildYml = function(yml) {
+      if (typeof yml !== 'string') return yml;
+      var normalized = yml.replace('Publish Android APK to Huawei AppGallery Connect', 'Publish Android APK to Huawei AppGallery');
+      return origInject(normalized);
+    };
+  }
+  if (typeof window.buildUnifiedWorkflowYaml === 'function' && !window.buildUnifiedWorkflowYaml.__v10) {
+    var origBuild = window.buildUnifiedWorkflowYaml;
+    var wrappedBuild = function(appName, bundleId, appVersion, publishToStores, buildIos) {
+      var yml = origBuild(appName, bundleId, appVersion, publishToStores, buildIos);
+      return typeof window.injectHuaweiIntoBuildYml === 'function' ? window.injectHuaweiIntoBuildYml(yml) : yml;
+    };
+    wrappedBuild.__v10 = true;
+    window.buildUnifiedWorkflowYaml = wrappedBuild;
+  }
+  if (typeof window.upgradeWorkflowYaml === 'function' && !window.upgradeWorkflowYaml.__v10) {
+    var origUpgrade = window.upgradeWorkflowYaml;
+    var wrappedUpgrade = function(yamlStr) {
+      var yml = origUpgrade(yamlStr);
+      return typeof window.injectHuaweiIntoBuildYml === 'function' ? window.injectHuaweiIntoBuildYml(yml) : yml;
+    };
+    wrappedUpgrade.__v10 = true;
+    window.upgradeWorkflowYaml = wrappedUpgrade;
+  }
+  if (typeof window.getDefaultGitHubWorkflowYaml === 'function' && !window.getDefaultGitHubWorkflowYaml.__v10) {
+    var origDef = window.getDefaultGitHubWorkflowYaml;
+    var wrappedDef = function(appName, bundleId, appVersion, mode) {
+      var yml = origDef(appName, bundleId, appVersion, mode);
+      return typeof window.injectHuaweiIntoBuildYml === 'function' ? window.injectHuaweiIntoBuildYml(yml) : yml;
+    };
+    wrappedDef.__v10 = true;
+    window.getDefaultGitHubWorkflowYaml = wrappedDef;
+  }
+  if (typeof window.applyModeToWorkflowYaml === 'function' && !window.applyModeToWorkflowYaml.__v10) {
+    var origApply = window.applyModeToWorkflowYaml;
+    var wrappedApply = function(yamlText, mode, appVersion) {
+      var yml = origApply(yamlText, mode, appVersion);
+      return typeof window.injectHuaweiIntoBuildYml === 'function' ? window.injectHuaweiIntoBuildYml(yml) : yml;
+    };
+    wrappedApply.__v10 = true;
+    window.applyModeToWorkflowYaml = wrappedApply;
+  }
+})();
 </script></body></html>
