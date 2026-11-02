@@ -4346,4 +4346,106 @@ jobs:
     window.applyModeToWorkflowYaml = wrappedApply;
   }
 })();
+
+
+/* === PROJECT_DETECTION_FIX_V11 === */
+(function applyProjectDetectionFixV11() {
+  var KNOWN_PKG_TO_REPO = {
+    'radiopm': 'Humorradio',
+    'humorradio': 'Humorradio',
+    'drpilulka': 'DrPilulka',
+    'wavecal': 'WaveCal',
+    'pdfstudio': 'PdfStudio',
+    'sudoku': 'Sudoku',
+    'tetrisek': 'Tetrisek',
+    'neonovekostky': 'Tetrisek',
+    'garaz': 'Garaz'
+  };
+
+  try {
+    if (typeof projectAliases !== 'undefined' && projectAliases) {
+      projectAliases['radiopm'] = 'Humorradio';
+      projectAliases['radiopm_app'] = 'Humorradio';
+      localStorage.setItem('stavitel_project_aliases', JSON.stringify(projectAliases));
+    }
+  } catch (e) {}
+
+  window.detectProjectFromFiles = function(filesMap) {
+    var mapToScan = filesMap || (typeof stagedFiles !== 'undefined' ? stagedFiles : {});
+    if (!mapToScan || typeof mapToScan !== 'object') return null;
+    var appName = null;
+    var pkgSegment = null;
+    var fullPkg = null;
+
+    var entries = Object.entries(mapToScan);
+    for (var i = 0; i < entries.length; i++) {
+      var path = entries[i][0];
+      var content = entries[i][1] || '';
+      if (path === '.github/workflows/build.yml' || path === 'codemagic.yaml') {
+        var mApp = content.match(/APP_NAME:\s*["']?([^"'\r\n]+)["']?/);
+        if (mApp && mApp[1] && mApp[1].indexOf('<') === -1) appName = mApp[1].trim();
+        var mBundle = content.match(/BUNDLE_ID:\s*["']?(cz\.(?:taxi)?mares\.([a-zA-Z0-9_]+))["']?/);
+        if (mBundle && mBundle[1]) {
+          fullPkg = mBundle[1].trim();
+          pkgSegment = mBundle[2].trim();
+        }
+      }
+      if (path === 'settings.gradle.kts') {
+        var mRoot = content.match(/rootProject\.name\s*=\s*["']([^"']+)["']/);
+        if (mRoot && mRoot[1]) appName = appName || mRoot[1].trim();
+      }
+      if (!pkgSegment) {
+        var pathMatch = path.match(/cz\/(taxi)?mares\/([a-zA-Z0-9_]+)\//);
+        if (pathMatch && pathMatch[2]) {
+          pkgSegment = pathMatch[2];
+          fullPkg = 'cz.' + (pathMatch[1] ? 'taximares.' : 'mares.') + pkgSegment;
+        }
+      }
+      if (!pkgSegment) {
+        var pkgMatch = content.match(/(?:package|namespace\s*=|applicationId\s*=|PRODUCT_BUNDLE_IDENTIFIER:)\s*["']?(cz\.(?:taxi)?mares\.([a-zA-Z0-9_]+))/);
+        if (pkgMatch && pkgMatch[1]) {
+          fullPkg = pkgMatch[1].trim();
+          pkgSegment = pkgMatch[2].trim();
+        }
+      }
+    }
+
+    var normSeg = pkgSegment ? normalizeProjId(pkgSegment) : '';
+    var mappedRepo = normSeg && KNOWN_PKG_TO_REPO[normSeg] ? KNOWN_PKG_TO_REPO[normSeg] : null;
+    var rawDisplay = mappedRepo || appName || pkgSegment;
+    if (!rawDisplay) return null;
+
+    var normApp = normalizeProjId(appName || mappedRepo);
+    var normPkg = normalizeProjId(pkgSegment);
+    var matchedKnown = null;
+    var kp = (typeof knownProjects !== 'undefined' && Array.isArray(knownProjects)) ? knownProjects : [];
+    var pa = (typeof projectAliases !== 'undefined' && projectAliases) ? projectAliases : {};
+
+    if (mappedRepo && kp.indexOf(mappedRepo) !== -1) {
+      matchedKnown = mappedRepo;
+    } else if (normApp && pa[normApp] && kp.indexOf(pa[normApp]) !== -1) {
+      matchedKnown = pa[normApp];
+    } else if (normPkg && pa[normPkg] && kp.indexOf(pa[normPkg]) !== -1) {
+      matchedKnown = pa[normPkg];
+    } else if (normApp) {
+      matchedKnown = kp.find(function(p) { return normalizeProjId(p) === normApp; }) || null;
+    }
+    if (!matchedKnown && normPkg) {
+      matchedKnown = kp.find(function(p) { return normalizeProjId(p) === normPkg; }) || null;
+    }
+
+    return {
+      display: matchedKnown || rawDisplay,
+      matchedKnown: matchedKnown || null,
+      norm: normalizeProjId(matchedKnown || rawDisplay),
+      normApp: normApp,
+      normPkg: normPkg,
+      pkg: fullPkg || (pkgSegment ? ('cz.mares.' + pkgSegment) : null)
+    };
+  };
+
+  if (typeof window.updateDetectedProjectStatus === 'function') {
+    window.updateDetectedProjectStatus();
+  }
+})();
 </script></body></html>
