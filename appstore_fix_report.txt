@@ -1,8 +1,0 @@
-✅ Dr. Pilulka: 8-Bit Puzzle (cz.mares.drpilulka): Support URL, snímky i poznámky pro Apple Review jsou uložené u verze 1.0 (připraveno k odeslání v App Store Connect).
-✅ Neonové kostky (cz.mares.tetrisek): Support URL, snímky i poznámky pro Apple Review jsou uložené u verze 1.0 (připraveno k odeslání v App Store Connect).
-✅ PDF Studio (cz.mares.pdfstudio): Support URL, snímky i poznámky pro Apple Review jsou uložené u verze 1.0 (připraveno k odeslání v App Store Connect).
-✅ WaveCal (cz.mares.wavecal): Support URL, snímky i poznámky pro Apple Review jsou uložené u verze 1.1 (připraveno k odeslání v App Store Connect).
-ℹ️ Rádio PM (cz.taximares.radiopm): verze 1.2 je ve stavu WAITING_FOR_REVIEW (privacyPolicyUrl aktualizována).
-ℹ️ Moji mazlíčci (cz.mares.kocicky): verze 1.0 je ve stavu READY_FOR_SALE (privacyPolicyUrl aktualizována).
-ℹ️ Sudoku PM (cz.mares.sudoku): verze 1.2 je ve stavu READY_FOR_SALE (privacyPolicyUrl aktualizována).
-ℹ️ Taxi Mareš (cz.mares.taxi.user): verze 1.0 je ve stavu READY_FOR_SALE (privacyPolicyUrl aktualizována).
