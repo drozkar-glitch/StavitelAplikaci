@@ -380,7 +380,7 @@
             <div class="vault-box">
                 <div class="vault-title">
                     <span style="color: #34d399;">🤖 1. Android Keystore (.jks / .keystore)</span>
-                    <span id="statusAndroidKey" class="status-pill pill-ok">✔ Vlastní klíč (Humorradio)</span>
+                    <span id="statusAndroidKey" class="status-pill pill-ok">✔ Výchozí klíč v ios-keys</span>
                 </div>
                 <div class="form-group" style="margin-bottom: 8px;">
                     <label>Soubor Android klíče (uloží se pro vybraný projekt i jako výchozí):</label>
@@ -459,8 +459,7 @@
                     <span style="color: #34d399;">🌺 5. Huawei AppGallery Service Account (.json)</span>
                     <span class="status-pill pill-ok" id="huaweiVaultStatusBadge">✔ Uloženo v ios-keys</span>
                 </div>
-                <p style="margin: 0 0 8px 0; font-size: 12px; color: var(--muted);">Servisní JSON klíč (Developer-level) pro automatické publikování .apk do Huawei AppGallery Connect (účet 119607105).<code>.aab</code> do Google Play Console.
-                </p>
+                <p style="margin: 0 0 8px 0; font-size: 12px; color: var(--muted);">Servisní JSON klíč (Developer-level) pro automatické publikování <code>.apk</code> do Huawei AppGallery Connect.</p>
                 <div class="form-group" style="margin-bottom: 0;">
                     <label>Soubor Huawei Service Account JSON klíče (.json):</label>
                     <input type="file" accept=".json" id="huaweiVaultFileInput">
@@ -482,7 +481,7 @@
             <div class="form-group" style="flex: 2.2;">
                 <label>Vyber existující projekt nebo založ nový:</label>
                 <div style="display: flex; gap: 8px;">
-                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="Humorradio">📁 Humorradio</option><option value="DrPilulka">📁 DrPilulka</option><option value="StavitelAplikaci">📁 StavitelAplikaci</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="WaveCal">📁 WaveCal</option><option value="Sudoku">📁 Sudoku</option><option value="Tetrisek">📁 Tetrisek</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
+                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="bombman">📁 bombman</option><option value="bandita">📁 bandita</option><option value="JenPockej">📁 JenPockej</option><option value="kocicky">📁 kocicky</option><option value="StavitelAplikaci">📁 StavitelAplikaci</option><option value="TaxiMaresUser">📁 TaxiMaresUser</option><option value="Sudoku">📁 Sudoku</option><option value="DrPilulka">📁 DrPilulka</option><option value="Tetrisek">📁 Tetrisek</option><option value="Humorradio">📁 Humorradio</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="WaveCal">📁 WaveCal</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
                     <button class="btn-secondary" style="white-space: nowrap;" title="Načte aktuální seznam tvých repozitářů přímo z GitHubu" onclick="fetchGitHubRepos(false)">🔄 Obnovit z GitHubu</button>
                     <button id="btnRemoveProject" class="btn-danger" style="white-space: nowrap;" title="Odebere vybraný název projektu z roletky (na GitHubu nic nemaže)" onclick="removeSelectedProjectFromList()">🗑️ Odebrat</button>
                 </div>
@@ -583,7 +582,7 @@
                     <span style="font-size: 13.5px; font-weight: 600; color: var(--muted);">
                         📦 Připravené soubory v paměti: <strong id="fileCount" style="color: var(--text);">0</strong>
                     </span>
-                    <span id="detectedProjectBadge" class="badge hidden" style="cursor: default;"></span>
+                    <span id="detectedProjectBadge" class="badge badge-green hidden" style="cursor: default;">✔ Kód patří projektu: WaveCal</span>
                 </div>
                 <button class="btn-danger" onclick="clearFiles()">🗑️ Vyčistit paměť</button>
             </div>
@@ -2887,1522 +2886,278 @@ jobs:
 </script>
 
 
-<script id="coreUpgradesScript">/* === HUAWEI_INTEGRATION_V9 === */
-(function installStavitelCoreUpgradesV9() {
-      if (window.__huaweiKeepAliveInterval) {
-        clearInterval(window.__huaweiKeepAliveInterval);
-        window.__huaweiKeepAliveInterval = null;
-      }
-      window.__huaweiVaultStatus = window.__huaweiVaultStatus || "OK";
+<script id="coreUpgradesScript">/* === STAVITEL_PERMANENT_CORE_V13 === */
+(function installPermanentCoreV13() {
+  const LT = String.fromCharCode(60);
+  const GT = String.fromCharCode(62);
 
-      function getTk() {
-        var inp = document.getElementById("ghToken") || document.querySelector('input[type="password"]');
-        if (inp && inp.value && inp.value.trim()) return inp.value.trim();
-        for (var i = 0; i < localStorage.length; i++) {
-          var val = (localStorage.getItem(localStorage.key(i)) || "").trim();
-          if (val.indexOf("ghp_") === 0 || val.indexOf("github_pat_") === 0 || val.indexOf("gho_") === 0) return val;
-        }
-        return (localStorage.getItem("ghToken") || "").trim();
-      }
-
-      function getOw() {
-        var inp = document.getElementById("ghOwner");
-        if (inp && inp.value && inp.value.trim()) return inp.value.trim();
-        return (localStorage.getItem("ghOwner") || "drozkar-glitch").trim();
-      }
-
-      function syncCreds() {
-        var tk = getTk();
-        var ow = getOw();
-        if (tk) {
-          localStorage.setItem("ghToken", tk);
-          var inp = document.getElementById("ghToken") || document.querySelector('input[type="password"]');
-          if (inp && !inp.value) inp.value = tk;
-          try { window.token = tk; } catch (e) {}
-        }
-        if (ow) {
-          localStorage.setItem("ghOwner", ow);
-          var owInp = document.getElementById("ghOwner");
-          if (owInp && !owInp.value) owInp.value = ow;
-          try { window.owner = ow; } catch (e) {}
-        }
-      }
-
-      function hideYellowPatchBadge() {
-        localStorage.removeItem("stavitel_custom_patch");
-        var badges = document.querySelectorAll("button, span, div, a");
-        for (var i = 0; i < badges.length; i++) {
-          var el = badges[i];
-          if (el.closest && el.closest("script, style, textarea")) continue;
-          if (el.children.length === 0 && el.textContent && el.textContent.indexOf("Záplata aktivní") !== -1) {
-            el.style.display = "none";
-          }
-        }
-      }
-
-      function inferLogType(msg, explicitType) {
-        if (explicitType) return explicitType;
-        if (typeof msg !== "string") return "";
-        if (msg.indexOf("✅") !== -1 || msg.indexOf("🎉") !== -1 || msg.indexOf("✔") !== -1) return "ok";
-        if (msg.indexOf("❌") !== -1 || msg.indexOf("Chyba") !== -1) return "err";
-        if (msg.indexOf("⚠️") !== -1 || msg.indexOf("⏳") !== -1 || msg.indexOf("🔎") !== -1 || msg.indexOf("📄") !== -1 || msg.indexOf("ℹ️") !== -1) return "warn";
-        if (msg.indexOf("☁️") !== -1 || msg.indexOf("📥") !== -1 || msg.indexOf("🔧") !== -1 || msg.indexOf("🔐") !== -1 || msg.indexOf("📦") !== -1 || msg.indexOf("🚑") !== -1 || msg.indexOf("⚡") !== -1) return "info";
-        return "";
-      }
-
-      function colorizeLogContainer() {
-        var logEl = document.getElementById("log") || document.getElementById("logBox") || document.getElementById("logOutput") || document.querySelector("pre#log, .log-container");
-        if (!logEl) {
-          var pres = document.querySelectorAll("pre, div");
-          for (var p = 0; p < pres.length; p++) {
-            var txt = pres[p].textContent || "";
-            if (txt.indexOf("Spouštím vloženou") !== -1 || txt.indexOf("Stav trezoru ios-keys:") !== -1) {
-              if (pres[p].children.length > 0 && pres[p].tagName === "DIV" && pres[p].clientHeight > 60 && pres[p].clientHeight < 600) {
-                logEl = pres[p];
-                break;
-              }
-            }
-          }
-        }
-        if (!logEl) return;
-        for (var i = 0; i < logEl.children.length; i++) {
-          var row = logEl.children[i];
-          if (row.__colorizedV9) continue;
-          var t = row.textContent || "";
-          if (t.indexOf("✅") !== -1 || t.indexOf("🎉") !== -1 || t.indexOf("✔") !== -1) {
-            row.style.color = "#4ade80";
-          } else if (t.indexOf("❌") !== -1) {
-            row.style.color = "#f87171";
-          } else if (t.indexOf("⚠️") !== -1 || t.indexOf("⏳") !== -1 || t.indexOf("🔎") !== -1 || t.indexOf("📄") !== -1) {
-            row.style.color = "#fbbf24";
-          } else if (t.indexOf("☁️") !== -1 || t.indexOf("📥") !== -1 || t.indexOf("🔧") !== -1 || t.indexOf("🔐") !== -1 || t.indexOf("📦") !== -1 || t.indexOf("⚡") !== -1) {
-            row.style.color = "#60a5fa";
-          }
-          row.__colorizedV9 = true;
-        }
-      }
-
-      if (typeof window.log === "function" && !window.log.__huaweiV9Wrapped) {
-        var baseLog = window.log.__origUnwrappedLog || window.log;
-        var wrappedLog = function(msg, type) {
-          if (typeof msg === "string" && msg.indexOf("Stav trezoru ios-keys:") !== -1 && msg.indexOf("Huawei=") === -1) {
-            var hs = window.__huaweiVaultStatus || "OK";
-            if (msg.indexOf("Google Play=OK") !== -1) {
-              msg = msg.replace("Google Play=OK", "Google Play=OK, Huawei=" + hs);
-            } else {
-              msg = msg + ", Huawei=" + hs;
-            }
-          }
-          var finalType = inferLogType(msg, type);
-          var res = baseLog.call(this, msg, finalType);
-          colorizeLogContainer();
-          return res;
-        };
-        wrappedLog.__origUnwrappedLog = baseLog;
-        wrappedLog.__huaweiV9Wrapped = true;
-        window.log = wrappedLog;
-      }
-
-      window.downloadStavitelZipFromGitHub = async function() {
-        try {
-          var ow = getOw();
-          var tk = getTk();
-          if (!tk) {
-            window.log("❌ Chybí GitHub token pro stažení Stavitele.", "err");
-            return;
-          }
-          window.log("📦 Připravuji stažení celého Stavitele Aplikací z GitHubu do .ZIP...", "info");
-          if (typeof window.JSZip === "undefined") {
-            await new Promise(function(resolve, reject) {
-              var s = document.createElement("script");
-              s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
-              s.onload = resolve;
-              s.onerror = reject;
-              document.head.appendChild(s);
-            });
-          }
-          var zip = new window.JSZip();
-          var headers = {
-            "Authorization": "Bearer " + tk,
-            "Accept": "application/vnd.github+json"
-          };
-
-          async function fetchDirToZip(repoName, dirPath, zipFolder) {
-            var url = "https://api.github.com/repos/" + ow + "/" + repoName + "/contents" + (dirPath ? "/" + dirPath : "") + "?_cb=" + Date.now();
-            var res = await fetch(url, { headers: headers, cache: "no-store" });
-            if (!res.ok) return;
-            var items = await res.json();
-            if (!Array.isArray(items)) return;
-            for (var i = 0; i < items.length; i++) {
-              var item = items[i];
-              if (item.type === "dir") {
-                await fetchDirToZip(repoName, item.path, zipFolder.folder(item.name));
-              } else if (item.type === "file") {
-                var fRes = await fetch(item.url + "?_cb=" + Date.now(), { headers: headers, cache: "no-store" });
-                if (fRes.ok) {
-                  var fData = await fRes.json();
-                  if (fData.content) {
-                    zipFolder.file(item.name, fData.content.replace(/\s/g, ""), { base64: true });
-                  }
-                }
-              }
-            }
-          }
-
-          await fetchDirToZip("StavitelAplikaci", "", zip);
-
-          var vaultBackupRes = await fetch("https://api.github.com/repos/" + ow + "/ios-keys/contents/StavitelAplikaci.html?_cb=" + Date.now(), {
-            headers: headers,
-            cache: "no-store"
-          });
-          if (vaultBackupRes.ok) {
-            var vbData = await vaultBackupRes.json();
-            if (vbData.content) {
-              zip.folder("ios-keys-backup").file("StavitelAplikaci.html", vbData.content.replace(/\s/g, ""), { base64: true });
-            }
-          }
-
-          var blob = await zip.generateAsync({ type: "blob" });
-          var d = new Date().toISOString().slice(0, 10);
-          var a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = "StavitelAplikaci-GH-" + d + ".zip";
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(function() {
-            URL.revokeObjectURL(a.href);
-            a.remove();
-          }, 1500);
-          window.log("✅ Celý Stavitel Aplikací z GitHubu byl úspěšně stažen jako .ZIP!", "ok");
-        } catch (err) {
-          window.log("❌ Chyba při stahování .ZIP Stavitele: " + (err.message || err), "err");
-        }
-      };
-
-      function ensureDownloadStavitelZipButtons() {
-        if (!document.getElementById("btnDownloadStavitelZipTop")) {
-          var badges = document.querySelectorAll("button, span, div, a");
-          var targetBar = null;
-          for (var i = 0; i < badges.length; i++) {
-            var b = badges[i];
-            if (b.closest && b.closest("script, style, textarea")) continue;
-            if (b.children.length === 0 && b.textContent && b.textContent.indexOf("Trezor ios-keys:") !== -1) {
-              targetBar = b.parentElement;
-              break;
-            }
-          }
-          if (targetBar) {
-            var topBtn = document.createElement("button");
-            topBtn.id = "btnDownloadStavitelZipTop";
-            topBtn.type = "button";
-            topBtn.textContent = "📦 Stáhnout Stavitel (.ZIP z GH)";
-            topBtn.style.cssText = "background:#1e3a8a;color:#93c5fd;border:1px solid #3b82f6;border-radius:9999px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;margin-left:6px;";
-            topBtn.onclick = function() { window.downloadStavitelZipFromGitHub(); };
-            targetBar.appendChild(topBtn);
-          }
-        }
-
-        if (!document.getElementById("btnDownloadStavitelZipBottom")) {
-          var btns = document.querySelectorAll("button");
-          for (var j = 0; j < btns.length; j++) {
-            var bt = btns[j];
-            if (bt.textContent && bt.textContent.indexOf("Vrátit commit") !== -1 && bt.parentElement) {
-              var botBtn = document.createElement("button");
-              botBtn.id = "btnDownloadStavitelZipBottom";
-              botBtn.type = "button";
-              botBtn.className = bt.className;
-              botBtn.style.cssText = "background:#1e3a8a;color:#93c5fd;border:1px solid #3b82f6;cursor:pointer;";
-              botBtn.textContent = "📦 ZIP Stavitele z GH";
-              botBtn.onclick = function() { window.downloadStavitelZipFromGitHub(); };
-              bt.parentElement.appendChild(botBtn);
-              break;
-            }
-          }
-        }
-      }
-
-      function installDirectoryVsBuildGuard() {
-        if (window.__dirGuardInstalledV9) return;
-        window.__dirGuardInstalledV9 = true;
-
-        document.addEventListener("click", function(ev) {
-          var btn = ev.target && ev.target.closest ? ev.target.closest("button") : null;
-          if (!btn) return;
-          var txt = (btn.textContent || "").trim();
-          if (
-            txt.indexOf("Uložit na disk A odeslat na GitHub") === -1 &&
-            txt.indexOf("Jen na GitHub") === -1 &&
-            txt.indexOf("Jen na disk") === -1 &&
-            txt.indexOf("Pouze odeslat tento režim na GitHub") === -1
-          ) {
-            return;
-          }
-
-          var sel = document.getElementById("projectSelect") || document.querySelector("select");
-          var selectedProj = sel && sel.value ? sel.value.trim() : "";
-          if (!selectedProj || selectedProj === "__new__") return;
-
-          var memFiles = window.parsedFiles || window.filesInMemory || window.loadedFiles || [];
-          if (Array.isArray(memFiles) && memFiles.length > 0) {
-            var detectedHint = "";
-            for (var i = 0; i < memFiles.length; i++) {
-              var f = memFiles[i];
-              var p = (f.path || f.name || "").toLowerCase();
-              var c = (f.content || "");
-              if (p.indexOf("radiopm") !== -1 || c.indexOf("cz.taximares.radiopm") !== -1 || c.indexOf("Humorradio") !== -1) {
-                detectedHint = "Humorradio";
-                break;
-              } else if (p.indexOf("wavecal") !== -1 || c.indexOf("cz.mares.wavecal") !== -1) {
-                detectedHint = "WaveCal";
-                break;
-              } else if (p.indexOf("sudoku") !== -1 || c.indexOf("cz.mares.sudoku") !== -1) {
-                detectedHint = "Sudoku";
-                break;
-              } else if (p.indexOf("pdfstudio") !== -1 || c.indexOf("cz.mares.pdfstudio") !== -1) {
-                detectedHint = "PdfStudio";
-                break;
-              } else if (p.indexOf("tetrisek") !== -1 || c.indexOf("neonovekostky") !== -1) {
-                detectedHint = "Tetrisek";
-                break;
-              }
-            }
-            if (detectedHint && selectedProj.toLowerCase() !== detectedHint.toLowerCase()) {
-              var proceed = window.confirm(
-                "⚠️ KONTROLA ADRESÁŘE A BUILDU:\n\n" +
-                "V Kroku 1 máš vybraný projekt: '" + selectedProj + "'\n" +
-                "Ale soubory v paměti patří projektu: '" + detectedHint + "'!\n\n" +
-                "Opravdu chceš pokračovat a přepsat '" + selectedProj + "'?"
-              );
-              if (!proceed) {
-                ev.stopImmediatePropagation();
-                ev.preventDefault();
-                window.log("⚠️ Akce zrušena kontrolou adresáře: nesouhlasí vybraný projekt (" + selectedProj + " vs " + detectedHint + ").", "warn");
-                return false;
-              }
-            }
-          }
-        }, true);
-      }
-
-      window.injectHuaweiIntoBuildYml = function(ymlContent) {
-        if (typeof ymlContent !== "string") return ymlContent;
-
-        var gplayInternalBlock = [
-          "      - name: Publish Android AAB to Google Play (Internal Testing)",
-          "        run: |",
-          "          if [ \"$PUBLISH_TO_STORES\" != \"true\" ]; then",
-          "            echo \"Publikace do obchodu je vypnuta (PUBLISH_TO_STORES=false). Preskakuji Google Play upload.\"",
-          "          elif [ -s \"iosApp/signing/gplaykey.json.b64\" ]; then",
-          "            echo \"Nalezen Google Play klic, dekoduji a nahravam do Google Play (Interni testovani)...\"",
-          "            base64 --decode \x3c iosApp/signing/gplaykey.json.b64 \x3e /tmp/gplay_key.json",
-          "            pip3 install --quiet --break-system-packages google-api-python-client google-auth-httplib2 google-auth-oauthlib || \\",
-          "            pip3 install --quiet google-api-python-client google-auth-httplib2 google-auth-oauthlib",
-          "",
-          "            python3 - \x3c\x3c 'EOF'",
-          "          import os",
-          "          from google.oauth2 import service_account",
-          "          from googleapiclient.discovery import build",
-          "          from googleapiclient.http import MediaFileUpload",
-          "          from googleapiclient.errors import HttpError",
-          "",
-          "          package_name = os.environ.get(\"BUNDLE_ID\")",
-          "          build_num = os.environ.get(\"PROJECT_BUILD_NUMBER\", \"101\")",
-          "          app_name = os.environ.get(\"APP_NAME\")",
-          "          app_version = os.environ.get(\"APP_VERSION\", \"1.0\")",
-          "          aab_path = f\"composeApp/build/outputs/bundle/release/{app_name}-{app_version}.{build_num}.aab\"",
-          "",
-          "          try:",
-          "              creds = service_account.Credentials.from_service_account_file(",
-          "                  \"/tmp/gplay_key.json\",",
-          "                  scopes=[\"https://www.googleapis.com/auth/androidpublisher\"]",
-          "              )",
-          "              service = build(\"androidpublisher\", \"v3\", credentials=creds)",
-          "",
-          "              edit_request = service.edits().insert(body={}, packageName=package_name)",
-          "              result = edit_request.execute(num_retries=5)",
-          "              edit_id = result[\"id\"]",
-          "",
-          "              media = MediaFileUpload(aab_path, mimetype=\"application/octet-stream\", resumable=True)",
-          "              bundle_response = service.edits().bundles().upload(",
-          "                  editId=edit_id,",
-          "                  packageName=package_name,",
-          "                  media_body=media",
-          "              ).execute(num_retries=5)",
-          "              version_code = bundle_response[\"versionCode\"]",
-          "              print(f\"AAB uspesne nahrano (versionCode: {version_code}).\")",
-          "",
-          "              def commit_edit(eid):",
-          "                  try:",
-          "                      service.edits().commit(editId=eid, packageName=package_name).execute(num_retries=5)",
-          "                      print(\"Publikace do Google Play (Interni testovani) uspesne dokoncena!\")",
-          "                  except Exception as cerr:",
-          "                      err_str = str(cerr)",
-          "                      if \"Only releases with status draft\" in err_str:",
-          "                          raise cerr",
-          "                      print(f\"Standardni commit vyzaduje rucni potvrzeni v konzoli ({cerr}), ukladam s changesNotSentForReview=True...\")",
-          "                      service.edits().commit(",
-          "                          editId=eid,",
-          "                          packageName=package_name,",
-          "                          changesNotSentForReview=True",
-          "                      ).execute(num_retries=5)",
-          "                      print(\"Publikace ulozena do Google Play (changesNotSentForReview=True)! Staci ji potvrdit v Prehledu publikovani.\")",
-          "",
-          "              try:",
-          "                  service.edits().tracks().update(",
-          "                      editId=edit_id,",
-          "                      track=\"internal\",",
-          "                      packageName=package_name,",
-          "                      body={\"releases\": [{\"versionCodes\": [str(version_code)], \"status\": \"completed\"}]}",
-          "                  ).execute(num_retries=5)",
-          "                  print(\"Prirazeno do kanalu internal (completed).\")",
-          "                  commit_edit(edit_id)",
-          "              except Exception as track_err:",
-          "                  print(f\"Aplikace je v Google Play v rezimu draft ({track_err}). Prepinam vydani v kanalu internal na status draft...\")",
-          "                  service.edits().tracks().update(",
-          "                      editId=edit_id,",
-          "                      track=\"internal\",",
-          "                      packageName=package_name,",
-          "                      body={\"releases\": [{\"versionCodes\": [str(version_code)], \"status\": \"draft\"}]}",
-          "                  ).execute(num_retries=5)",
-          "                  print(\"Prirazeno do kanalu internal jako draft.\")",
-          "                  commit_edit(edit_id)",
-          "          except HttpError as e:",
-          "              if e.resp.status == 404:",
-          "                  print(f\"UPOZORNENI: Balicek '{package_name}' zatim v Google Play Console neexistuje (404 Package not found).\")",
-          "                  print(\"Prvni .aab soubor je nutne do Google Play Console nahrat rucne.\")",
-          "              else:",
-          "                  print(f\"UPOZORNENI: Chyba Google Play API ({e.resp.status}): {e}.\")",
-          "          except Exception as e:",
-          "              print(f\"UPOZORNENI: Neocekavana chyba pri nahravani do Google Play: {e}.\")",
-          "          EOF",
-          "          else",
-          "            echo \"Google Play klic nebyl nalezen, preskakuji Google Play upload.\"",
-          "          fi"
-        ].join("\n");
-
-        var gplayRegex = /      - name: Publish Android AAB to Google Play[^\n]*\n[\s\S]*?(?=\n      - name: Publish Android APK to Huawei AppGallery|\n  build-ios:)/;
-        if (gplayRegex.test(ymlContent)) {
-          ymlContent = ymlContent.replace(gplayRegex, gplayInternalBlock);
-        }
-
-        if (ymlContent.indexOf("huawei_key.json.b64") === -1) {
-          var gplayLine = '"https://api.github.com/repos/${OWNER}/ios-keys/contents/gplaykey.json.b64" -o "iosApp/signing/gplaykey.json.b64" || rm -f "iosApp/signing/gplaykey.json.b64"';
-          var huaweiFetchCmd = 'curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" "https://api.github.com/repos/${OWNER}/ios-keys/contents/huawei_key.json.b64" -o "iosApp/signing/huawei_key.json.b64" || rm -f "iosApp/signing/huawei_key.json.b64"';
-          if (ymlContent.indexOf(gplayLine) !== -1) {
-            ymlContent = ymlContent.replace(gplayLine, gplayLine + "\n            " + huaweiFetchCmd);
-          }
-        }
-
-        var huaweiStepBlock = [
-          "      - name: Publish Android APK to Huawei AppGallery",
-          "        run: |",
-          "          if [ \"$PUBLISH_TO_STORES\" != \"true\" ]; then",
-          "            echo \"Publikace do obchodu je vypnuta (PUBLISH_TO_STORES=false). Preskakuji Huawei AppGallery upload.\"",
-          "          elif [ -s \"iosApp/signing/huawei_key.json.b64\" ]; then",
-          "            echo \"Nalezen Huawei Service Account klic, dekoduji a pripojuji se k Huawei AppGallery Connect...\"",
-          "            base64 --decode \x3c iosApp/signing/huawei_key.json.b64 \x3e /tmp/huawei_key.json",
-          "            pip3 install --quiet --break-system-packages pyjwt cryptography requests || \\",
-          "            pip3 install --quiet pyjwt cryptography requests",
-          "",
-          "            python3 - \x3c\x3c 'EOF'",
-          "          import os, sys, json, time, jwt, requests",
-          "",
-          "          package_name = os.environ.get(\"BUNDLE_ID\", \"\").strip()",
-          "          build_num = os.environ.get(\"PROJECT_BUILD_NUMBER\", \"101\").strip()",
-          "          app_name = os.environ.get(\"APP_NAME\", \"\").strip()",
-          "          app_version = os.environ.get(\"APP_VERSION\", \"1.0\").strip()",
-          "          apk_path = f\"composeApp/build/outputs/apk/release/{app_name}-{app_version}.{build_num}.apk\"",
-          "",
-          "          KNOWN_APP_IDS = {",
-          "              \"cz.taximares.radiopm\": \"119618129\",",
-          "              \"cz.mares.radiopm\": \"119618129\"",
-          "          }",
-          "",
-          "          if not os.path.exists(apk_path):",
-          "              print(f\"UPOZORNENI: APK soubor {apk_path} nebyl nalezen, preskakuji Huawei upload.\")",
-          "              sys.exit(0)",
-          "",
-          "          try:",
-          "              with open(\"/tmp/huawei_key.json\", \"r\", encoding=\"utf-8\") as f:",
-          "                  hk = json.load(f)",
-          "              key_id = str(hk.get(\"key_id\", \"\")).strip()",
-          "              priv_key = str(hk.get(\"private_key\", \"\")).strip()",
-          "              sub_account = str(hk.get(\"sub_account\", \"\")).strip()",
-          "              token_uri = str(hk.get(\"token_uri\", \"https://connect-api.cloud.huawei.com/api/oauth2/v1/token\")).strip()",
-          "              base_agc = \"https://connect-api.cloud.huawei.com/api\"",
-          "",
-          "              now = int(time.time())",
-          "              candidates = []",
-          "              for alg in [\"PS256\", \"RS256\"]:",
-          "                  for aud_val in [",
-          "                      \"https://connect-api.cloud.huawei.com/api/oauth2/v1/token\",",
-          "                      token_uri,",
-          "                      \"https://connect-api.cloud.huawei.com\"",
-          "                  ]:",
-          "                      try:",
-          "                          pl = {\"iss\": sub_account, \"aud\": aud_val, \"iat\": now - 30, \"exp\": now + 3000}",
-          "                          tok = jwt.encode(pl, priv_key, algorithm=alg, headers={\"kid\": key_id, \"typ\": \"JWT\", \"alg\": alg})",
-          "                          if isinstance(tok, bytes):",
-          "                              tok = tok.decode(\"utf-8\")",
-          "                          candidates.append((f\"JWT-{alg} (aud={aud_val})\", {",
-          "                              \"Authorization\": f\"Bearer {tok}\",",
-          "                              \"client_id\": sub_account,",
-          "                              \"Content-Type\": \"application/json\"",
-          "                          }))",
-          "                      except Exception as sign_err:",
-          "                          pass",
-          "",
-          "              if \"client_secret\" in hk or \"key\" in hk:",
-          "                  c_sec = hk.get(\"client_secret\") or hk.get(\"key\")",
-          "                  c_id = hk.get(\"client_id\") or sub_account",
-          "                  tr = requests.post(f\"{base_agc}/oauth2/v1/token\", json={\"grant_type\": \"client_credentials\", \"client_id\": c_id, \"client_secret\": c_sec}, timeout=30)",
-          "                  if tr.ok and tr.json().get(\"access_token\"):",
-          "                      at = tr.json()[\"access_token\"]",
-          "                      candidates.insert(0, (\"OAuth-ClientCredentials\", {",
-          "                          \"Authorization\": f\"Bearer {at}\",",
-          "                          \"client_id\": str(c_id),",
-          "                          \"Content-Type\": \"application/json\"",
-          "                      }))",
-          "",
-          "              working_headers = None",
-          "              app_res = None",
-          "              last_err_detail = \"\"",
-          "              known_id = KNOWN_APP_IDS.get(package_name, \"\")",
-          "",
-          "              for label, hdrs in candidates:",
-          "                  test_r = requests.get(f\"{base_agc}/publish/v2/appid-list\", params={\"packageName\": package_name}, headers=hdrs, timeout=30)",
-          "                  if test_r.ok:",
-          "                      working_headers = hdrs",
-          "                      app_res = test_r",
-          "                      print(f\"Huawei autorizace uspesna ({label}).\")",
-          "                      break",
-          "                  elif known_id:",
-          "                      test_r2 = requests.get(f\"{base_agc}/publish/v2/app-info\", params={\"appId\": known_id}, headers=hdrs, timeout=30)",
-          "                      if test_r2.ok:",
-          "                          working_headers = hdrs",
-          "                          app_res = test_r2",
-          "                          print(f\"Huawei autorizace uspesna pres App ID {known_id} ({label}).\")",
-          "                          break",
-          "                      else:",
-          "                          last_err_detail = f\"{label} -> HTTP {test_r2.status_code}: {test_r2.text}\"",
-          "                  else:",
-          "                      last_err_detail = f\"{label} -> HTTP {test_r.status_code}: {test_r.text}\"",
-          "",
-          "              if not working_headers:",
-          "                  print(f\"UPOZORNENI: Huawei AppGallery API odmitlo autorizaci. Posledni odpoved serveru: {last_err_detail}\")",
-          "                  sys.exit(0)",
-          "",
-          "              huawei_app_id = \"\"",
-          "              if app_res and app_res.ok:",
-          "                  app_ids = app_res.json().get(\"appids\", [])",
-          "                  if app_ids:",
-          "                      huawei_app_id = str(app_ids[0].get(\"value\", \"\"))",
-          "",
-          "              if not huawei_app_id and known_id:",
-          "                  huawei_app_id = known_id",
-          "                  print(f\"Balicek '{package_name}' v konzoli jeste nema prirazeny packageName (--), pouzivam zalozene App ID: {huawei_app_id}.\")",
-          "",
-          "              if not huawei_app_id:",
-          "                  print(f\"UPOZORNENI: Balicek '{package_name}' zatim v Huawei AppGallery Connect neexistuje.\")",
-          "                  sys.exit(0)",
-          "",
-          "              print(f\"Pripravuji nahrani {os.path.basename(apk_path)} do Huawei App ID: {huawei_app_id}...\")",
-          "              url_res = requests.get(",
-          "                  f\"{base_agc}/publish/v2/upload-url/for-obs\",",
-          "                  params={\"appId\": huawei_app_id, \"fileName\": os.path.basename(apk_path), \"contentLength\": os.path.getsize(apk_path)},",
-          "                  headers=working_headers,",
-          "                  timeout=30",
-          "              )",
-          "              if url_res.ok and url_res.json().get(\"urlInfo\"):",
-          "                  url_info = url_res.json()[\"urlInfo\"]",
-          "                  upload_url = url_info.get(\"url\")",
-          "                  upload_headers = dict(url_info.get(\"headers\", {}))",
-          "                  with open(apk_path, \"rb\") as apk_f:",
-          "                      up_r = requests.put(upload_url, data=apk_f, headers=upload_headers, timeout=300)",
-          "                  if up_r.ok:",
-          "                      file_info_body = {",
-          "                          \"fileType\": 5,",
-          "                          \"files\": [{\"fileName\": os.path.basename(apk_path), \"fileDestUrl\": url_info.get(\"objectId\", \"\")}]",
-          "                      }",
-          "                      fi_r = requests.put(f\"{base_agc}/publish/v2/app-file-info\", params={\"appId\": huawei_app_id}, json=file_info_body, headers=working_headers, timeout=60)",
-          "                      if fi_r.ok and str(fi_r.json().get(\"ret\", {}).get(\"code\", \"\")) == \"0\":",
-          "                          print(f\"APK {os.path.basename(apk_path)} uspesne nahrano a prirazeno do Huawei AppGallery Connect (App ID {huawei_app_id})!\")",
-          "                      else:",
-          "                          print(f\"Odpoved Huawei pri prirazeni APK (app-file-info): {fi_r.status_code} {fi_r.text}\")",
-          "                  else:",
-          "                      print(f\"Upozorneni pri nahravani souboru na Huawei OBS: {up_r.status_code} {up_r.text}\")",
-          "              else:",
-          "                  print(f\"Odpoved upload-url/for-obs ({url_res.status_code}: {url_res.text}), zkousim standardni upload-url...\")",
-          "                  u2_res = requests.get(f\"{base_agc}/publish/v2/upload-url\", params={\"appId\": huawei_app_id, \"suffix\": \"apk\"}, headers=working_headers, timeout=30)",
-          "                  if u2_res.ok and u2_res.json().get(\"uploadUrl\"):",
-          "                      u2_data = u2_res.json()",
-          "                      with open(apk_path, \"rb\") as apk_f:",
-          "                          up2_r = requests.post(",
-          "                              u2_data[\"uploadUrl\"],",
-          "                              files={\"file\": (os.path.basename(apk_path), apk_f, \"application/octet-stream\")},",
-          "                              data={\"authCode\": u2_data.get(\"authCode\", \"\"), \"fileCount\": \"1\"},",
-          "                              timeout=300",
-          "                          )",
-          "                      if up2_r.ok:",
-          "                          flist = up2_r.json().get(\"result\", {}).get(\"UploadFileRsp\", {}).get(\"fileInfoList\", [])",
-          "                          if flist:",
-          "                              dest_url = flist[0].get(\"fileDestUlr\") or flist[0].get(\"fileDestUrl\")",
-          "                              fi_body = {\"fileType\": 5, \"files\": [{\"fileName\": os.path.basename(apk_path), \"fileDestUrl\": dest_url}]}",
-          "                              fi2_r = requests.put(f\"{base_agc}/publish/v2/app-file-info\", params={\"appId\": huawei_app_id}, json=fi_body, headers=working_headers, timeout=60)",
-          "                              print(f\"APK nahrano pres upload-url do Huawei AppGallery ({fi2_r.status_code}): {fi2_r.text}\")",
-          "                          else:",
-          "                              print(f\"Odpoved po uploadu: {up2_r.text}\")",
-          "                      else:",
-          "                          print(f\"Chyba pri POST uploadu APK: {up2_r.status_code} {up2_r.text}\")",
-          "                  else:",
-          "                      print(f\"Nelze ziskat upload URL z Huawei AppGallery: {u2_res.status_code} {u2_res.text}\")",
-          "          except Exception as e:",
-          "              print(f\"UPOZORNENI: Chyba pri komunikaci s Huawei AppGallery API: {e}\")",
-          "          EOF",
-          "          else",
-          "            echo \"Huawei klic nebyl nalezen, preskakuji Huawei AppGallery upload.\"",
-          "          fi"
-        ].join("\n");
-
-        var huaweiRegex = /      - name: Publish Android APK to Huawei AppGallery\n[\s\S]*?(?=\n  build-ios:)/;
-        if (huaweiRegex.test(ymlContent)) {
-          ymlContent = ymlContent.replace(huaweiRegex, huaweiStepBlock);
-        } else if (ymlContent.indexOf("  build-ios:") !== -1) {
-          ymlContent = ymlContent.replace("\n  build-ios:", "\n\n" + huaweiStepBlock + "\n\n  build-ios:");
-        } else {
-          ymlContent = ymlContent + "\n\n" + huaweiStepBlock + "\n";
-        }
-        return ymlContent;
-      };
-
-      if (!window.fetch.__huaweiV9Hooked) {
-        var baseFetch = window.fetch.__origUnwrappedFetch || window.fetch.bind(window);
-        var hookedFetch = async function(url, options) {
-          try {
-            if (typeof url === "string" && url.indexOf("/contents/.github/workflows/build.yml") !== -1 && options && options.method === "PUT" && options.body) {
-              var bodyObj = JSON.parse(options.body);
-              if (bodyObj && bodyObj.content) {
-                var decoded = decodeURIComponent(escape(atob(bodyObj.content)));
-                var upgraded = window.injectHuaweiIntoBuildYml(decoded);
-                if (upgraded !== decoded) {
-                  bodyObj.content = btoa(unescape(encodeURIComponent(upgraded)));
-                  options.body = JSON.stringify(bodyObj);
-                }
-              }
-            }
-          } catch (e) {}
-          return baseFetch(url, options);
-        };
-        hookedFetch.__origUnwrappedFetch = baseFetch;
-        hookedFetch.__huaweiV9Hooked = true;
-        window.fetch = hookedFetch;
-      }
-
-      syncCreds();
-      hideYellowPatchBadge();
-      ensureDownloadStavitelZipButtons();
-      installDirectoryVsBuildGuard();
-      colorizeLogContainer();
-    })();
-/* === END_HUAWEI_INTEGRATION_V9 === */
-
-/* PERMANENT_STAVITEL_CORE_V6 */
-(function installPermanentStavitelCore() {
-    // Bezpecna oprava textovych uzlu bez sahani na innerHTML a bez ruseni listeneru
-    const fixTextsSafely = () => {
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
-      let n;
-      while ((n = walker.nextNode())) {
-        if (n.nodeValue) {
-          if (n.nodeValue.includes(".")) {
-            n.nodeValue = n.nodeValue.replace(".", ".");
-          }
-          if (n.nodeValue.includes("Všech 5 klíčů připraveno")) {
-            n.nodeValue = n.nodeValue.replace("Všech 5 klíčů připraveno", "Všech 5 klíčů připraveno");
-          }
-        }
-      }
-    };
-    fixTextsSafely();
-    if (!window._stavitelTextFixTimer) {
-      window._stavitelTextFixTimer = setInterval(fixTextsSafely, 1500);
-    }
-
-    // Generator ZIP archivu v pameti prohlizece (bez CORS problemu s codeload.github.com)
-    window.createSingleFileZipBlob = function(filename, contentStr) {
-      const enc = new TextEncoder();
-      const nameBytes = enc.encode(filename);
-      const dataBytes = enc.encode(contentStr);
-
-      const crcTable = new Uint32Array(256);
-      for (let n = 0; n < 256; n++) {
-        let c = n;
-        for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-        crcTable[n] = c >>> 0;
-      }
-      let crc = 0xFFFFFFFF;
-      for (let i = 0; i < dataBytes.length; i++) {
-        crc = (crc >>> 8) ^ crcTable[(crc ^ dataBytes[i]) & 0xFF];
-      }
-      crc = (crc ^ 0xFFFFFFFF) >>> 0;
-
-      const lfh = new Uint8Array(30 + nameBytes.length);
-      const lfv = new DataView(lfh.buffer);
-      lfv.setUint32(0, 0x04034b50, true);
-      lfv.setUint16(4, 20, true);
-      lfv.setUint16(6, 0x0800, true);
-      lfv.setUint16(8, 0, true);
-      lfv.setUint32(14, crc, true);
-      lfv.setUint32(18, dataBytes.length, true);
-      lfv.setUint32(22, dataBytes.length, true);
-      lfv.setUint16(26, nameBytes.length, true);
-      lfh.set(nameBytes, 30);
-
-      const cdh = new Uint8Array(46 + nameBytes.length);
-      const cdv = new DataView(cdh.buffer);
-      cdv.setUint32(0, 0x02014b50, true);
-      cdv.setUint16(4, 20, true);
-      cdv.setUint16(6, 20, true);
-      cdv.setUint16(8, 0x0800, true);
-      cdv.setUint16(10, 0, true);
-      cdv.setUint32(16, crc, true);
-      cdv.setUint32(20, dataBytes.length, true);
-      cdv.setUint32(24, dataBytes.length, true);
-      cdv.setUint16(28, nameBytes.length, true);
-      cdv.setUint32(42, 0, true);
-      cdh.set(nameBytes, 46);
-
-      const cdOffset = lfh.length + dataBytes.length;
-      const eocd = new Uint8Array(22);
-      const eocdv = new DataView(eocd.buffer);
-      eocdv.setUint32(0, 0x06054b50, true);
-      eocdv.setUint16(8, 1, true);
-      eocdv.setUint16(10, 1, true);
-      eocdv.setUint32(12, cdh.length, true);
-      eocdv.setUint32(16, cdOffset, true);
-
-      return new Blob([lfh, dataBytes, cdh, eocd], { type: "application/zip" });
-    };
-
-    // Funkce pro tlacitka "Stáhnout Stavitel (.ZIP z GH)" a "ZIP Stavitele z GH"
-    window.downloadStavitelZipFromGH = async function() {
-      try {
-        if (typeof window.log === "function") window.log("📦 Stahuji nejnovější Stavitel z GitHubu a balím do .ZIP...");
-        const ownerInput = document.querySelector('input[placeholder*="drozkar"], #ghOwner');
-        const ownerVal = (ownerInput?.value || localStorage.getItem("stavitel_gh_owner") || localStorage.getItem("ghOwner") || "drozkar-glitch").trim();
-        const tokenInput = document.querySelector('input[type="password"], #ghToken');
-        const tokenVal = (tokenInput?.value || localStorage.getItem("stavitel_gh_token") || localStorage.getItem("ghToken") || "").trim();
-
-        const hdrs = { "Accept": "application/vnd.github.raw" };
-        if (tokenVal) hdrs["Authorization"] = "Bearer " + tokenVal;
-
-        let htmlStr = null;
-        for (const file of ["index.html", "StavitelAplikaci.html"]) {
-          const r = await fetch("https://api.github.com/repos/" + ownerVal + "/StavitelAplikaci/contents/" + file + "?_cb=" + Date.now(), { headers: hdrs, cache: "no-store" });
-          if (r.ok) {
-            htmlStr = await r.text();
-            break;
-          }
-        }
-        if (!htmlStr) {
-          htmlStr = typeof window.buildCleanStavitelHtml === "function"
-            ? window.buildCleanStavitelHtml()
-            : ("<!DOCTYPE html>\n" + document.documentElement.outerHTML);
-        }
-
-        const blob = window.createSingleFileZipBlob("StavitelAplikaci.html", htmlStr);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "StavitelAplikaci.zip";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        if (typeof window.log === "function") window.log("✅ Soubor StavitelAplikaci.zip byl úspěšně stažen!");
-      } catch (err) {
-        if (typeof window.log === "function") window.log("❌ Chyba při stahování ZIPu: " + err.message);
-      }
-    };
-
-    // Napojeni obou ZIP tlacitek (vcetne trvaleho HTML atributu onclick pro ulozeni na GitHub)
-    document.querySelectorAll("button").forEach(btn => {
-      const t = (btn.textContent || "").trim();
-      if (t.includes("Stáhnout Stavitel (.ZIP z GH)") || t.includes("ZIP Stavitele z GH")) {
-        btn.setAttribute("onclick", "window.downloadStavitelZipFromGH()");
-        btn.onclick = function(e) {
-          if (e) e.preventDefault();
-          window.downloadStavitelZipFromGH();
-        };
-      }
-    });
-
-    // Univerzalni sablona .github/workflows/build.yml (Android + Google Play + Huawei AppGallery + iOS)
-    window.buildUnifiedWorkflowYaml = function(appName, bundleId, appVersion, publishToStores, buildIos) {
-      const aName = (appName || "App").trim();
-      const bId = (bundleId || "cz.mares.app").trim();
-      const aVer = (appVersion || "1.0").trim();
-      const pubStores = (publishToStores === false || publishToStores === "false") ? "false" : "true";
-      const bIos = (buildIos === false || buildIos === "false") ? "false" : "true";
-
-      return [
-        'name: Build & Publish KMP (Android + iOS)',
-        '',
-        'on:',
-        '  push:',
-        '    branches: [ "main", "master" ]',
-        '    paths-ignore:',
-        '      - "**.md"',
-        '      - "**.html"',
-        '  workflow_dispatch:',
-        '',
-        'env:',
-        '  APP_NAME: "' + aName + '"',
-        '  BUNDLE_ID: "' + bId + '"',
-        '  APP_VERSION: "' + aVer + '"',
-        '  PUBLISH_TO_STORES: "' + pubStores + '"',
-        '  BUILD_IOS: "' + bIos + '"',
-        '  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"',
-        '',
-        'jobs:',
-        '  build-android:',
-        '    name: Android Release (.apk & .aab)',
-        '    runs-on: ubuntu-latest',
-        '    steps:',
-        '      - name: Checkout repository',
-        '        uses: actions/checkout@v4',
-        '',
-        '      - name: Set up JDK 17',
-        '        uses: actions/setup-java@v5',
-        '        with:',
-        '          distribution: \'temurin\'',
-        '          java-version: \'17\'',
-        '',
-        '      - name: Fetch Signing Keys from Private Vault (ios-keys)',
-        '        env:',
-        '          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}',
-        '          OWNER: ${{ github.repository_owner }}',
-        '        run: |',
-        '          mkdir -p iosApp/signing',
-        '          if [ -n "$VAULT_TOKEN" ]; then',
-        '            if curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
-        '              "https://api.github.com/repos/${OWNER}/ios-keys/contents/android_keystore_${APP_NAME}.b64" -o "iosApp/signing/android_keystore.b64" && \\',
-        '              curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
-        '              "https://api.github.com/repos/${OWNER}/ios-keys/contents/android_keystore_${APP_NAME}.props" -o "iosApp/signing/android_keystore.props"; then',
-        '              echo "Nacten vlastni Android keystore pro projekt ${APP_NAME} z ios-keys."',
-        '            else',
-        '              for f in android_keystore.b64 android_keystore.props; do',
-        '                curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
-        '                  "https://api.github.com/repos/${OWNER}/ios-keys/contents/${f}" -o "iosApp/signing/${f}" || rm -f "iosApp/signing/${f}"',
-        '              done',
-        '            fi',
-        '            curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
-        '              "https://api.github.com/repos/${OWNER}/ios-keys/contents/gplaykey.json.b64" -o "iosApp/signing/gplaykey.json.b64" || rm -f "iosApp/signing/gplaykey.json.b64"',
-        '            for hf in huawei_key.json.b64 huaweikey.json.b64 agconnect_key.json.b64; do',
-        '              if curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
-        '                "https://api.github.com/repos/${OWNER}/ios-keys/contents/${hf}" -o "iosApp/signing/huawei_key.json.b64"; then',
-        '                break',
-        '              fi',
-        '            done',
-        '          fi',
-        '',
-        '      - name: Prepare Gradle Wrapper and Build Number',
-        '        run: |',
-        '          BUILD_NUM=$(( ${GITHUB_RUN_NUMBER:-1} + 100 ))',
-        '          echo "PROJECT_BUILD_NUMBER=${BUILD_NUM}" >> $GITHUB_ENV',
-        '          if [ ! -f "gradlew" ] || [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then',
-        '            mkdir -p /tmp/gw_init',
-        '            echo \'rootProject.name = "init"\' > /tmp/gw_init/settings.gradle.kts',
-        '            cd /tmp/gw_init',
-        '            gradle wrapper --gradle-version 8.7 --no-daemon',
-        '            cd - > /dev/null',
-        '            cp -f /tmp/gw_init/gradlew .',
-        '            cp -rf /tmp/gw_init/gradle .',
-        '          fi',
-        '          chmod +x gradlew',
-        '',
-        '      - name: Prepare Android Signing Keystore',
-        '        run: |',
-        '          if [ -s "iosApp/signing/android_keystore.b64" ] && [ -s "iosApp/signing/android_keystore.props" ]; then',
-        '            base64 --decode < iosApp/signing/android_keystore.b64 > /tmp/android_keystore.jks',
-        '            echo "CM_KEYSTORE_PATH=/tmp/android_keystore.jks" >> $GITHUB_ENV',
-        '            while IFS=\'=\' read -r key val; do',
-        '              key=$(echo "$key" | tr -d \'\\r\\n \')',
-        '              val=$(echo "$val" | tr -d \'\\r\\n\')',
-        '              if [ -n "$key" ]; then',
-        '                export "${key}=${val}"',
-        '                echo "${key}=${val}" >> $GITHUB_ENV',
-        '              fi',
-        '            done < iosApp/signing/android_keystore.props',
-        '            DETECTED_ALIAS=$(keytool -J-Duser.language=en -list -v -keystore /tmp/android_keystore.jks -storepass "$CM_KEYSTORE_PASSWORD" 2>/dev/null | sed -n \'s/^Alias name: //p\' | head -n 1 | tr -d \'\\r\\n \')',
-        '            if [ -n "$DETECTED_ALIAS" ]; then',
-        '              echo "Automaticky rozpoznan skutecny alias v keystore: $DETECTED_ALIAS"',
-        '              echo "CM_KEY_ALIAS=$DETECTED_ALIAS" >> $GITHUB_ENV',
-        '            fi',
-        '            echo "Android keystore uspesne nacten."',
-        '          else',
-        '            echo "UPOZORNENI: Android keystore nebyl nalezen, build pobezi bez produkcniho podpisu."',
-        '          fi',
-        '',
-        '      - name: Build Android Release AAB and APK',
-        '        run: |',
-        '          if [ -f "composeApp/build.gradle.kts" ]; then',
-        '            sed -i "s/versionName = \\"[0-9.]*\\\\.\\$ciBuildNumber\\"/versionName = \\"${APP_VERSION}.\\$ciBuildNumber\\"/g" composeApp/build.gradle.kts || true',
-        '            sed -i "s/versionName = \\"[0-9.]*\\\\.\\\\\\${ciBuildNumber}\\"/versionName = \\"${APP_VERSION}.\\\\\\${ciBuildNumber}\\"/g" composeApp/build.gradle.kts || true',
-        '          fi',
-        '          ./gradlew :composeApp:bundleRelease :composeApp:assembleRelease',
-        '          BUILD_NUM="${PROJECT_BUILD_NUMBER}"',
-        '          VERSION_NAME="${APP_VERSION}.${BUILD_NUM}"',
-        '          mv composeApp/build/outputs/apk/release/composeApp-release.apk "composeApp/build/outputs/apk/release/${APP_NAME}-${VERSION_NAME}.apk"',
-        '          mv composeApp/build/outputs/bundle/release/composeApp-release.aab "composeApp/build/outputs/bundle/release/${APP_NAME}-${VERSION_NAME}.aab"',
-        '',
-        '      - name: Upload Android Artifacts (.apk & .aab)',
-        '        uses: actions/upload-artifact@v4',
-        '        with:',
-        '          name: ${{ env.APP_NAME }}-Android-APK-AAB',
-        '          path: |',
-        '            composeApp/build/outputs/apk/release/*.apk',
-        '            composeApp/build/outputs/bundle/release/*.aab',
-        '',
-        '      - name: Publish Android AAB to Google Play (Internal Testing)',
-        '        run: |',
-        '          if [ "$PUBLISH_TO_STORES" != "true" ]; then',
-        '            echo "Publikace do obchodu je vypnuta (PUBLISH_TO_STORES=false). Preskakuji Google Play upload."',
-        '          elif [ -s "iosApp/signing/gplaykey.json.b64" ]; then',
-        '            echo "Nalezen Google Play klic, dekoduji a nahravam do Google Play (Interni testovani)..."',
-        '            base64 --decode < iosApp/signing/gplaykey.json.b64 > /tmp/gplay_key.json',
-        '            pip3 install --quiet --break-system-packages google-api-python-client google-auth-httplib2 google-auth-oauthlib || \\',
-        '            pip3 install --quiet google-api-python-client google-auth-httplib2 google-auth-oauthlib',
-        '',
-        '            python3 - << \'EOF\'',
-        '          import os',
-        '          from google.oauth2 import service_account',
-        '          from googleapiclient.discovery import build',
-        '          from googleapiclient.http import MediaFileUpload',
-        '          from googleapiclient.errors import HttpError',
-        '',
-        '          package_name = os.environ.get("BUNDLE_ID")',
-        '          build_num = os.environ.get("PROJECT_BUILD_NUMBER", "101")',
-        '          app_name = os.environ.get("APP_NAME")',
-        '          app_version = os.environ.get("APP_VERSION", "1.0")',
-        '          aab_path = f"composeApp/build/outputs/bundle/release/{app_name}-{app_version}.{build_num}.aab"',
-        '',
-        '          try:',
-        '              creds = service_account.Credentials.from_service_account_file(',
-        '                  "/tmp/gplay_key.json",',
-        '                  scopes=["https://www.googleapis.com/auth/androidpublisher"]',
-        '              )',
-        '              service = build("androidpublisher", "v3", credentials=creds)',
-        '',
-        '              edit_request = service.edits().insert(body={}, packageName=package_name)',
-        '              result = edit_request.execute(num_retries=5)',
-        '              edit_id = result["id"]',
-        '',
-        '              media = MediaFileUpload(aab_path, mimetype="application/octet-stream", resumable=True)',
-        '              bundle_response = service.edits().bundles().upload(',
-        '                  editId=edit_id,',
-        '                  packageName=package_name,',
-        '                  media_body=media',
-        '              ).execute(num_retries=5)',
-        '              version_code = bundle_response["versionCode"]',
-        '              print(f"AAB uspesne nahrano (versionCode: {version_code}).")',
-        '',
-        '              def commit_edit(eid):',
-        '                  try:',
-        '                      service.edits().commit(editId=eid, packageName=package_name).execute(num_retries=5)',
-        '                      print("Publikace do Google Play (Interni testovani) uspesne dokoncena!")',
-        '                  except Exception as cerr:',
-        '                      err_str = str(cerr)',
-        '                      if "Only releases with status draft" in err_str:',
-        '                          raise cerr',
-        '                      print(f"Standardni commit vyzaduje rucni potvrzeni v konzoli ({cerr}), ukladam s changesNotSentForReview=True...")',
-        '                      service.edits().commit(',
-        '                          editId=eid,',
-        '                          packageName=package_name,',
-        '                          changesNotSentForReview=True',
-        '                      ).execute(num_retries=5)',
-        '                      print("Publikace ulozena do Google Play (changesNotSentForReview=True)! Staci ji potvrdit v Prehledu publikovani.")',
-        '',
-        '              try:',
-        '                  service.edits().tracks().update(',
-        '                      editId=edit_id,',
-        '                      track="internal",',
-        '                      packageName=package_name,',
-        '                      body={"releases": [{"versionCodes": [str(version_code)], "status": "completed"}]}',
-        '                  ).execute(num_retries=5)',
-        '                  print("Prirazeno do kanalu internal (completed).")',
-        '                  commit_edit(edit_id)',
-        '              except Exception as track_err:',
-        '                  print(f"Aplikace je v Google Play v rezimu draft ({track_err}). Prepinam vydani v kanalu internal na status draft...")',
-        '                  service.edits().tracks().update(',
-        '                      editId=edit_id,',
-        '                      track="internal",',
-        '                      packageName=package_name,',
-        '                      body={"releases": [{"versionCodes": [str(version_code)], "status": "draft"}]}',
-        '                  ).execute(num_retries=5)',
-        '                  print("Prirazeno do kanalu internal jako draft.")',
-        '                  commit_edit(edit_id)',
-        '          except HttpError as e:',
-        '              if e.resp.status == 404:',
-        '                  print(f"UPOZORNENI: Balicek \'{package_name}\' zatim v Google Play Console neexistuje (404 Package not found).")',
-        '                  print("Prvni .aab soubor je nutne do Google Play Console nahrat rucne.")',
-        '              else:',
-        '                  print(f"UPOZORNENI: Chyba Google Play API ({e.resp.status}): {e}.")',
-        '          except Exception as e:',
-        '              print(f"UPOZORNENI: Neocekavana chyba pri nahravani do Google Play: {e}.")',
-        '          EOF',
-        '          else',
-        '            echo "Google Play klic nebyl nalezen, preskakuji Google Play upload."',
-        '          fi',
-        '',
-        '      - name: Publish Android APK to Huawei AppGallery',
-        '        run: |',
-        '          if [ "$PUBLISH_TO_STORES" != "true" ]; then',
-        '            echo "Publikace do obchodu je vypnuta (PUBLISH_TO_STORES=false). Preskakuji Huawei AppGallery upload."',
-        '          elif [ -s "iosApp/signing/huawei_key.json.b64" ]; then',
-        '            echo "Nalezen Huawei AppGallery klic, dekoduji a nahravam .apk do Huawei AppGallery Connect..."',
-        '            base64 --decode < iosApp/signing/huawei_key.json.b64 > /tmp/huawei_key.json',
-        '            pip3 install --quiet --break-system-packages requests || pip3 install --quiet requests',
-        '',
-        '            python3 - << \'EOF\'',
-        '          import os, sys, json, requests',
-        '',
-        '          package_name = os.environ.get("BUNDLE_ID", "").strip()',
-        '          build_num = os.environ.get("PROJECT_BUILD_NUMBER", "101").strip()',
-        '          app_name = os.environ.get("APP_NAME", "").strip()',
-        '          app_version = os.environ.get("APP_VERSION", "1.0").strip()',
-        '          apk_path = f"composeApp/build/outputs/apk/release/{app_name}-{app_version}.{build_num}.apk"',
-        '',
-        '          try:',
-        '              with open("/tmp/huawei_key.json", "r", encoding="utf-8") as f:',
-        '                  cfg = json.load(f)',
-        '              client_id = str(cfg.get("client_id") or cfg.get("clientId") or "").strip()',
-        '              client_secret = str(cfg.get("client_secret") or cfg.get("clientSecret") or "").strip()',
-        '              if not client_id or not client_secret:',
-        '                  print("UPOZORNENI: V Huawei JSON klici chybi client_id nebo client_secret.")',
-        '                  sys.exit(0)',
-        '',
-        '              base_url = "https://connect-api.cloud.huawei.com/api"',
-        '              tok_res = requests.post(',
-        '                  f"{base_url}/oauth2/v1/token",',
-        '                  json={"grant_type": "client_credentials", "client_id": client_id, "client_secret": client_secret},',
-        '                  timeout=30',
-        '              )',
-        '              if not tok_res.ok or "access_token" not in tok_res.json():',
-        '                  print(f"UPOZORNENI: Nepodarilo se ziskat Huawei OAuth token ({tok_res.status_code}): {tok_res.text}")',
-        '                  sys.exit(0)',
-        '',
-        '              access_token = tok_res.json()["access_token"]',
-        '              headers = {"client_id": client_id, "Authorization": f"Bearer {access_token}"}',
-        '',
-        '              info_res = requests.get(',
-        '                  f"{base_url}/publish/v2/app-info",',
-        '                  params={"packageName": package_name},',
-        '                  headers=headers,',
-        '                  timeout=30',
-        '              )',
-        '              info_json = info_res.json() if info_res.ok else {}',
-        '              ret_code = info_json.get("ret", {}).get("code", -1)',
-        '              app_id = str(info_json.get("appInfo", {}).get("appId") or "").strip()',
-        '',
-        '              if ret_code != 0 or not app_id:',
-        '                  print(f"UPOZORNENI: Balicek \'{package_name}\' zatim v Huawei AppGallery Connect neexistuje ({info_json.get(\'ret\', info_res.text)}).")',
-        '                  print("Zaloz aplikaci v Huawei AppGallery Connect pod timto nazvem balicku a spust build znovu.")',
-        '                  sys.exit(0)',
-        '',
-        '              print(f"Nalezena Huawei aplikace (appId: {app_id}). Ziskavam upload URL pro APK...")',
-        '              file_size = os.path.getsize(apk_path)',
-        '              file_name = os.path.basename(apk_path)',
-        '',
-        '              url_res = requests.get(',
-        '                  f"{base_url}/publish/v2/upload-url/for-obs",',
-        '                  params={"appId": app_id, "suffix": "apk", "contentLength": file_size, "fileName": file_name},',
-        '                  headers=headers,',
-        '                  timeout=30',
-        '              )',
-        '              url_json = url_res.json() if url_res.ok else {}',
-        '              if "urlInfo" in url_json:',
-        '                  u_info = url_json["urlInfo"]',
-        '                  upload_url = u_info["url"]',
-        '                  put_headers = u_info.get("headers", {})',
-        '                  object_id = u_info.get("objectId", "")',
-        '                  with open(apk_path, "rb") as apk_f:',
-        '                      up_res = requests.put(upload_url, data=apk_f, headers=put_headers, timeout=300)',
-        '                  if up_res.ok:',
-        '                      upd_res = requests.put(',
-        '                          f"{base_url}/publish/v2/app-file-info",',
-        '                          params={"appId": app_id},',
-        '                          headers=headers,',
-        '                          json={"fileType": 5, "files": [{"fileName": file_name, "fileDestUrl": object_id, "size": str(file_size)}]},',
-        '                          timeout=60',
-        '                      )',
-        '                      print(f"APK uspesne nahrano do Huawei AppGallery Connect ({upd_res.status_code}: {upd_res.text})!")',
-        '                  else:',
-        '                      print(f"UPOZORNENI: Chyba pri uploadu APK do Huawei OBS ({up_res.status_code}): {up_res.text}")',
-        '              else:',
-        '                  print(f"UPOZORNENI: Huawei upload-url odpoved: {url_res.status_code} {url_res.text}")',
-        '          except Exception as e:',
-        '              print(f"UPOZORNENI: Chyba pri komunikaci s Huawei AppGallery Connect: {e}")',
-        '          EOF',
-        '          else',
-        '            echo "Huawei AppGallery klic nebyl nalezen, preskakuji Huawei upload."',
-        '          fi',
-        '',
-        '  build-ios:',
-        '    name: iOS Release (.ipa & TestFlight)',
-        '    runs-on: macos-latest',
-        '    if: true',
-        '    steps:',
-        '      - name: Checkout repository',
-        '        uses: actions/checkout@v4',
-        '',
-        '      - name: Set up JDK 17',
-        '        uses: actions/setup-java@v5',
-        '        with:',
-        '          distribution: \'temurin\'',
-        '          java-version: \'17\'',
-        '',
-        '      - name: Fetch Signing Keys from Private Vault (ios-keys)',
-        '        env:',
-        '          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}',
-        '          OWNER: ${{ github.repository_owner }}',
-        '        run: |',
-        '          mkdir -p iosApp/signing',
-        '          if [ -n "$VAULT_TOKEN" ]; then',
-        '            for f in ioskey.p12.b64 ioskey.pwd apple_api_key.p8.b64 apple_api_key.props; do',
-        '              curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
-        '                "https://api.github.com/repos/${OWNER}/ios-keys/contents/${f}" -o "iosApp/signing/${f}" || rm -f "iosApp/signing/${f}"',
-        '            done',
-        '          fi',
-        '',
-        '      - name: Build KMP iOS Framework, Sign and Package IPA',
-        '        run: |',
-        '          if [ "$BUILD_IOS" != "true" ]; then',
-        '            echo "iOS build je vypnuty (rezim Pouze Android). Preskakuji."',
-        '            exit 0',
-        '          fi',
-        '          export PATH="$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.11/bin:$HOME/Library/Python/3.12/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"',
-        '          BUILD_NUM=$(( ${GITHUB_RUN_NUMBER:-1} + 100 ))',
-        '          export PROJECT_BUILD_NUMBER="${BUILD_NUM}"',
-        '',
-        '          if [ ! -f "gradlew" ] || [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then',
-        '            mkdir -p /tmp/gw_init',
-        '            echo \'rootProject.name = "init"\' > /tmp/gw_init/settings.gradle.kts',
-        '            cd /tmp/gw_init',
-        '            gradle wrapper --gradle-version 8.7 --no-daemon',
-        '            cd - > /dev/null',
-        '            cp -f /tmp/gw_init/gradlew .',
-        '            cp -rf /tmp/gw_init/gradle .',
-        '          fi',
-        '          chmod +x gradlew',
-        '',
-        '          ./gradlew :composeApp:linkReleaseFrameworkIosArm64',
-        '',
-        '          if ! command -v xcodegen &> /dev/null; then',
-        '            HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen',
-        '          fi',
-        '',
-        '          FW_PATH="$(pwd)/composeApp/build/bin/iosArm64/releaseFramework"',
-        '          cat << EOF > iosApp/project.yml',
-        '          name: iosApp',
-        '          options:',
-        '            xcodeVersion: "15.0"',
-        '            bundleIdPrefix: cz.mares',
-        '            deploymentTarget:',
-        '              iOS: "15.0"',
-        '          targets:',
-        '            iosApp:',
-        '              type: application',
-        '              platform: iOS',
-        '              deploymentTarget: "15.0"',
-        '              sources:',
-        '                - path: iosApp',
-        '                  excludes:',
-        '                    - "signing/**"',
-        '                    - "Info.plist"',
-        '                    - "*.entitlements"',
-        '              settings:',
-        '                base:',
-        '                  SWIFT_VERSION: "5.0"',
-        '                  PRODUCT_NAME: "${APP_NAME}"',
-        '                  PRODUCT_BUNDLE_IDENTIFIER: "${BUNDLE_ID}"',
-        '                  MARKETING_VERSION: "${APP_VERSION}"',
-        '                  CURRENT_PROJECT_VERSION: "${BUILD_NUM}"',
-        '                  SDKROOT: iphoneos',
-        '                  TARGETED_DEVICE_FAMILY: "1,2"',
-        '                  IPHONEOS_DEPLOYMENT_TARGET: "15.0"',
-        '                  GENERATE_INFOPLIST_FILE: NO',
-        '                  INFOPLIST_FILE: iosApp/Info.plist',
-        '                  ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon',
-        '                  ENABLE_USER_SCRIPT_SANDBOXING: NO',
-        '                  SWIFT_ENABLE_EXPLICIT_MODULES: NO',
-        '                  FRAMEWORK_SEARCH_PATHS:',
-        '                    - "\\$(inherited)"',
-        '                    - "${FW_PATH}"',
-        '                  OTHER_LDFLAGS:',
-        '                    - "\\$(inherited)"',
-        '                    - "-ObjC"',
-        '                    - "-framework"',
-        '                    - "ComposeApp"',
-        '                    - "-lsqlite3"',
-        '                  ENABLE_BITCODE: NO',
-        '          schemes:',
-        '            iosApp:',
-        '              build:',
-        '                targets:',
-        '                  iosApp: all',
-        '          EOF',
-        '',
-        '          cd iosApp',
-        '          xcodegen generate',
-        '          sed -i \'\' \'s/objectVersion = [0-9]*;/objectVersion = 56;/g\' iosApp.xcodeproj/project.pbxproj',
-        '          cd ..',
-        '',
-        '          if [ ! -s "iosApp/signing/ioskey.p12.b64" ] || [ ! -s "iosApp/signing/apple_api_key.p8.b64" ]; then',
-        '            echo "Chybi iOS certifikat (.p12) nebo Apple API klic (.p8) v trezoru ios-keys! Nahraj je do ios-keys pres StavitelAplikaci.html."',
-        '            exit 1',
-        '          fi',
-        '',
-        '          pip3 install --quiet --break-system-packages codemagic-cli-tools || \\',
-        '          pip3 install --quiet codemagic-cli-tools',
-        '',
-        '          base64 --decode < iosApp/signing/ioskey.p12.b64 > /tmp/certificate.p12',
-        '          CERT_PWD=$(cat iosApp/signing/ioskey.pwd | tr -d \'\\r\\n\')',
-        '',
-        '          base64 --decode < iosApp/signing/apple_api_key.p8.b64 > /tmp/AuthKey.p8',
-        '          while IFS=\'=\' read -r key val; do',
-        '            key=$(echo "$key" | tr -d \'\\r\\n \')',
-        '            val=$(echo "$val" | tr -d \'\\r\\n\')',
-        '            if [ -n "$key" ]; then',
-        '              export "${key}=${val}"',
-        '            fi',
-        '          done < iosApp/signing/apple_api_key.props',
-        '',
-        '          openssl pkcs12 -in /tmp/certificate.p12 -nocerts -nodes -passin pass:"$CERT_PWD" -out /tmp/cert_key_raw.pem || \\',
-        '          openssl pkcs12 -legacy -in /tmp/certificate.p12 -nocerts -nodes -passin pass:"$CERT_PWD" -out /tmp/cert_key_raw.pem',
-        '          openssl pkey -in /tmp/cert_key_raw.pem -out /tmp/cert_key.pem',
-        '',
-        '          keychain initialize',
-        '',
-        '          app-store-connect fetch-signing-files "$BUNDLE_ID" \\',
-        '            --type IOS_APP_STORE \\',
-        '            --certificate-key=@file:/tmp/cert_key.pem \\',
-        '            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \\',
-        '            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \\',
-        '            --private-key "@file:/tmp/AuthKey.p8" \\',
-        '            --create',
-        '',
-        '          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"',
-        '          mkdir -p "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"',
-        '          for prof in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"/*.mobileprovision; do',
-        '            if [ -f "$prof" ]; then',
-        '              cp -f "$prof" "$HOME/Library/MobileDevice/Provisioning Profiles/"',
-        '              UUID=$(security cms -D -i "$prof" | plutil -extract UUID raw - 2>/dev/null || true)',
-        '              if [ -n "$UUID" ]; then',
-        '                cp -f "$prof" "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"',
-        '                cp -f "$prof" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/${UUID}.mobileprovision"',
-        '              fi',
-        '            fi',
-        '          done',
-        '',
-        '          keychain add-certificates \\',
-        '            --certificate /tmp/certificate.p12 \\',
-        '            --certificate-password "$CERT_PWD"',
-        '',
-        '          xcode-project use-profiles --project "iosApp/iosApp.xcodeproj"',
-        '',
-        '          mkdir -p build/ios/xcarchive build/ios/ipa',
-        '          xcodebuild -project iosApp/iosApp.xcodeproj \\',
-        '            -scheme iosApp \\',
-        '            -configuration Release \\',
-        '            -destination "generic/platform=iOS" \\',
-        '            -archivePath build/ios/xcarchive/iosApp.xcarchive \\',
-        '            archive \\',
-        '            COMPILER_INDEX_STORE_ENABLE=NO',
-        '',
-        '          xcodebuild -exportArchive \\',
-        '            -archivePath build/ios/xcarchive/iosApp.xcarchive \\',
-        '            -exportPath build/ios/ipa \\',
-        '            -exportOptionsPlist "$HOME/export_options.plist"',
-        '',
-        '          if [ "$PUBLISH_TO_STORES" = "true" ]; then',
-        '            MAX_PUB_ATTEMPTS=5',
-        '            PUB_ATTEMPT=1',
-        '            APP_NOT_IN_ASC=0',
-        '            while [ $PUB_ATTEMPT -le $MAX_PUB_ATTEMPTS ]; do',
-        '              echo "Pokus $PUB_ATTEMPT/$MAX_PUB_ATTEMPTS: Nahravam .ipa (verze $APP_VERSION) do Apple App Store Connect (TestFlight)..."',
-        '              set +e',
-        '              app-store-connect publish \\',
-        '                --path build/ios/ipa/*.ipa \\',
-        '                --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \\',
-        '                --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \\',
-        '                --private-key "@file:/tmp/AuthKey.p8" 2>&1 | tee /tmp/asc_publish.log',
-        '              PUB_EXIT=${PIPESTATUS[0]}',
-        '              set -e',
-        '',
-        '              if [ $PUB_EXIT -eq 0 ]; then',
-        '                echo "Upload .ipa (verze $APP_VERSION) uspesne dokoncen!"',
-        '                break',
-        '              fi',
-        '',
-        '              if grep -qE "Cannot determine the Apple ID from Bundle ID|No suitable application records were found" /tmp/asc_publish.log; then',
-        '                echo "UPOZORNENI: Aplikace s Bundle ID \'$BUNDLE_ID\' zatim neni v App Store Connect zalozena."',
-        '                echo "Zaloz v App Store Connect novou aplikaci (Apps -> + -> New App) s Bundle ID \'$BUNDLE_ID\' a spust build znovu."',
-        '                APP_NOT_IN_ASC=1',
-        '                break',
-        '              fi',
-        '',
-        '              if grep -qE "90062|90186|closed for new build submissions|must contain a higher version" /tmp/asc_publish.log; then',
-        '                if [ $PUB_ATTEMPT -eq $MAX_PUB_ATTEMPTS ]; then',
-        '                  echo "Nepodarilo se najit volnou verzi ani po $MAX_PUB_ATTEMPTS pokusech."',
-        '                  exit 1',
-        '                fi',
-        '                NEW_VER=$(python3 - << \'PYEOF\'',
-        '          import re, os',
-        '          log_txt = open("/tmp/asc_publish.log", "r", errors="ignore").read()',
-        '          cur = os.environ.get("APP_VERSION", "1.0").strip()',
-        '          matches = re.findall(r"previously approved version \\[([0-9.]+)\\]|train version \'([0-9.]+)\'", log_txt)',
-        '          base = cur',
-        '          for g1, g2 in matches:',
-        '              v = g1 or g2',
-        '              if v:',
-        '                  base = v',
-        '          def parse_v(s):',
-        '              parts = [int(x) for x in s.split(".") if x.isdigit()]',
-        '              while len(parts) < 2:',
-        '                  parts.append(0)',
-        '              return parts',
-        '          p_cur = parse_v(cur)',
-        '          p_base = parse_v(base)',
-        '          target = list(p_base if p_base >= p_cur else p_cur)',
-        '          target[-1] += 1',
-        '          print(".".join(str(x) for x in target))',
-        '          PYEOF',
-        '                )',
-        '                NEW_VER=$(echo "$NEW_VER" | tr -d \'\\r\\n \')',
-        '                echo "Verze $APP_VERSION je v App Store uzavrena (90062/90186). Automaticky zvysuji verzi na $NEW_VER a prebaluji .ipa..."',
-        '                export APP_VERSION="$NEW_VER"',
-        '                echo "APP_VERSION=$NEW_VER" >> $GITHUB_ENV',
-        '',
-        '                plutil -replace ApplicationProperties.CFBundleShortVersionString -string "$NEW_VER" build/ios/xcarchive/iosApp.xcarchive/Info.plist || true',
-        '                for app_plist in build/ios/xcarchive/iosApp.xcarchive/Products/Applications/*.app/Info.plist; do',
-        '                  if [ -f "$app_plist" ]; then',
-        '                    plutil -replace CFBundleShortVersionString -string "$NEW_VER" "$app_plist" || true',
-        '                  fi',
-        '                done',
-        '',
-        '                rm -rf build/ios/ipa/*.ipa',
-        '                xcodebuild -exportArchive \\',
-        '                  -archivePath build/ios/xcarchive/iosApp.xcarchive \\',
-        '                  -exportPath build/ios/ipa \\',
-        '                  -exportOptionsPlist "$HOME/export_options.plist"',
-        '',
-        '                PUB_ATTEMPT=$((PUB_ATTEMPT + 1))',
-        '              else',
-        '                echo "Chyba pri nahravani .ipa do App Store Connect (kod $PUB_EXIT)."',
-        '                exit $PUB_EXIT',
-        '              fi',
-        '            done',
-        '          else',
-        '            echo "Publikace do obchodu je vypnuta (PUBLISH_TO_STORES=false). Preskakuji TestFlight upload."',
-        '          fi',
-        '',
-        '      - name: Upload iOS Artifact (.ipa)',
-        '        uses: actions/upload-artifact@v4',
-        '        with:',
-        '          name: ${{ env.APP_NAME }}-iOS-IPA',
-        '          path: build/ios/ipa/*.ipa'
-      ].join("\n") + "\n";
-    };
-
-    window.upgradeWorkflowYaml = function(yamlStr) {
-      if (typeof yamlStr !== "string" || (!yamlStr.includes("Build & Publish KMP") && !yamlStr.includes("BUNDLE_ID:"))) {
-        return yamlStr;
-      }
-      const mApp = yamlStr.match(/APP_NAME:\s*"([^"]+)"/);
-      const mBun = yamlStr.match(/BUNDLE_ID:\s*"([^"]+)"/);
-      const mVer = yamlStr.match(/APP_VERSION:\s*"([^"]+)"/);
-      const mPub = yamlStr.match(/PUBLISH_TO_STORES:\s*"([^"]+)"/);
-      const mIos = yamlStr.match(/BUILD_IOS:\s*"([^"]+)"/);
-
-      return window.buildUnifiedWorkflowYaml(
-        mApp ? mApp[1] : "App",
-        mBun ? mBun[1] : "cz.mares.app",
-        mVer ? mVer[1] : "1.0",
-        mPub ? mPub[1] : "true",
-        mIos ? mIos[1] : "true"
-      );
-    };
-
-    if (typeof window.generateWorkflowYaml === "function") {
-      window.generateWorkflowYaml = function(appName, bundleId, appVersion, publishToStores, buildIos) {
-        return window.buildUnifiedWorkflowYaml(appName, bundleId, appVersion, publishToStores, buildIos);
-      };
-    }
-
-    if (!window.fetch._permanentCoreV6) {
-      const origFetch = window.fetch.bind(window);
-      const wrappedFetch = async function(input, init) {
-        try {
-          const url = typeof input === "string" ? input : (input && input.url ? input.url : "");
-          if (url.includes("api.github.com/repos/") && init && typeof init.body === "string" && (init.method === "PUT" || init.method === "POST")) {
-            const bodyObj = JSON.parse(init.body);
-            let modified = false;
-
-            if (url.includes(".github/workflows/build.yml") && typeof bodyObj.content === "string") {
-              const decoded = decodeURIComponent(escape(atob(bodyObj.content.replace(/\s/g, ""))));
-              const upgraded = window.upgradeWorkflowYaml(decoded);
-              if (upgraded !== decoded) {
-                bodyObj.content = btoa(unescape(encodeURIComponent(upgraded)));
-                modified = true;
-              }
-            }
-            if (url.includes("/git/blobs") && typeof bodyObj.content === "string") {
-              if (bodyObj.encoding === "base64") {
-                const decoded = decodeURIComponent(escape(atob(bodyObj.content.replace(/\s/g, ""))));
-                if (decoded.includes("Build & Publish KMP")) {
-                  const upgraded = window.upgradeWorkflowYaml(decoded);
-                  if (upgraded !== decoded) {
-                    bodyObj.content = btoa(unescape(encodeURIComponent(upgraded)));
-                    modified = true;
-                  }
-                }
-              } else if (bodyObj.content.includes("Build & Publish KMP")) {
-                const upgraded = window.upgradeWorkflowYaml(bodyObj.content);
-                if (upgraded !== bodyObj.content) {
-                  bodyObj.content = upgraded;
-                  modified = true;
-                }
-              }
-            }
-            if (url.includes("/git/trees") && Array.isArray(bodyObj.tree)) {
-              for (const item of bodyObj.tree) {
-                if (item && item.path === ".github/workflows/build.yml" && typeof item.content === "string") {
-                  const upgraded = window.upgradeWorkflowYaml(item.content);
-                  if (upgraded !== item.content) {
-                    item.content = upgraded;
-                    modified = true;
-                  }
-                }
-              }
-            }
-            if (modified) {
-              init.body = JSON.stringify(bodyObj);
-            }
-          }
-        } catch (e) {}
-        return origFetch(input, init);
-      };
-      wrappedFetch._permanentCoreV6 = true;
-      window.fetch = wrappedFetch;
-    }
-  })();
-
-
-/* === HUAWEI_JWT_FIX_V10 === */
-(function applyHuaweiJwtFixV10() {
-  if (typeof window.injectHuaweiIntoBuildYml === 'function') {
-    var origInject = window.injectHuaweiIntoBuildYml;
-    window.injectHuaweiIntoBuildYml = function(yml) {
-      if (typeof yml !== 'string') return yml;
-      var normalized = yml.replace('Publish Android APK to Huawei AppGallery Connect', 'Publish Android APK to Huawei AppGallery');
-      return origInject(normalized);
-    };
+  localStorage.removeItem("stavitel_custom_patch");
+  const patchBadge = document.getElementById("patchStatusBadge");
+  if (patchBadge) {
+    patchBadge.classList.add("hidden");
+    patchBadge.style.display = "none";
   }
-  if (typeof window.buildUnifiedWorkflowYaml === 'function' && !window.buildUnifiedWorkflowYaml.__v10) {
-    var origBuild = window.buildUnifiedWorkflowYaml;
-    var wrappedBuild = function(appName, bundleId, appVersion, publishToStores, buildIos) {
-      var yml = origBuild(appName, bundleId, appVersion, publishToStores, buildIos);
-      return typeof window.injectHuaweiIntoBuildYml === 'function' ? window.injectHuaweiIntoBuildYml(yml) : yml;
-    };
-    wrappedBuild.__v10 = true;
-    window.buildUnifiedWorkflowYaml = wrappedBuild;
-  }
-  if (typeof window.upgradeWorkflowYaml === 'function' && !window.upgradeWorkflowYaml.__v10) {
-    var origUpgrade = window.upgradeWorkflowYaml;
-    var wrappedUpgrade = function(yamlStr) {
-      var yml = origUpgrade(yamlStr);
-      return typeof window.injectHuaweiIntoBuildYml === 'function' ? window.injectHuaweiIntoBuildYml(yml) : yml;
-    };
-    wrappedUpgrade.__v10 = true;
-    window.upgradeWorkflowYaml = wrappedUpgrade;
-  }
-  if (typeof window.getDefaultGitHubWorkflowYaml === 'function' && !window.getDefaultGitHubWorkflowYaml.__v10) {
-    var origDef = window.getDefaultGitHubWorkflowYaml;
-    var wrappedDef = function(appName, bundleId, appVersion, mode) {
-      var yml = origDef(appName, bundleId, appVersion, mode);
-      return typeof window.injectHuaweiIntoBuildYml === 'function' ? window.injectHuaweiIntoBuildYml(yml) : yml;
-    };
-    wrappedDef.__v10 = true;
-    window.getDefaultGitHubWorkflowYaml = wrappedDef;
-  }
-  if (typeof window.applyModeToWorkflowYaml === 'function' && !window.applyModeToWorkflowYaml.__v10) {
-    var origApply = window.applyModeToWorkflowYaml;
-    var wrappedApply = function(yamlText, mode, appVersion) {
-      var yml = origApply(yamlText, mode, appVersion);
-      return typeof window.injectHuaweiIntoBuildYml === 'function' ? window.injectHuaweiIntoBuildYml(yml) : yml;
-    };
-    wrappedApply.__v10 = true;
-    window.applyModeToWorkflowYaml = wrappedApply;
-  }
-})();
 
+  const huaweiCardP = document.querySelector("#huaweiVaultCardBox p");
+  if (huaweiCardP) {
+    huaweiCardP.innerHTML = "Servisní JSON klíč (Developer-level) pro automatické publikování <code>.apk</code> do Huawei AppGallery Connect.";
+  }
 
-/* === PROJECT_DETECTION_FIX_V11 === */
-(function applyProjectDetectionFixV11() {
-  var KNOWN_PKG_TO_REPO = {
-    'radiopm': 'Humorradio',
-    'humorradio': 'Humorradio',
-    'drpilulka': 'DrPilulka',
-    'wavecal': 'WaveCal',
-    'pdfstudio': 'PdfStudio',
-    'sudoku': 'Sudoku',
-    'tetrisek': 'Tetrisek',
-    'neonovekostky': 'Tetrisek',
-    'garaz': 'Garaz'
+  const KNOWN_PKG_TO_REPO = {
+    "radiopm": "Humorradio",
+    "humorradio": "Humorradio",
+    "drpilulka": "DrPilulka",
+    "wavecal": "WaveCal",
+    "pdfstudio": "PdfStudio",
+    "sudoku": "Sudoku",
+    "tetrisek": "Tetrisek",
+    "neonovekostky": "Tetrisek",
+    "garaz": "Garaz",
+    "jenpockej": "JenPockej",
+    "bandita": "Bandita",
+    "bombman": "BombMan"
   };
 
-  try {
-    if (typeof projectAliases !== 'undefined' && projectAliases) {
-      projectAliases['radiopm'] = 'Humorradio';
-      projectAliases['radiopm_app'] = 'Humorradio';
-      localStorage.setItem('stavitel_project_aliases', JSON.stringify(projectAliases));
+  function compareSemVer(a, b) {
+    const pa = String(a || "1.0").split(".").map(x => parseInt(x, 10) || 0);
+    const pb = String(b || "1.0").split(".").map(x => parseInt(x, 10) || 0);
+    const len = Math.max(pa.length, pb.length);
+    for (let i = 0; i < len; i++) {
+      const va = pa[i] || 0;
+      const vb = pb[i] || 0;
+      if (va !== vb) return va - vb;
     }
-  } catch (e) {}
+    return 0;
+  }
 
+  // 1. Trvalá kontrola všech 5 klíčů v trezoru ios-keys (včetně Huawei)
+  window.checkVaultKeysStatus = async function(silent = false) {
+    const owner = (localStorage.getItem("stavitel_gh_user") || document.getElementById("ghUsername")?.value || "drozkar-glitch").trim();
+    const token = (localStorage.getItem("stavitel_gh_token") || document.getElementById("ghToken")?.value || "").trim();
+    if (!owner || !token) return;
+
+    try {
+      const repoRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys`, token);
+      if (!repoRes.ok) {
+        setPillStatus("statusAndroidKey", false);
+        setPillStatus("statusGplayKey", false);
+        setPillStatus("statusIosP12", false);
+        setPillStatus("statusAppleP8", false);
+        setPillStatus("huaweiVaultStatusBadge", false);
+        return;
+      }
+      const repoData = await repoRes.json();
+      const branch = repoData.default_branch || "main";
+      const treeRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/git/trees/${branch}?recursive=1`, token);
+      if (!treeRes.ok) return;
+
+      const files = new Set(((await treeRes.json()).tree || []).map(i => i.path));
+      const activeProj = typeof getActiveProjectName === "function" ? getActiveProjectName() : "";
+      const hasProjectAndroid = files.has(`android_keystore_${activeProj}.b64`) && files.has(`android_keystore_${activeProj}.props`);
+      const hasDefaultAndroid = files.has("android_keystore.b64") && files.has("android_keystore.props");
+      const hasAndroid = hasProjectAndroid || hasDefaultAndroid;
+      const hasGplay = files.has("gplaykey.json.b64");
+      const hasIosP12 = files.has("ioskey.p12.b64") && files.has("ioskey.pwd");
+      const hasAppleP8 = files.has("apple_api_key.p8.b64") && files.has("apple_api_key.props");
+      const hasHuawei = files.has("huawei_key.json.b64") || files.has("huaweikey.json.b64") || files.has("agconnect_key.json.b64");
+
+      window.__huaweiVaultStatus = hasHuawei ? "OK" : "CHYBÍ";
+
+      setPillStatus(
+        "statusAndroidKey",
+        hasAndroid,
+        hasProjectAndroid ? `✔ Vlastní klíč (${activeProj})` : (hasDefaultAndroid ? "✔ Výchozí klíč v ios-keys" : "⚠ Chybí v ios-keys")
+      );
+      setPillStatus("statusGplayKey", hasGplay);
+      setPillStatus("statusIosP12", hasIosP12);
+      setPillStatus("statusAppleP8", hasAppleP8);
+      setPillStatus("huaweiVaultStatusBadge", hasHuawei);
+
+      const allReady = hasAndroid && hasGplay && hasIosP12 && hasAppleP8 && hasHuawei;
+      const badge = document.getElementById("ghStatusBadge");
+      if (badge) {
+        if (allReady) {
+          badge.classList.add("badge-green");
+          badge.innerText = "🔐 Trezor ios-keys: Všech 5 klíčů připraveno";
+        } else {
+          badge.classList.remove("badge-green");
+          badge.innerText = "⚙️ Trezor ios-keys: Doplnit klíče";
+        }
+      }
+
+      if (!silent && typeof window.log === "function") {
+        window.log(
+          `🔐 Stav trezoru ios-keys: Android=${hasProjectAndroid ? `vlastní (${activeProj})` : (hasDefaultAndroid ? "výchozí" : "CHYBÍ")}, Google Play=${hasGplay ? "OK" : "CHYBÍ"}, Huawei=${hasHuawei ? "OK" : "CHYBÍ"}, iOS .p12=${hasIosP12 ? "OK" : "CHYBÍ"}, Apple .p8=${hasAppleP8 ? "OK" : "CHYBÍ"}`,
+          allReady ? "ok" : "warn"
+        );
+      }
+    } catch (e) {}
+  };
+
+  // 2. Trvalé ukládání všech 5 klíčů do trezoru ios-keys (včetně 5. Huawei JSON klíče)
+  window.saveAllProvidedKeysToVault = async function() {
+    const owner = (localStorage.getItem("stavitel_gh_user") || document.getElementById("ghUsername")?.value || "drozkar-glitch").trim();
+    const token = (localStorage.getItem("stavitel_gh_token") || document.getElementById("ghToken")?.value || "").trim();
+    if (!owner || !token) {
+      alert("Nejprve vyplň své GitHub jméno a Personal Access Token nahoře.");
+      return;
+    }
+
+    const activeProj = typeof getActiveProjectName === "function" ? getActiveProjectName() : "";
+    const treeEntries = [];
+    const uploadedNames = [];
+
+    const androidFileInput = document.getElementById("androidJksFile");
+    const androidKsPwd = (document.getElementById("androidKsPwd")?.value || "").trim();
+    const androidAlias = (document.getElementById("androidKeyAlias")?.value || "").trim() || "key0";
+    const androidKeyPwd = (document.getElementById("androidKeyPwd")?.value || "").trim() || androidKsPwd;
+
+    if (androidFileInput && androidFileInput.files && androidFileInput.files.length > 0) {
+      if (!androidKsPwd) {
+        alert("U Android Keystore prosím vyplň Heslo úložiště (Keystore password).");
+        return;
+      }
+      const buf = await androidFileInput.files[0].arrayBuffer();
+      const b64 = arrayBufferToBase64(buf) + "\n";
+      const props = `CM_KEYSTORE_PASSWORD=${androidKsPwd}\nCM_KEY_ALIAS=${androidAlias}\nCM_KEY_PASSWORD=${androidKeyPwd}\n`;
+
+      if (activeProj && activeProj !== "ios-keys") {
+        treeEntries.push({ path: `android_keystore_${activeProj}.b64`, mode: "100644", type: "blob", content: b64 });
+        treeEntries.push({ path: `android_keystore_${activeProj}.props`, mode: "100644", type: "blob", content: props });
+      }
+      treeEntries.push({ path: "android_keystore.b64", mode: "100644", type: "blob", content: b64 });
+      treeEntries.push({ path: "android_keystore.props", mode: "100644", type: "blob", content: props });
+      uploadedNames.push(`Android Keystore (${activeProj || "výchozí"})`);
+    }
+
+    const gplayFileInput = document.getElementById("gplayJsonFile");
+    if (gplayFileInput && gplayFileInput.files && gplayFileInput.files.length > 0) {
+      const buf = await gplayFileInput.files[0].arrayBuffer();
+      treeEntries.push({ path: "gplaykey.json.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(buf) + "\n" });
+      uploadedNames.push("Google Play JSON klíč");
+    }
+
+    const iosP12Input = document.getElementById("iosP12File");
+    const iosP12Pwd = (document.getElementById("iosP12Password")?.value || "").trim();
+    if (iosP12Input && iosP12Input.files && iosP12Input.files.length > 0) {
+      if (!iosP12Pwd) {
+        alert("Zadej prosím heslo k iOS .p12 certifikátu.");
+        return;
+      }
+      const buf = await iosP12Input.files[0].arrayBuffer();
+      treeEntries.push({ path: "ioskey.p12.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(buf) + "\n" });
+      treeEntries.push({ path: "ioskey.pwd", mode: "100644", type: "blob", content: iosP12Pwd + "\n" });
+      uploadedNames.push("iOS certifikát (.p12)");
+    }
+
+    const appleP8Input = document.getElementById("appleP8File");
+    const appleKeyId = (document.getElementById("appleKeyId")?.value || "").trim();
+    const appleIssuerId = (document.getElementById("appleIssuerId")?.value || "").trim();
+    if (appleP8Input && appleP8Input.files && appleP8Input.files.length > 0) {
+      if (!appleKeyId || !appleIssuerId) {
+        alert("U Apple .p8 klíče prosím vyplň i Key ID a Issuer ID.");
+        return;
+      }
+      const buf = await appleP8Input.files[0].arrayBuffer();
+      const props = `APP_STORE_CONNECT_KEY_IDENTIFIER=${appleKeyId}\nAPP_STORE_CONNECT_ISSUER_ID=${appleIssuerId}\n`;
+      treeEntries.push({ path: "apple_api_key.p8.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(buf) + "\n" });
+      treeEntries.push({ path: "apple_api_key.props", mode: "100644", type: "blob", content: props });
+      uploadedNames.push("Apple API klíč (.p8)");
+    }
+
+    const huaweiFileInput = document.getElementById("huaweiVaultFileInput");
+    if (huaweiFileInput && huaweiFileInput.files && huaweiFileInput.files.length > 0) {
+      const buf = await huaweiFileInput.files[0].arrayBuffer();
+      treeEntries.push({ path: "huawei_key.json.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(buf) + "\n" });
+      uploadedNames.push("Huawei AppGallery JSON klíč");
+    }
+
+    if (treeEntries.length === 0) {
+      alert("Nevybral jsi žádný nový soubor klíče k nahrání.");
+      return;
+    }
+
+    try {
+      log(`🔒 Ukládám (${uploadedNames.join(", ")}) do soukromého trezoru "${owner}/ios-keys"...`);
+      const { defaultBranch, latestCommitSha, baseTreeSha } = await ensureIosKeysRepo(owner, token);
+
+      const treeRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/git/trees`, token, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ base_tree: baseTreeSha, tree: treeEntries })
+      });
+      if (!treeRes.ok) throw new Error(`Chyba při nahrávání do trezoru (${treeRes.status})`);
+      const treeData = await treeRes.json();
+
+      const newCommitRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/git/commits`, token, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `Aktualizace klicu: ${uploadedNames.join(", ")}`,
+          tree: treeData.sha,
+          parents: [latestCommitSha]
+        })
+      });
+      if (!newCommitRes.ok) throw new Error(`Chyba při vytváření commitu v trezoru (${newCommitRes.status})`);
+      const newCommitData = await newCommitRes.json();
+
+      await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/git/refs/heads/${defaultBranch}`, token, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sha: newCommitData.sha, force: true })
+      });
+
+      if (androidFileInput) androidFileInput.value = "";
+      if (document.getElementById("androidKsPwd")) document.getElementById("androidKsPwd").value = "";
+      if (document.getElementById("androidKeyAlias")) document.getElementById("androidKeyAlias").value = "";
+      if (document.getElementById("androidKeyPwd")) document.getElementById("androidKeyPwd").value = "";
+      if (gplayFileInput) gplayFileInput.value = "";
+      if (iosP12Input) iosP12Input.value = "";
+      if (document.getElementById("iosP12Password")) document.getElementById("iosP12Password").value = "";
+      if (appleP8Input) appleP8Input.value = "";
+      if (document.getElementById("appleKeyId")) document.getElementById("appleKeyId").value = "";
+      if (document.getElementById("appleIssuerId")) document.getElementById("appleIssuerId").value = "";
+      if (huaweiFileInput) huaweiFileInput.value = "";
+
+      log(`🎉 Klíče (${uploadedNames.join(", ")}) byly trvale uloženy do trezoru ios-keys!`, "ok");
+      await window.checkVaultKeysStatus(false);
+    } catch (err) {
+      log(`❌ Chyba při ukládání klíčů: ${err.message}`, "err");
+    }
+  };
+
+  // 3. Rozpoznání projektu ze souborů
   window.detectProjectFromFiles = function(filesMap) {
-    var mapToScan = filesMap || (typeof stagedFiles !== 'undefined' ? stagedFiles : {});
-    if (!mapToScan || typeof mapToScan !== 'object') return null;
-    var appName = null;
-    var pkgSegment = null;
-    var fullPkg = null;
+    const mapToScan = filesMap || (typeof stagedFiles !== "undefined" ? stagedFiles : {});
+    if (!mapToScan || typeof mapToScan !== "object") return null;
+    let appName = null;
+    let pkgSegment = null;
+    let fullPkg = null;
 
-    var entries = Object.entries(mapToScan);
-    for (var i = 0; i < entries.length; i++) {
-      var path = entries[i][0];
-      var content = entries[i][1] || '';
-      if (path === '.github/workflows/build.yml' || path === 'codemagic.yaml') {
-        var mApp = content.match(/APP_NAME:\s*["']?([^"'\r\n]+)["']?/);
-        if (mApp && mApp[1] && mApp[1].indexOf('<') === -1) appName = mApp[1].trim();
-        var mBundle = content.match(/BUNDLE_ID:\s*["']?(cz\.(?:taxi)?mares\.([a-zA-Z0-9_]+))["']?/);
+    for (const [path, rawContent] of Object.entries(mapToScan)) {
+      const content = rawContent || "";
+      if (path === ".github/workflows/build.yml" || path === "codemagic.yaml") {
+        const mApp = content.match(/APP_NAME:\s*["']?([^"'\r\n]+)["']?/);
+        if (mApp && mApp[1] && !mApp[1].includes(LT)) appName = mApp[1].trim();
+        const mBundle = content.match(/BUNDLE_ID:\s*["']?(cz\.(?:taxi)?mares\.([a-zA-Z0-9_]+))["']?/);
         if (mBundle && mBundle[1]) {
           fullPkg = mBundle[1].trim();
           pkgSegment = mBundle[2].trim();
         }
       }
-      if (path === 'settings.gradle.kts') {
-        var mRoot = content.match(/rootProject\.name\s*=\s*["']([^"']+)["']/);
+      if (path === "settings.gradle.kts") {
+        const mRoot = content.match(/rootProject\.name\s*=\s*["']([^"']+)["']/);
         if (mRoot && mRoot[1]) appName = appName || mRoot[1].trim();
       }
       if (!pkgSegment) {
-        var pathMatch = path.match(/cz\/(taxi)?mares\/([a-zA-Z0-9_]+)\//);
+        const pathMatch = path.match(/cz\/(taxi)?mares\/([a-zA-Z0-9_]+)\//);
         if (pathMatch && pathMatch[2]) {
           pkgSegment = pathMatch[2];
-          fullPkg = 'cz.' + (pathMatch[1] ? 'taximares.' : 'mares.') + pkgSegment;
+          fullPkg = "cz." + (pathMatch[1] ? "taximares." : "mares.") + pkgSegment;
         }
       }
       if (!pkgSegment) {
-        var pkgMatch = content.match(/(?:package|namespace\s*=|applicationId\s*=|PRODUCT_BUNDLE_IDENTIFIER:)\s*["']?(cz\.(?:taxi)?mares\.([a-zA-Z0-9_]+))/);
+        const pkgMatch = content.match(/(?:package|namespace\s*=|applicationId\s*=|PRODUCT_BUNDLE_IDENTIFIER:)\s*["']?(cz\.(?:taxi)?mares\.([a-zA-Z0-9_]+))/);
         if (pkgMatch && pkgMatch[1]) {
           fullPkg = pkgMatch[1].trim();
           pkgSegment = pkgMatch[2].trim();
@@ -4410,135 +3165,47 @@ jobs:
       }
     }
 
-    var normSeg = pkgSegment ? normalizeProjId(pkgSegment) : '';
-    var mappedRepo = normSeg && KNOWN_PKG_TO_REPO[normSeg] ? KNOWN_PKG_TO_REPO[normSeg] : null;
-    var rawDisplay = mappedRepo || appName || pkgSegment;
+    const normSeg = pkgSegment ? normalizeProjId(pkgSegment) : "";
+    const mappedRepo = normSeg && KNOWN_PKG_TO_REPO[normSeg] ? KNOWN_PKG_TO_REPO[normSeg] : null;
+    const rawDisplay = mappedRepo || appName || pkgSegment;
     if (!rawDisplay) return null;
 
-    var normApp = normalizeProjId(appName || mappedRepo);
-    var normPkg = normalizeProjId(pkgSegment);
-    var matchedKnown = null;
-    var kp = (typeof knownProjects !== 'undefined' && Array.isArray(knownProjects)) ? knownProjects : [];
-    var pa = (typeof projectAliases !== 'undefined' && projectAliases) ? projectAliases : {};
+    const normApp = normalizeProjId(appName || mappedRepo);
+    const normPkg = normalizeProjId(pkgSegment);
+    let matchedKnown = null;
+    const kp = (typeof knownProjects !== "undefined" && Array.isArray(knownProjects)) ? knownProjects : [];
+    const pa = (typeof projectAliases !== "undefined" && projectAliases) ? projectAliases : {};
 
-    if (mappedRepo && kp.indexOf(mappedRepo) !== -1) {
+    if (mappedRepo && kp.includes(mappedRepo)) {
       matchedKnown = mappedRepo;
-    } else if (normApp && pa[normApp] && kp.indexOf(pa[normApp]) !== -1) {
+    } else if (normApp && pa[normApp] && kp.includes(pa[normApp])) {
       matchedKnown = pa[normApp];
-    } else if (normPkg && pa[normPkg] && kp.indexOf(pa[normPkg]) !== -1) {
+    } else if (normPkg && pa[normPkg] && kp.includes(pa[normPkg])) {
       matchedKnown = pa[normPkg];
     } else if (normApp) {
-      matchedKnown = kp.find(function(p) { return normalizeProjId(p) === normApp; }) || null;
+      matchedKnown = kp.find(p => normalizeProjId(p) === normApp) || null;
     }
     if (!matchedKnown && normPkg) {
-      matchedKnown = kp.find(function(p) { return normalizeProjId(p) === normPkg; }) || null;
+      matchedKnown = kp.find(p => normalizeProjId(p) === normPkg) || null;
     }
 
     return {
       display: matchedKnown || rawDisplay,
       matchedKnown: matchedKnown || null,
       norm: normalizeProjId(matchedKnown || rawDisplay),
-      normApp: normApp,
-      normPkg: normPkg,
-      pkg: fullPkg || (pkgSegment ? ('cz.mares.' + pkgSegment) : null)
+      normApp,
+      normPkg,
+      pkg: fullPkg || (pkgSegment ? ("cz.mares." + pkgSegment) : null)
     };
   };
 
-  if (typeof window.updateDetectedProjectStatus === 'function') {
-    window.updateDetectedProjectStatus();
-  }
-})();
-
-
-/* === CZECH_STORES_AND_AUTO_VERSION_V12 === */
-(function installCzechStoresAndAutoVersionV12() {
-  var LT = String.fromCharCode(60);
-  var GT = String.fromCharCode(62);
-
-  function compareSemVer(a, b) {
-    var pa = String(a || '1.0').split('.').map(function(x) { return parseInt(x, 10) || 0; });
-    var pb = String(b || '1.0').split('.').map(function(x) { return parseInt(x, 10) || 0; });
-    var len = Math.max(pa.length, pb.length);
-    for (var i = 0; i !== len; i++) {
-      var va = pa[i] || 0;
-      var vb = pb[i] || 0;
-      if (va !== vb) return va - vb;
-    }
-    return 0;
-  }
-
-  try {
-    if (typeof projectVersions !== 'undefined' && projectVersions) {
-      if (!projectVersions['Humorradio'] || compareSemVer('1.1', projectVersions['Humorradio']) > 0) {
-        projectVersions['Humorradio'] = '1.1';
-        localStorage.setItem('stavitel_project_versions', JSON.stringify(projectVersions));
-      }
-      var curProj = typeof getActiveProjectName === 'function' ? getActiveProjectName() : '';
-      var verInp = document.getElementById('appVersion');
-      if (curProj === 'Humorradio' && verInp) {
-        verInp.value = projectVersions['Humorradio'];
-      }
-    }
-  } catch (e) {}
-
-  window.syncProjectVersionFromGitHub = async function(projName, silent) {
-    try {
-      if (!projName || projName === '__NEW__' || projName === 'ios-keys' || projName === 'StavitelAplikaci') return;
-      var ow = (localStorage.getItem('stavitel_gh_user') || (document.getElementById('ghUsername') && document.getElementById('ghUsername').value) || 'drozkar-glitch').trim();
-      var tk = (localStorage.getItem('stavitel_gh_token') || (document.getElementById('ghToken') && document.getElementById('ghToken').value) || '').trim();
-      if (!ow || !tk) return;
-      var url = 'https://api.github.com/repos/' + ow + '/' + projName + '/contents/.github/workflows/build.yml?_cb=' + Date.now();
-      var res = await ghFetch(url, tk, { cache: 'no-store' });
-      if (!res.ok) return;
-      var txt = await res.text();
-      if (txt.trim().indexOf('{') !== 0) return;
-      var data = JSON.parse(txt);
-      if (!data || !data.content) return;
-      var yaml = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ''))));
-      var m = yaml.match(/APP_VERSION:\s*["']?([0-9]+(?:\.[0-9]+)+)["']?/);
-      if (m && m[1]) {
-        var ghVer = m[1].trim();
-        var localVer = (typeof projectVersions !== 'undefined' && projectVersions[projName]) ? projectVersions[projName] : '1.0';
-        if (compareSemVer(ghVer, localVer) > 0) {
-          if (typeof projectVersions !== 'undefined') {
-            projectVersions[projName] = ghVer;
-            localStorage.setItem('stavitel_project_versions', JSON.stringify(projectVersions));
-          }
-          var activeNow = typeof getActiveProjectName === 'function' ? getActiveProjectName() : '';
-          var verEl = document.getElementById('appVersion');
-          if (activeNow === projName && verEl) {
-            verEl.value = ghVer;
-          }
-          if (!silent && typeof window.log === 'function') {
-            window.log('🔄 Hlavní verze projektu "' + projName + '" byla automaticky synchronizována z GitHubu na ' + ghVer + '.', 'ok');
-          }
-        }
-      }
-    } catch (e) {}
-  };
-
-  if (typeof window.onProjectSelectChange === 'function' && !window.onProjectSelectChange.__v12Wrapped) {
-    var origSelChange = window.onProjectSelectChange;
-    var wrappedSelChange = function() {
-      var r = origSelChange.apply(this, arguments);
-      var p = typeof getActiveProjectName === 'function' ? getActiveProjectName() : '';
-      if (p && typeof window.syncProjectVersionFromGitHub === 'function') {
-        window.syncProjectVersionFromGitHub(p, false);
-      }
-      return r;
-    };
-    wrappedSelChange.__v12Wrapped = true;
-    window.onProjectSelectChange = wrappedSelChange;
-    var selEl = document.getElementById('projectSelect');
-    if (selEl) selEl.onchange = wrappedSelChange;
-  }
-
+  // 4. Jednotná neprůstřelná šablona .github/workflows/build.yml pro všechny projekty
   window.buildCzechUnifiedWorkflowYaml = function(appName, bundleId, appVersion, publishToStores, buildIos) {
-    var aName = String(appName || 'App').trim();
-    var bId = String(bundleId || 'cz.mares.app').trim();
-    var aVer = String(appVersion || '1.0').trim();
-    var pubStores = (publishToStores === false || publishToStores === 'false') ? 'false' : 'true';
-    var bIos = (buildIos === false || buildIos === 'false') ? 'false' : 'true';
+    const aName = String(appName || "App").trim();
+    const bId = String(bundleId || "cz.mares.app").trim();
+    const aVer = String(appVersion || "1.0").trim();
+    const pubStores = (publishToStores === false || publishToStores === "false") ? "false" : "true";
+    const bIos = (buildIos === false || buildIos === "false") ? "false" : "true";
 
     return [
       'name: Build & Publish KMP (Android + iOS)',
@@ -4573,6 +3240,28 @@ jobs:
       '          distribution: \'temurin\'',
       '          java-version: \'17\'',
       '',
+      '      - name: Detect Package Name and Prepare Build Number',
+      '        run: |',
+      '          BUILD_NUM=$(( ${GITHUB_RUN_NUMBER:-1} + 100 ))',
+      '          echo "PROJECT_BUILD_NUMBER=${BUILD_NUM}" ' + GT + GT + ' $GITHUB_ENV',
+      '          if [ -f "composeApp/build.gradle.kts" ]; then',
+      '            DETECTED_PKG=$(sed -n \'s/.*applicationId[[:space:]]*=[[:space:]]*"\\([^"]*\\)".*/\\1/p\' composeApp/build.gradle.kts | head -n 1 | tr -d \'\\r\\n \')',
+      '            if [ -n "$DETECTED_PKG" ]; then',
+      '              echo "Automaticky rozpoznano applicationId: $DETECTED_PKG"',
+      '              echo "BUNDLE_ID=${DETECTED_PKG}" ' + GT + GT + ' $GITHUB_ENV',
+      '            fi',
+      '          fi',
+      '          if [ ! -f "gradlew" ] || [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then',
+      '            mkdir -p /tmp/gw_init',
+      '            echo \'rootProject.name = "init"\' ' + GT + ' /tmp/gw_init/settings.gradle.kts',
+      '            cd /tmp/gw_init',
+      '            gradle wrapper --gradle-version 8.7 --no-daemon',
+      '            cd - ' + GT + ' /dev/null',
+      '            cp -f /tmp/gw_init/gradlew .',
+      '            cp -rf /tmp/gw_init/gradle .',
+      '          fi',
+      '          chmod +x gradlew',
+      '',
       '      - name: Fetch Signing Keys from Private Vault (ios-keys)',
       '        env:',
       '          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}',
@@ -4601,21 +3290,6 @@ jobs:
       '              fi',
       '            done',
       '          fi',
-      '',
-      '      - name: Prepare Gradle Wrapper and Build Number',
-      '        run: |',
-      '          BUILD_NUM=$(( ${GITHUB_RUN_NUMBER:-1} + 100 ))',
-      '          echo "PROJECT_BUILD_NUMBER=${BUILD_NUM}" ' + GT + GT + ' $GITHUB_ENV',
-      '          if [ ! -f "gradlew" ] || [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then',
-      '            mkdir -p /tmp/gw_init',
-      '            echo \'rootProject.name = "init"\' ' + GT + ' /tmp/gw_init/settings.gradle.kts',
-      '            cd /tmp/gw_init',
-      '            gradle wrapper --gradle-version 8.7 --no-daemon',
-      '            cd - ' + GT + ' /dev/null',
-      '            cp -f /tmp/gw_init/gradlew .',
-      '            cp -rf /tmp/gw_init/gradle .',
-      '          fi',
-      '          chmod +x gradlew',
       '',
       '      - name: Prepare Android Signing Keystore',
       '        run: |',
@@ -4666,17 +3340,21 @@ jobs:
       '          if [ "$PUBLISH_TO_STORES" != "true" ]; then',
       '            echo "ℹ️ VYSLEDEK GOOGLE PLAY: Publikace do obchodu je vypnuta (rezim bez publikace). Preskakuji Google Play."',
       '          elif [ -s "iosApp/signing/gplaykey.json.b64" ]; then',
-      '            echo "⏳ Pripojuji se ke Google Play Console a nahravam .aab do Interniho testovani..."',
+      '            echo "⏳ Pripojuji se ke Google Play Console a nahravam .aab (timeout nastaven na 300 s)..."',
       '            base64 --decode ' + LT + ' iosApp/signing/gplaykey.json.b64 ' + GT + ' /tmp/gplay_key.json',
       '            pip3 install --quiet --break-system-packages google-api-python-client google-auth-httplib2 google-auth-oauthlib || \\',
       '            pip3 install --quiet google-api-python-client google-auth-httplib2 google-auth-oauthlib',
       '',
       '            python3 - ' + LT + LT + ' \'EOF\'',
-      '          import os',
+      '          import os, time, socket',
+      '          import httplib2',
+      '          import google_auth_httplib2',
       '          from google.oauth2 import service_account',
       '          from googleapiclient.discovery import build',
       '          from googleapiclient.http import MediaFileUpload',
       '          from googleapiclient.errors import HttpError',
+      '',
+      '          socket.setdefaulttimeout(300)',
       '',
       '          package_name = os.environ.get("BUNDLE_ID")',
       '          build_num = os.environ.get("PROJECT_BUILD_NUMBER", "101")',
@@ -4684,17 +3362,20 @@ jobs:
       '          app_version = os.environ.get("APP_VERSION", "1.0")',
       '          aab_path = f"composeApp/build/outputs/bundle/release/{app_name}-{app_version}.{build_num}.aab"',
       '',
-      '          try:',
+      '          def upload_to_gplay():',
       '              creds = service_account.Credentials.from_service_account_file(',
       '                  "/tmp/gplay_key.json",',
       '                  scopes=["https://www.googleapis.com/auth/androidpublisher"]',
       '              )',
-      '              service = build("androidpublisher", "v3", credentials=creds)',
+      '              http = httplib2.Http(timeout=300)',
+      '              authed_http = google_auth_httplib2.AuthorizedHttp(creds, http=http)',
+      '              service = build("androidpublisher", "v3", http=authed_http, cache_discovery=False)',
+      '',
       '              edit_request = service.edits().insert(body={}, packageName=package_name)',
       '              result = edit_request.execute(num_retries=5)',
       '              edit_id = result["id"]',
       '',
-      '              media = MediaFileUpload(aab_path, mimetype="application/octet-stream", resumable=True)',
+      '              media = MediaFileUpload(aab_path, mimetype="application/octet-stream", chunksize=5*1024*1024, resumable=True)',
       '              bundle_response = service.edits().bundles().upload(',
       '                  editId=edit_id,',
       '                  packageName=package_name,',
@@ -4707,9 +3388,9 @@ jobs:
       '                  try:',
       '                      service.edits().commit(editId=eid, packageName=package_name).execute(num_retries=5)',
       '                      if is_draft:',
-      '                          print(f"✅ VYSLEDEK GOOGLE PLAY: Balicek .aab (verze {app_version}.{build_num}) byl ulozen jako koncept (Draft) v kanalu Interni testovani!")',
+      '                          print(f"✅ VYSLEDEK GOOGLE PLAY: Balicek .aab (verze {app_version}.{build_num}) byl ulozen jako koncept (Draft) v Google Play!")',
       '                      else:',
-      '                          print(f"✅ VYSLEDEK GOOGLE PLAY: Balicek .aab (verze {app_version}.{build_num}) byl uspesne publikovan do Interniho testovani!")',
+      '                          print(f"✅ VYSLEDEK GOOGLE PLAY: Balicek .aab (verze {app_version}.{build_num}) byl uspesne publikovan do Google Play!")',
       '                  except Exception as cerr:',
       '                      err_str = str(cerr)',
       '                      if "Only releases with status draft" in err_str:',
@@ -4719,7 +3400,7 @@ jobs:
       '                          packageName=package_name,',
       '                          changesNotSentForReview=True',
       '                      ).execute(num_retries=5)',
-      '                      print(f"✅ VYSLEDEK GOOGLE PLAY: Balicek .aab (verze {app_version}.{build_num}) byl ulozen do Google Play! Staci jej potvrdit v Prehledu publikovani.")',
+      '                      print(f"✅ VYSLEDEK GOOGLE PLAY: Balicek .aab (verze {app_version}.{build_num}) byl ulozen do Google Play (changesNotSentForReview=True)!")',
       '',
       '              try:',
       '                  service.edits().tracks().update(',
@@ -4737,16 +3418,31 @@ jobs:
       '                      body={"releases": [{"versionCodes": [str(version_code)], "status": "draft"}]}',
       '                  ).execute(num_retries=5)',
       '                  commit_edit(edit_id, is_draft=True)',
-      '          except HttpError as e:',
-      '              err_txt = str(e)',
-      '              if e.resp.status == 404:',
-      '                  print(f"⚠️ VYSLEDEK GOOGLE PLAY: Aplikace s balickem \'{package_name}\' zatim v Google Play Console neexistuje (404). Prvni .aab soubor je nutne nahrat do konzole rucne.")',
-      '              elif "Version code" in err_txt and "already been used" in err_txt:',
-      '                  print(f"ℹ️ VYSLEDEK GOOGLE PLAY: Verze s kodem {build_num} uz je v Google Play Console nahrana.")',
-      '              else:',
-      '                  print(f"⚠️ VYSLEDEK GOOGLE PLAY: Google Play API vratilo stav {e.resp.status}: {err_txt}")',
-      '          except Exception as e:',
-      '              print(f"⚠️ VYSLEDEK GOOGLE PLAY: Nepodarilo se dokoncit zapis do Google Play: {e}")',
+      '',
+      '          max_attempts = 3',
+      '          for attempt in range(1, max_attempts + 1):',
+      '              try:',
+      '                  upload_to_gplay()',
+      '                  break',
+      '              except HttpError as e:',
+      '                  err_txt = str(e)',
+      '                  if e.resp.status == 404:',
+      '                      print(f"⚠️ VYSLEDEK GOOGLE PLAY: Aplikace s balickem \'{package_name}\' zatim v Google Play Console neexistuje (404). Prvni .aab soubor je nutne nahrat do konzole rucne.")',
+      '                      break',
+      '                  elif "already been used" in err_txt or "version code" in err_txt.lower():',
+      '                      print(f"✅ VYSLEDEK GOOGLE PLAY: Verze s kodem {build_num} uz je v Google Play Console nahrana z predchoziho pokusu.")',
+      '                      break',
+      '                  else:',
+      '                      print(f"⚠️ UPOZORNENI (pokus {attempt}/{max_attempts}): Google Play API vratilo stav {e.resp.status}: {err_txt}")',
+      '                      if attempt ' + LT + ' max_attempts:',
+      '                          time.sleep(10)',
+      '              except Exception as e:',
+      '                  print(f"⏳ UPOZORNENI (pokus {attempt}/{max_attempts}): Prodleva odpovedi Google Play ({e}).")',
+      '                  if attempt ' + LT + ' max_attempts:',
+      '                      print("Cekam 15 sekund a overuji stav zapisu v Google Play...")',
+      '                      time.sleep(15)',
+      '                  else:',
+      '                      print(f"⚠️ VYSLEDEK GOOGLE PLAY: Nepodarilo se dokoncit zapis do Google Play ani po {max_attempts} pokusech: {e}")',
       '          EOF',
       '          else',
       '            echo "⚠️ VYSLEDEK GOOGLE PLAY: Klic gplaykey.json nebyl v trezoru nalezen, preskakuji Google Play."',
@@ -4966,6 +3662,13 @@ jobs:
       '          export PATH="$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.11/bin:$HOME/Library/Python/3.12/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"',
       '          BUILD_NUM=$(( ${GITHUB_RUN_NUMBER:-1} + 100 ))',
       '          export PROJECT_BUILD_NUMBER="${BUILD_NUM}"',
+      '          if [ -f "composeApp/build.gradle.kts" ]; then',
+      '            DETECTED_PKG=$(sed -n \'s/.*applicationId[[:space:]]*=[[:space:]]*"\\([^"]*\\)".*/\\1/p\' composeApp/build.gradle.kts | head -n 1 | tr -d \'\\r\\n \')',
+      '            if [ -n "$DETECTED_PKG" ]; then',
+      '              export BUNDLE_ID="$DETECTED_PKG"',
+      '              echo "BUNDLE_ID=${DETECTED_PKG}" ' + GT + GT + ' $GITHUB_ENV',
+      '            fi',
+      '          fi',
       '          INITIAL_APP_VERSION="$APP_VERSION"',
       '',
       '          if [ ! -f "gradlew" ] || [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then',
@@ -4983,6 +3686,98 @@ jobs:
       '',
       '          if ! command -v xcodegen &' + GT + ' /dev/null; then',
       '            HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen',
+      '          fi',
+      '',
+      '          pip3 install --quiet --break-system-packages Pillow || pip3 install --quiet Pillow',
+      '          python3 - ' + LT + LT + ' \'PYEOF\'',
+      '          import os, glob, json',
+      '          from PIL import Image, ImageDraw',
+      '',
+      '          assets_dir = "iosApp/iosApp/Assets.xcassets"',
+      '          icon_dir = os.path.join(assets_dir, "AppIcon.appiconset")',
+      '          os.makedirs(icon_dir, exist_ok=True)',
+      '',
+      '          with open(os.path.join(assets_dir, "Contents.json"), "w") as f:',
+      '              json.dump({"info": {"version": 1, "author": "xcode"}}, f, indent=2)',
+      '',
+      '          base = None',
+      '          gradle_icon = os.path.join(icon_dir, "app-icon-1024.png")',
+      '          if os.path.exists(gradle_icon) and os.path.getsize(gradle_icon) ' + GT + ' 1000:',
+      '              try:',
+      '                  src = Image.open(gradle_icon).convert("RGBA")',
+      '                  bg = Image.new("RGBA", src.size, (15, 23, 42, 255))',
+      '                  base = Image.alpha_composite(bg, src).convert("RGB").resize((1024, 1024), Image.Resampling.LANCZOS)',
+      '              except Exception:',
+      '                  base = None',
+      '',
+      '          if base is None:',
+      '              candidates = []',
+      '              for pattern in [',
+      '                  "app/src/main/ic_launcher-playstore.png",',
+      '                  "composeApp/src/androidMain/res/mipmap-xxxhdpi/ic_launcher.*",',
+      '                  "composeApp/src/androidMain/res/mipmap-xxhdpi/ic_launcher.*",',
+      '                  "app/src/main/res/mipmap-xxxhdpi/ic_launcher.*"',
+      '              ]:',
+      '                  for p in glob.glob(pattern):',
+      '                      if p.lower().endswith((".png", ".webp", ".jpg", ".jpeg")):',
+      '                          candidates.append(p)',
+      '              if candidates:',
+      '                  best_path = max(candidates, key=lambda p: os.path.getsize(p))',
+      '                  src = Image.open(best_path).convert("RGBA")',
+      '                  bg = Image.new("RGBA", src.size, (15, 23, 42, 255))',
+      '                  base = Image.alpha_composite(bg, src).convert("RGB").resize((1024, 1024), Image.Resampling.LANCZOS)',
+      '              else:',
+      '                  base = Image.new("RGB", (1024, 1024), (15, 23, 42))',
+      '                  draw = ImageDraw.Draw(base)',
+      '                  draw.rounded_rectangle([180, 180, 844, 844], radius=140, fill=(2, 132, 199))',
+      '',
+      '          specs = [',
+      '              ("iphone", "20x20", "2x", 40),',
+      '              ("iphone", "20x20", "3x", 60),',
+      '              ("iphone", "29x29", "2x", 58),',
+      '              ("iphone", "29x29", "3x", 87),',
+      '              ("iphone", "40x40", "2x", 80),',
+      '              ("iphone", "40x40", "3x", 120),',
+      '              ("iphone", "60x60", "2x", 120),',
+      '              ("iphone", "60x60", "3x", 180),',
+      '              ("ipad", "20x20", "1x", 20),',
+      '              ("ipad", "20x20", "2x", 40),',
+      '              ("ipad", "29x29", "1x", 29),',
+      '              ("ipad", "29x29", "2x", 58),',
+      '              ("ipad", "40x40", "1x", 40),',
+      '              ("ipad", "40x40", "2x", 80),',
+      '              ("ipad", "76x76", "1x", 76),',
+      '              ("ipad", "76x76", "2x", 152),',
+      '              ("ipad", "83.5x83.5", "2x", 167),',
+      '              ("ios-marketing", "1024x1024", "1x", 1024),',
+      '          ]',
+      '',
+      '          images_json = []',
+      '          for idiom, size_str, scale, px in specs:',
+      '              fname = f"icon_{idiom}_{size_str}_{scale}.png"',
+      '              img = base.resize((px, px), Image.Resampling.LANCZOS).convert("RGB")',
+      '              img.save(os.path.join(icon_dir, fname), format="PNG")',
+      '              images_json.append({',
+      '                  "idiom": idiom,',
+      '                  "size": size_str,',
+      '                  "scale": scale,',
+      '                  "filename": fname',
+      '              })',
+      '',
+      '          base.save(gradle_icon, format="PNG")',
+      '          with open(os.path.join(icon_dir, "Contents.json"), "w") as f:',
+      '              json.dump({"images": images_json, "info": {"version": 1, "author": "xcode"}}, f, indent=2)',
+      '          print("✅ Vygenerovano vsech 18 velikosti iOS ikon pro iPhone a iPad.")',
+      '          PYEOF',
+      '',
+      '          if [ -f "iosApp/iosApp/Info.plist" ]; then',
+      '            plutil -replace CFBundleExecutable -string \'$(EXECUTABLE_NAME)\' iosApp/iosApp/Info.plist || true',
+      '            plutil -replace CFBundleIdentifier -string \'$(PRODUCT_BUNDLE_IDENTIFIER)\' iosApp/iosApp/Info.plist || true',
+      '            plutil -replace CFBundleName -string \'$(PRODUCT_NAME)\' iosApp/iosApp/Info.plist || true',
+      '            plutil -replace CFBundlePackageType -string \'APPL\' iosApp/iosApp/Info.plist || true',
+      '            plutil -replace CFBundleShortVersionString -string \'$(MARKETING_VERSION)\' iosApp/iosApp/Info.plist || true',
+      '            plutil -replace CFBundleVersion -string \'$(CURRENT_PROJECT_VERSION)\' iosApp/iosApp/Info.plist || true',
+      '            plutil -replace CFBundleIconName -string \'AppIcon\' iosApp/iosApp/Info.plist || true',
       '          fi',
       '',
       '          FW_PATH="$(pwd)/composeApp/build/bin/iosArm64/releaseFramework"',
@@ -5385,33 +4180,50 @@ jobs:
   window.injectHuaweiIntoBuildYml = function(yml) { return yml; };
 
   window.upgradeWorkflowYaml = function(yamlStr) {
-    if (typeof yamlStr !== 'string' || (yamlStr.indexOf('Build & Publish KMP') === -1 && yamlStr.indexOf('BUNDLE_ID:') === -1)) {
+    if (typeof yamlStr !== "string" || (!yamlStr.includes("Build & Publish KMP") && !yamlStr.includes("BUNDLE_ID:"))) {
       return yamlStr;
     }
-    var mApp = yamlStr.match(/APP_NAME:\s*"([^"]+)"/);
-    var mBun = yamlStr.match(/BUNDLE_ID:\s*"([^"]+)"/);
-    var mVer = yamlStr.match(/APP_VERSION:\s*"([^"]+)"/);
-    var mPub = yamlStr.match(/PUBLISH_TO_STORES:\s*"([^"]+)"/);
-    var mIos = yamlStr.match(/BUILD_IOS:\s*"([^"]+)"/);
+    const mApp = yamlStr.match(/APP_NAME:\s*"([^"]+)"/);
+    const mBun = yamlStr.match(/BUNDLE_ID:\s*"([^"]+)"/);
+    const mVer = yamlStr.match(/APP_VERSION:\s*"([^"]+)"/);
+    const mPub = yamlStr.match(/PUBLISH_TO_STORES:\s*"([^"]+)"/);
+    const mIos = yamlStr.match(/BUILD_IOS:\s*"([^"]+)"/);
     return window.buildCzechUnifiedWorkflowYaml(
-      mApp ? mApp[1] : 'App',
-      mBun ? mBun[1] : 'cz.mares.app',
-      mVer ? mVer[1] : '1.0',
-      mPub ? mPub[1] : 'true',
-      mIos ? mIos[1] : 'true'
+      mApp ? mApp[1] : "App",
+      mBun ? mBun[1] : "cz.mares.app",
+      mVer ? mVer[1] : "1.0",
+      mPub ? mPub[1] : "true",
+      mIos ? mIos[1] : "true"
     );
   };
 
   window.getDefaultGitHubWorkflowYaml = function(appName, bundleId, appVersion, mode) {
-    var cleanVer = String(appVersion || '1.0').trim();
-    var pubStr = (mode === 'publish') ? 'true' : 'false';
-    var iosStr = (mode === 'android_only') ? 'false' : 'true';
+    const cleanVer = String(appVersion || "1.0").trim();
+    const pubStr = (mode === "publish") ? "true" : "false";
+    const iosStr = (mode === "android_only") ? "false" : "true";
     return window.buildCzechUnifiedWorkflowYaml(appName, bundleId, cleanVer, pubStr, iosStr);
   };
 
-  var curActiveProj = typeof getActiveProjectName === 'function' ? getActiveProjectName() : '';
-  if (curActiveProj && typeof window.syncProjectVersionFromGitHub === 'function') {
-    window.syncProjectVersionFromGitHub(curActiveProj, true);
-  }
+  window.applyModeToWorkflowYaml = function(yamlText, mode, appVersion = null) {
+    const cleanVer = String(appVersion || document.getElementById("appVersion")?.value || "1.0").trim();
+    let appName = typeof getActiveProjectName === "function" ? getActiveProjectName() : "App";
+    let bundleId = (appName === "Humorradio" || appName === "RadioPM")
+      ? "cz.taximares.radiopm"
+      : `cz.mares.${normalizeProjId(appName)}`;
+
+    if (yamlText) {
+      const mApp = yamlText.match(/APP_NAME:\s*["']?([^"'\r\n]+)["']?/);
+      const mBundle = yamlText.match(/BUNDLE_ID:\s*["']?([^"'\r\n]+)["']?/);
+      if (mApp && mApp[1] && !mApp[1].includes(LT)) appName = mApp[1].trim();
+      if (mBundle && mBundle[1] && !mBundle[1].includes(LT)) bundleId = mBundle[1].trim();
+    }
+
+    const det = window.detectProjectFromFiles(typeof stagedFiles !== "undefined" ? stagedFiles : {});
+    if (det && det.pkg) bundleId = det.pkg;
+
+    return window.getDefaultGitHubWorkflowYaml(appName, bundleId, cleanVer, mode);
+  };
+
+  window.checkVaultKeysStatus(true);
 })();
 </script></body></html>
