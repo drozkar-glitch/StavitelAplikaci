@@ -481,7 +481,7 @@
             <div class="form-group" style="flex: 2.2;">
                 <label>Vyber existující projekt nebo založ nový:</label>
                 <div style="display: flex; gap: 8px;">
-                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="kocicky">📁 kocicky</option><option value="WaveCal">📁 WaveCal</option><option value="Humorradio">📁 Humorradio</option><option value="bombman">📁 bombman</option><option value="bandita">📁 bandita</option><option value="JenPockej">📁 JenPockej</option><option value="TaxiMaresUser">📁 TaxiMaresUser</option><option value="Sudoku">📁 Sudoku</option><option value="DrPilulka">📁 DrPilulka</option><option value="Tetrisek">📁 Tetrisek</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
+                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="kocicky">📁 kocicky</option><option value="WaveCal">📁 WaveCal</option><option value="Humorradio">📁 Humorradio</option><option value="bombman">📁 bombman</option><option value="bandita">📁 bandita</option><option value="JenPockej">📁 JenPockej</option><option value="TaxiMaresUser">📁 TaxiMaresUser</option><option value="Sudoku">📁 Sudoku</option><option value="DrPilulka">📁 DrPilulka</option><option value="Tetrisek">📁 Tetrisek</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select><button id="btnDownloadLatestApkTop" type="button" style="margin-top: 8px; width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(52, 211, 153, 0.45); background: linear-gradient(135deg, rgb(5, 150, 105), rgb(2, 132, 199)); color: rgb(255, 255, 255); font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: rgba(2, 132, 199, 0.25) 0px 2px 8px;">📲 Stáhnout poslední .APK</button>
                     <button class="btn-secondary" style="white-space: nowrap;" title="Načte aktuální seznam tvých repozitářů přímo z GitHubu" onclick="fetchGitHubRepos(false)">🔄 Obnovit z GitHubu</button>
                     <button id="btnRemoveProject" class="btn-danger" style="white-space: nowrap;" title="Odebere vybraný název projektu z roletky (na GitHubu nic nemaže)" onclick="removeSelectedProjectFromList()">🗑️ Odebrat</button>
                 </div>
@@ -607,7 +607,7 @@
                 <div class="tools-box-title">Stažení projektu z GitHubu &amp; Záchrana</div>
                 <div class="tools-buttons">
                     <button class="btn-secondary" onclick="downloadRepoFromGitHubToDisk()" title="Stáhne kompletní vybraný projekt z GitHubu do složky na tvém disku">📥 Stáhnout na disk</button>
-                    <button class="btn-secondary" onclick="downloadRepoFromGitHubAsZip()" title="Stáhne kompletní vybraný projekt z GitHubu jako .ZIP">⬇️ Stáhnout .ZIP</button>
+                    <button class="btn-secondary" onclick="downloadRepoFromGitHubAsZip()" title="Stáhne kompletní vybraný projekt z GitHubu jako .ZIP">⬇️ Stáhnout .ZIP</button><button id="btnDownloadLatestApkBottom" type="button" class="btn-secondary" style="border-color: rgb(16, 185, 129);">📲 Poslední .APK</button>
                     <button class="btn-warn" onclick="revertLastCommitOnGitHub()" title="Vrátí vybraný projekt na GitHubu o 1 commit zpět">⏪ Vrátit commit</button>
                 <button id="btnDownloadStavitelZipBottom" type="button" class="btn-warn" style="background: rgb(30, 58, 138); color: rgb(147, 197, 253); border: 1px solid rgb(59, 130, 246); cursor: pointer;" onclick="window.downloadStavitelZipFromGH()">📦 ZIP Stavitele z GH</button></div>
             </div>
@@ -4237,4 +4237,468 @@ jobs:
       });
     }
   })();
+</script><script id="apkDownloaderScript">/* === STAVITEL_APK_DOWNLOADER_V1 === */
+(function installApkDownloaderV1() {
+  const LT = String.fromCharCode(60);
+
+  function getApkBridgeWorkflowYaml() {
+    return [
+      'name: APK Bridge Extractor',
+      'on:',
+      '  workflow_dispatch:',
+      '    inputs:',
+      '      target_repo:',
+      '        description: "Target repository"',
+      '        required: true',
+      '        type: string',
+      '      artifact_id:',
+      '        description: "Artifact ID"',
+      '        required: true',
+      '        type: string',
+      '',
+      'jobs:',
+      '  extract-apk:',
+      '    runs-on: ubuntu-latest',
+      '    steps:',
+      '      - name: Extract APK from Artifact',
+      '        env:',
+      '          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}',
+      '          OWNER: ${{ github.repository_owner }}',
+      '          TARGET_REPO: ${{ inputs.target_repo }}',
+      '          ARTIFACT_ID: ${{ inputs.artifact_id }}',
+      '        run: |',
+      '          python3 - ' + LT + LT + ' \'PYEOF\'',
+      '          import os, sys, json, base64, zipfile, io, urllib.request, urllib.parse',
+      '',
+      '          token = os.environ["VAULT_TOKEN"].strip()',
+      '          owner = os.environ["OWNER"].strip()',
+      '          repo = os.environ["TARGET_REPO"].strip()',
+      '          art_id = os.environ["ARTIFACT_ID"].strip()',
+      '',
+      '          def api_req(url, method="GET", data=None, content_type="application/json"):',
+      '              hdrs = {',
+      '                  "Authorization": f"Bearer {token}",',
+      '                  "Accept": "application/vnd.github+json",',
+      '                  "User-Agent": "Stavitel-APK-Bridge"',
+      '              }',
+      '              if data is not None:',
+      '                  hdrs["Content-Type"] = content_type',
+      '              req = urllib.request.Request(url, data=data, headers=hdrs, method=method)',
+      '              with urllib.request.urlopen(req, timeout=120) as resp:',
+      '                  raw = resp.read()',
+      '                  return json.loads(raw.decode("utf-8")) if raw else {}',
+      '',
+      '          repo_info = api_req(f"https://api.github.com/repos/{owner}/{repo}")',
+      '          is_private = bool(repo_info.get("private", False))',
+      '          default_branch = repo_info.get("default_branch", "main")',
+      '',
+      '          class NoAuthRedirectHandler(urllib.request.HTTPRedirectHandler):',
+      '              def redirect_request(self, req, fp, code, msg, headers, newurl):',
+      '                  newheaders = {k: v for k, v in req.headers.items() if k.lower() not in ("content-length", "content-type", "authorization")}',
+      '                  return urllib.request.Request(newurl, headers=newheaders, origin_req_host=req.origin_req_host, unverifiable=True)',
+      '',
+      '          opener = urllib.request.build_opener(NoAuthRedirectHandler())',
+      '          zip_req = urllib.request.Request(',
+      '              f"https://api.github.com/repos/{owner}/{repo}/actions/artifacts/{art_id}/zip",',
+      '              headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json", "User-Agent": "Stavitel-APK-Bridge"}',
+      '          )',
+      '          with opener.open(zip_req, timeout=180) as zresp:',
+      '              zip_bytes = zresp.read()',
+      '',
+      '          apk_name = None',
+      '          apk_bytes = None',
+      '          with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:',
+      '              for info in zf.infolist():',
+      '                  if info.filename.lower().endswith(".apk") and not info.is_dir():',
+      '                      apk_name = os.path.basename(info.filename)',
+      '                      apk_bytes = zf.read(info.filename)',
+      '                      break',
+      '',
+      '          if not apk_bytes or not apk_name:',
+      '              print("No APK found in artifact")',
+      '              sys.exit(1)',
+      '',
+      '          blob_sha = ""',
+      '          if is_private:',
+      '              b64_data = base64.b64encode(apk_bytes).decode("ascii")',
+      '              blob_res = api_req(',
+      '                  f"https://api.github.com/repos/{owner}/ios-keys/git/blobs",',
+      '                  method="POST",',
+      '                  data=json.dumps({"content": b64_data, "encoding": "base64"}).encode("utf-8")',
+      '              )',
+      '              blob_sha = blob_res.get("sha", "")',
+      '',
+      '          tag_name = "apk-latest"',
+      '          body_meta = json.dumps({"artifact_id": str(art_id), "apk_name": apk_name, "blob_sha": blob_sha})',
+      '          rel = None',
+      '          try:',
+      '              rel = api_req(f"https://api.github.com/repos/{owner}/{repo}/releases/tags/{tag_name}")',
+      '          except Exception:',
+      '              rel = None',
+      '',
+      '          if rel and rel.get("id"):',
+      '              rel_id = rel["id"]',
+      '              for asset in rel.get("assets", []):',
+      '                  aid = asset["id"]',
+      '                  api_req(f"https://api.github.com/repos/{owner}/{repo}/releases/assets/{aid}", method="DELETE")',
+      '              rel = api_req(',
+      '                  f"https://api.github.com/repos/{owner}/{repo}/releases/{rel_id}",',
+      '                  method="PATCH",',
+      '                  data=json.dumps({"body": body_meta, "prerelease": True, "name": f"Poslední APK ({apk_name})"}).encode("utf-8")',
+      '              )',
+      '          else:',
+      '              rel = api_req(',
+      '                  f"https://api.github.com/repos/{owner}/{repo}/releases",',
+      '                  method="POST",',
+      '                  data=json.dumps({',
+      '                      "tag_name": tag_name,',
+      '                      "target_commitish": default_branch,',
+      '                      "name": f"Poslední APK ({apk_name})",',
+      '                      "body": body_meta,',
+      '                      "prerelease": True',
+      '                  }).encode("utf-8")',
+      '              )',
+      '',
+      '          rel_id = rel["id"]',
+      '          upload_url = f"https://uploads.github.com/repos/{owner}/{repo}/releases/{rel_id}/assets?name={urllib.parse.quote(apk_name)}"',
+      '          up_res = api_req(upload_url, method="POST", data=apk_bytes, content_type="application/vnd.android.package-archive")',
+      '          print("UPLOADED:", up_res.get("browser_download_url", ""))',
+      '          PYEOF'
+    ].join('\n') + '\n';
+  }
+
+  window.__getApkBridgeWorkflowYaml = getApkBridgeWorkflowYaml;
+
+  function getSelectedRepoForApk() {
+    const sel = document.getElementById("projectSelect");
+    let val = "";
+    if (sel && sel.value && sel.value !== "__new__" && sel.value !== "new") {
+      val = sel.value.trim();
+    } else if (typeof getActiveProjectName === "function") {
+      val = String(getActiveProjectName() || "").trim();
+    }
+    if (!val || val === "__new__" || val === "new" || val === "ios-keys" || val === "StavitelAplikaci") {
+      return "";
+    }
+    return val;
+  }
+
+  function updateApkButtonLabels() {
+    const repo = getSelectedRepoForApk();
+    const topBtn = document.getElementById("btnDownloadLatestApkTop");
+    if (topBtn && !topBtn.disabled) {
+      topBtn.textContent = repo
+        ? `📲 Stáhnout poslední .APK (${repo})`
+        : "📲 Stáhnout poslední .APK";
+    }
+  }
+
+  async function extractApkFromZipBuffer(arrayBuffer) {
+    const view = new DataView(arrayBuffer);
+    let eocdPos = -1;
+    const minPos = Math.max(0, view.byteLength - 65557);
+    for (let p = view.byteLength - 22; p >= minPos; p--) {
+      if (view.getUint32(p, true) === 0x06054b50) {
+        eocdPos = p;
+        break;
+      }
+    }
+    if (eocdPos === -1) throw new Error("Neplatný ZIP archív.");
+    const cdCount = view.getUint16(eocdPos + 10, true);
+    let ptr = view.getUint32(eocdPos + 16, true);
+    const dec = new TextDecoder("utf-8");
+
+    for (let i = 0; i < cdCount; i++) {
+      if (view.getUint32(ptr, true) !== 0x02014b50) break;
+      const compMethod = view.getUint16(ptr + 10, true);
+      const compSize = view.getUint32(ptr + 20, true);
+      const nameLen = view.getUint16(ptr + 28, true);
+      const extraLen = view.getUint16(ptr + 30, true);
+      const commentLen = view.getUint16(ptr + 32, true);
+      const localOffset = view.getUint32(ptr + 42, true);
+      const fileName = dec.decode(new Uint8Array(arrayBuffer, ptr + 46, nameLen));
+
+      if (fileName.toLowerCase().endsWith(".apk")) {
+        const lfNameLen = view.getUint16(localOffset + 26, true);
+        const lfExtraLen = view.getUint16(localOffset + 28, true);
+        const dataStart = localOffset + 30 + lfNameLen + lfExtraLen;
+        const compBytes = new Uint8Array(arrayBuffer, dataStart, compSize);
+        const cleanName = fileName.split("/").pop();
+
+        if (compMethod === 0) {
+          return { name: cleanName, bytes: compBytes };
+        } else if (compMethod === 8 && typeof DecompressionStream !== "undefined") {
+          const ds = new DecompressionStream("deflate-raw");
+          const stream = new Blob([compBytes]).stream().pipeThrough(ds);
+          const outBuf = await new Response(stream).arrayBuffer();
+          return { name: cleanName, bytes: new Uint8Array(outBuf) };
+        }
+      }
+      ptr += 46 + nameLen + extraLen + commentLen;
+    }
+    throw new Error("V artefaktu nebyl nalezen žádný soubor .apk.");
+  }
+
+  function triggerBytesDownload(bytes, fileName) {
+    const blob = new Blob([bytes], { type: "application/vnd.android.package-archive" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 15000);
+  }
+
+  function triggerUrlDownload(url, fileName) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName || "";
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 5000);
+
+    const lb = document.getElementById("logBox");
+    if (lb) {
+      lb.style.display = "block";
+      const row = document.createElement("div");
+      row.style.marginTop = "4px";
+      row.innerHTML = `👉 Přímý odkaz ke stažení: <a href="${url}" style="color:#38bdf8;font-weight:700;text-decoration:underline;">${fileName}</a>`;
+      lb.appendChild(row);
+      lb.scrollTop = lb.scrollHeight;
+    }
+  }
+
+  async function downloadFromReleaseMeta(owner, token, isPrivate, relData) {
+    const assets = relData.assets || [];
+    const apkAsset = assets.find(a => (a.name || "").toLowerCase().endsWith(".apk"));
+    if (!apkAsset) return false;
+
+    let meta = {};
+    try { meta = JSON.parse(relData.body || "{}"); } catch (e) {}
+
+    if (!isPrivate && apkAsset.browser_download_url) {
+      triggerUrlDownload(apkAsset.browser_download_url, apkAsset.name);
+      return apkAsset.name;
+    }
+
+    if (meta.blob_sha) {
+      const bRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/git/blobs/${meta.blob_sha}`, token);
+      if (bRes.ok) {
+        const bJson = await bRes.json();
+        const binStr = atob((bJson.content || "").replace(/\s/g, ""));
+        const bytes = new Uint8Array(binStr.length);
+        for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+        triggerBytesDownload(bytes, apkAsset.name);
+        return apkAsset.name;
+      }
+    }
+
+    if (apkAsset.browser_download_url) {
+      triggerUrlDownload(apkAsset.browser_download_url, apkAsset.name);
+      return apkAsset.name;
+    }
+    return false;
+  }
+
+  window.downloadLatestProjectApk = async function() {
+    const owner = (localStorage.getItem("stavitel_gh_user") || document.getElementById("ghUsername")?.value || "drozkar-glitch").trim();
+    const token = (localStorage.getItem("stavitel_gh_token") || document.getElementById("ghToken")?.value || "").trim();
+    if (!owner || !token) {
+      alert("Nejprve vyplň své GitHub jméno a Personal Access Token nahoře.");
+      return;
+    }
+
+    const repo = getSelectedRepoForApk();
+    if (!repo) {
+      alert("Nejprve v Kroku 1 vyber existující projekt z roletky.");
+      return;
+    }
+
+    const topBtn = document.getElementById("btnDownloadLatestApkTop");
+    const botBtn = document.getElementById("btnDownloadLatestApkBottom");
+    const setBusy = (busy) => {
+      if (topBtn) {
+        topBtn.disabled = busy;
+        topBtn.style.opacity = busy ? "0.7" : "1";
+        topBtn.textContent = busy ? `⏳ Stahuji .APK (${repo})...` : `📲 Stáhnout poslední .APK (${repo})`;
+      }
+      if (botBtn) {
+        botBtn.disabled = busy;
+        botBtn.textContent = busy ? "⏳ Stahuji .APK..." : "📲 Poslední .APK";
+      }
+    };
+
+    setBusy(true);
+    try {
+      log(`🔎 Hledám poslední sestavené .APK pro projekt "${repo}"...`, "info");
+
+      const repoRes = await ghFetch(`https://api.github.com/repos/${owner}/${repo}?_cb=${Date.now()}`, token);
+      if (!repoRes.ok) throw new Error(`Repozitář "${owner}/${repo}" nebyl na GitHubu nalezen.`);
+      const repoInfo = await repoRes.json();
+      const isPrivate = !!repoInfo.private;
+
+      const artRes = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/actions/artifacts?per_page=30&_cb=${Date.now()}`, token);
+      const artifacts = artRes.ok ? ((await artRes.json()).artifacts || []) : [];
+      const validArts = artifacts.filter(a => !a.expired);
+      const latestArt = validArts.find(a => /android|apk/i.test(a.name)) || validArts.find(a => !/ios|ipa/i.test(a.name));
+
+      // Kontrola již připraveného přímého .APK v release apk-latest
+      const relCheck = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/releases/tags/apk-latest?_cb=${Date.now()}`, token);
+      if (relCheck.ok) {
+        const relData = await relCheck.json();
+        let meta = {};
+        try { meta = JSON.parse(relData.body || "{}"); } catch (e) {}
+        if (!latestArt || String(meta.artifact_id) === String(latestArt.id)) {
+          const dlName = await downloadFromReleaseMeta(owner, token, isPrivate, relData);
+          if (dlName) {
+            log(`🎉 Stahuji poslední APK projektu "${repo}": ${dlName}`, "ok");
+            return;
+          }
+        }
+      }
+
+      if (!latestArt) {
+        throw new Error(`V projektu "${repo}" zatím není žádný sestavený Android .APK artefakt. Nejprve spusť build.`);
+      }
+
+      // Pokus o přímé stažení a rozbalení v prohlížeči
+      try {
+        const directRes = await fetch(latestArt.archive_download_url, {
+          headers: { "Authorization": `Bearer ${token}`, "Accept": "application/vnd.github+json" }
+        });
+        if (directRes.ok) {
+          const zipBuf = await directRes.arrayBuffer();
+          const extracted = await extractApkFromZipBuffer(zipBuf);
+          triggerBytesDownload(extracted.bytes, extracted.name);
+          log(`🎉 Staženo poslední APK projektu "${repo}": ${extracted.name}`, "ok");
+          return;
+        }
+      } catch (corsErr) {
+        // Přechod na extrakci přes APK Bridge kvůli CORS na Azure úložišti GitHubu
+      }
+
+      log(`⚙️ Vytahuji čisté .APK z posledního buildu na GitHubu (cca 10–15 s)...`, "warn");
+      if (typeof ensureRepoVaultSecret === "function") {
+        await ensureRepoVaultSecret(owner, "ios-keys", token);
+      }
+
+      const vRepoRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys`, token);
+      const vBranch = vRepoRes.ok ? ((await vRepoRes.json()).default_branch || "main") : "main";
+
+      // Samo-opravná kontrola existence apk_bridge.yml v ios-keys
+      const wfCheck = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/contents/.github/workflows/apk_bridge.yml?ref=${vBranch}`, token);
+      if (!wfCheck.ok) {
+        await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/contents/.github/workflows/apk_bridge.yml`, token, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: "Instalace APK Bridge Extractoru [skip ci]",
+            content: btoa(unescape(encodeURIComponent(getApkBridgeWorkflowYaml()))),
+            branch: vBranch
+          })
+        });
+        await new Promise(r => setTimeout(r, 2500));
+      }
+
+      const beforeRunsRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/actions/workflows/apk_bridge.yml/runs?per_page=5&_cb=${Date.now()}`, token);
+      const oldIds = new Set(beforeRunsRes.ok ? ((await beforeRunsRes.json()).workflow_runs || []).map(r => r.id) : []);
+
+      const dispRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/actions/workflows/apk_bridge.yml/dispatches`, token, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ref: vBranch,
+          inputs: {
+            target_repo: repo,
+            artifact_id: String(latestArt.id)
+          }
+        })
+      });
+      if (!dispRes.ok && dispRes.status !== 204) {
+        throw new Error(`Nepodařilo se spustit extrakci APK (${dispRes.status}).`);
+      }
+
+      let finishedRun = null;
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        const pollRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/actions/workflows/apk_bridge.yml/runs?per_page=5&_cb=${Date.now()}`, token);
+        if (!pollRes.ok) continue;
+        const candidate = ((await pollRes.json()).workflow_runs || []).find(r => !oldIds.has(r.id));
+        if (candidate && candidate.status === "completed") {
+          finishedRun = candidate;
+          break;
+        }
+      }
+
+      if (finishedRun) {
+        await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/actions/runs/${finishedRun.id}`, token, { method: "DELETE" });
+        if (finishedRun.conclusion !== "success") {
+          throw new Error("Extrakce APK na serveru skončila chybou.");
+        }
+      } else {
+        throw new Error(" vypršel časový limit při přípravě .APK souboru.");
+      }
+
+      const finalRel = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys`, token) &&
+        await ghFetch(`https://api.github.com/repos/${owner}/${repo}/releases/tags/apk-latest?_cb=${Date.now()}`, token);
+      if (finalRel && finalRel.ok) {
+        const dlName = await downloadFromReleaseMeta(owner, token, isPrivate, await finalRel.json());
+        if (dlName) {
+          log(`🎉 Stahuji poslední APK projektu "${repo}": ${dlName}`, "ok");
+          return;
+        }
+      }
+      throw new Error("Soubor .APK se nepodařilo po rozbalení načíst.");
+    } catch (err) {
+      log(`❌ Chyba při stahování .APK: ${err.message}`, "err");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // Vložení tlačítka přímo do Kroku 1 pod roletku výběru projektu
+  const projSelect = document.getElementById("projectSelect");
+  if (projSelect && projSelect.parentElement) {
+    let topBtn = document.getElementById("btnDownloadLatestApkTop");
+    if (!topBtn) {
+      topBtn = document.createElement("button");
+      topBtn.id = "btnDownloadLatestApkTop";
+      topBtn.type = "button";
+      topBtn.style.cssText = "margin-top:8px;width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(52,211,153,0.45);background:linear-gradient(135deg,#059669,#0284c7);color:#ffffff;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 8px rgba(2,132,199,0.25);";
+      projSelect.insertAdjacentElement("afterend", topBtn);
+    }
+    topBtn.disabled = false;
+    topBtn.onclick = () => window.downloadLatestProjectApk();
+    if (!projSelect.dataset.apkLabelBound) {
+      projSelect.dataset.apkLabelBound = "1";
+      projSelect.addEventListener("change", updateApkButtonLabels);
+    }
+  }
+
+  // Vložení tlačítka také dolů do sekce "Stažení projektu z GitHubu & Záchrana" vedle Stáhnout .ZIP
+  const allBtns = Array.from(document.querySelectorAll("button"));
+  const zipDownloadBtn = allBtns.find(b => b.id !== "btnDownloadLatestApkBottom" && b.textContent.includes("⬇️") && b.textContent.includes(".ZIP"));
+  if (zipDownloadBtn && zipDownloadBtn.parentElement) {
+    let botBtn = document.getElementById("btnDownloadLatestApkBottom");
+    if (!botBtn) {
+      botBtn = document.createElement("button");
+      botBtn.id = "btnDownloadLatestApkBottom";
+      botBtn.type = "button";
+      botBtn.className = zipDownloadBtn.className;
+      botBtn.style.cssText = zipDownloadBtn.style.cssText;
+      botBtn.style.borderColor = "#10b981";
+      botBtn.textContent = "📲 Poslední .APK";
+      zipDownloadBtn.insertAdjacentElement("afterend", botBtn);
+    }
+    botBtn.disabled = false;
+    botBtn.onclick = () => window.downloadLatestProjectApk();
+  }
+
+  updateApkButtonLabels();
+})();
 </script></body></html>
