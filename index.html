@@ -481,7 +481,7 @@
             <div class="form-group" style="flex: 2.2;">
                 <label>Vyber existující projekt nebo založ nový:</label>
                 <div style="display: flex; gap: 8px;">
-                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="kocicky">📁 kocicky</option><option value="WaveCal">📁 WaveCal</option><option value="Humorradio">📁 Humorradio</option><option value="bombman">📁 bombman</option><option value="bandita">📁 bandita</option><option value="JenPockej">📁 JenPockej</option><option value="TaxiMaresUser">📁 TaxiMaresUser</option><option value="Sudoku">📁 Sudoku</option><option value="DrPilulka">📁 DrPilulka</option><option value="Tetrisek">📁 Tetrisek</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select><button id="btnDownloadLatestApkTop" type="button" style="margin-top: 8px; width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(52, 211, 153, 0.45); background: linear-gradient(135deg, rgb(5, 150, 105), rgb(2, 132, 199)); color: rgb(255, 255, 255); font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: rgba(2, 132, 199, 0.25) 0px 2px 8px;">📲 Stáhnout poslední .APK</button>
+                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="kocicky">📁 kocicky</option><option value="WaveCal">📁 WaveCal</option><option value="Humorradio">📁 Humorradio</option><option value="bombman">📁 bombman</option><option value="bandita">📁 bandita</option><option value="JenPockej">📁 JenPockej</option><option value="TaxiMaresUser">📁 TaxiMaresUser</option><option value="Sudoku">📁 Sudoku</option><option value="DrPilulka">📁 DrPilulka</option><option value="Tetrisek">📁 Tetrisek</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
                     <button class="btn-secondary" style="white-space: nowrap;" title="Načte aktuální seznam tvých repozitářů přímo z GitHubu" onclick="fetchGitHubRepos(false)">🔄 Obnovit z GitHubu</button>
                     <button id="btnRemoveProject" class="btn-danger" style="white-space: nowrap;" title="Odebere vybraný název projektu z roletky (na GitHubu nic nemaže)" onclick="removeSelectedProjectFromList()">🗑️ Odebrat</button>
                 </div>
@@ -596,18 +596,18 @@
         <div class="tools-grid">
             <div class="tools-box">
                 <div class="tools-box-title">Samostatné akce s pamětí</div>
-                <div class="tools-buttons">
+                <div class="tools-buttons" style="flex-wrap: wrap;">
                     <button class="btn-secondary" onclick="pushToGitHubOnly()">☁️ Jen na GitHub</button>
                     <button class="btn-secondary" onclick="saveToDiskOnly()">💾 Jen na disk</button>
                     <button class="btn-secondary" onclick="downloadZip()">📦 Stáhnout .ZIP</button>
-                </div>
+                <button id="btnDownloadLatestApkLeft" type="button" class="btn-secondary" style="flex: 1 1 100%; grid-column: 1 / -1; width: 100%; margin-top: 2px; background: rgba(16, 185, 129, 0.16); border: 1px solid rgba(16, 185, 129, 0.55); color: rgb(236, 253, 245); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; opacity: 1;">📲 Stáhnout poslední .APK</button></div>
             </div>
 
             <div class="tools-box">
                 <div class="tools-box-title">Stažení projektu z GitHubu &amp; Záchrana</div>
                 <div class="tools-buttons">
                     <button class="btn-secondary" onclick="downloadRepoFromGitHubToDisk()" title="Stáhne kompletní vybraný projekt z GitHubu do složky na tvém disku">📥 Stáhnout na disk</button>
-                    <button class="btn-secondary" onclick="downloadRepoFromGitHubAsZip()" title="Stáhne kompletní vybraný projekt z GitHubu jako .ZIP">⬇️ Stáhnout .ZIP</button><button id="btnDownloadLatestApkBottom" type="button" class="btn-secondary" style="border-color: rgb(16, 185, 129);">📲 Poslední .APK</button>
+                    <button class="btn-secondary" onclick="downloadRepoFromGitHubAsZip()" title="Stáhne kompletní vybraný projekt z GitHubu jako .ZIP">⬇️ Stáhnout .ZIP</button>
                     <button class="btn-warn" onclick="revertLastCommitOnGitHub()" title="Vrátí vybraný projekt na GitHubu o 1 commit zpět">⏪ Vrátit commit</button>
                 <button id="btnDownloadStavitelZipBottom" type="button" class="btn-warn" style="background: rgb(30, 58, 138); color: rgb(147, 197, 253); border: 1px solid rgb(59, 130, 246); cursor: pointer;" onclick="window.downloadStavitelZipFromGH()">📦 ZIP Stavitele z GH</button></div>
             </div>
@@ -4237,9 +4237,12 @@ jobs:
       });
     }
   })();
-</script><script id="apkDownloaderScript">/* === STAVITEL_APK_DOWNLOADER_V1 === */
-(function installApkDownloaderV1() {
+</script><script id="apkDownloaderScript">/* === STAVITEL_APK_DOWNLOADER_V2 === */
+(function installApkDownloaderV2() {
   const LT = String.fromCharCode(60);
+
+  document.getElementById("btnDownloadLatestApkTop")?.remove();
+  document.getElementById("btnDownloadLatestApkBottom")?.remove();
 
   function getApkBridgeWorkflowYaml() {
     return [
@@ -4282,6 +4285,7 @@ jobs:
       '                  "User-Agent": "Stavitel-APK-Bridge"',
       '              }',
       '              if data is not None:',
+      '                  hdrs["Content-Type": content_type]',
       '                  hdrs["Content-Type"] = content_type',
       '              req = urllib.request.Request(url, data=data, headers=hdrs, method=method)',
       '              with urllib.request.urlopen(req, timeout=120) as resp:',
@@ -4369,15 +4373,21 @@ jobs:
 
   window.__getApkBridgeWorkflowYaml = getApkBridgeWorkflowYaml;
 
+  function getProjectSelectEl() {
+    return document.getElementById("projectSelect") || document.querySelector("select");
+  }
+
   function getSelectedRepoForApk() {
-    const sel = document.getElementById("projectSelect");
-    let val = "";
-    if (sel && sel.value && sel.value !== "__new__" && sel.value !== "new") {
-      val = sel.value.trim();
-    } else if (typeof getActiveProjectName === "function") {
-      val = String(getActiveProjectName() || "").trim();
-    }
-    if (!val || val === "__new__" || val === "new" || val === "ios-keys" || val === "StavitelAplikaci") {
+    const sel = getProjectSelectEl();
+    if (!sel) return "";
+    const val = String(sel.value || "").trim();
+    if (
+      !val ||
+      val.toUpperCase() === "__NEW__" ||
+      val.toLowerCase() === "new" ||
+      val.startsWith("__") ||
+      /^(stavitelaplikaci|ios-keys)$/i.test(val)
+    ) {
       return "";
     }
     return val;
@@ -4385,12 +4395,39 @@ jobs:
 
   function updateApkButtonLabels() {
     const repo = getSelectedRepoForApk();
-    const topBtn = document.getElementById("btnDownloadLatestApkTop");
-    if (topBtn && !topBtn.disabled) {
-      topBtn.textContent = repo
+    const leftBtn = document.getElementById("btnDownloadLatestApkLeft");
+    if (leftBtn && !leftBtn.disabled) {
+      leftBtn.textContent = repo
         ? `📲 Stáhnout poslední .APK (${repo})`
         : "📲 Stáhnout poslední .APK";
     }
+  }
+
+  function purgeSystemReposFromDropdown() {
+    const sel = getProjectSelectEl();
+    if (!sel) return;
+    const prevVal = String(sel.value || "").trim();
+    const wasSystem = /^(stavitelaplikaci|ios-keys)$/i.test(prevVal);
+
+    Array.from(sel.options).forEach(opt => {
+      const v = String(opt.value || "").trim();
+      const t = String(opt.textContent || "").trim();
+      if (/^(stavitelaplikaci|ios-keys)$/i.test(v) || /\b(StavitelAplikaci|ios-keys)\b/i.test(t)) {
+        opt.remove();
+      }
+    });
+
+    if (wasSystem || !sel.value) {
+      const firstReal = Array.from(sel.options).find(o => {
+        const v = String(o.value || "").trim();
+        return v && v.toUpperCase() !== "__NEW__" && v.toLowerCase() !== "new" && !v.startsWith("__");
+      });
+      if (firstReal) {
+        sel.value = firstReal.value;
+        sel.dispatchEvent(new Event("change"));
+      }
+    }
+    updateApkButtonLabels();
   }
 
   async function extractApkFromZipBuffer(arrayBuffer) {
@@ -4519,17 +4556,14 @@ jobs:
       return;
     }
 
-    const topBtn = document.getElementById("btnDownloadLatestApkTop");
-    const botBtn = document.getElementById("btnDownloadLatestApkBottom");
+    const leftBtn = document.getElementById("btnDownloadLatestApkLeft");
     const setBusy = (busy) => {
-      if (topBtn) {
-        topBtn.disabled = busy;
-        topBtn.style.opacity = busy ? "0.7" : "1";
-        topBtn.textContent = busy ? `⏳ Stahuji .APK (${repo})...` : `📲 Stáhnout poslední .APK (${repo})`;
-      }
-      if (botBtn) {
-        botBtn.disabled = busy;
-        botBtn.textContent = busy ? "⏳ Stahuji .APK..." : "📲 Poslední .APK";
+      if (leftBtn) {
+        leftBtn.disabled = busy;
+        leftBtn.style.opacity = busy ? "0.7" : "1";
+        leftBtn.textContent = busy
+          ? `⏳ Stahuji .APK (${repo})...`
+          : `📲 Stáhnout poslední .APK (${repo})`;
       }
     };
 
@@ -4547,7 +4581,6 @@ jobs:
       const validArts = artifacts.filter(a => !a.expired);
       const latestArt = validArts.find(a => /android|apk/i.test(a.name)) || validArts.find(a => !/ios|ipa/i.test(a.name));
 
-      // Kontrola již připraveného přímého .APK v release apk-latest
       const relCheck = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/releases/tags/apk-latest?_cb=${Date.now()}`, token);
       if (relCheck.ok) {
         const relData = await relCheck.json();
@@ -4566,7 +4599,6 @@ jobs:
         throw new Error(`V projektu "${repo}" zatím není žádný sestavený Android .APK artefakt. Nejprve spusť build.`);
       }
 
-      // Pokus o přímé stažení a rozbalení v prohlížeči
       try {
         const directRes = await fetch(latestArt.archive_download_url, {
           headers: { "Authorization": `Bearer ${token}`, "Accept": "application/vnd.github+json" }
@@ -4578,9 +4610,7 @@ jobs:
           log(`🎉 Staženo poslední APK projektu "${repo}": ${extracted.name}`, "ok");
           return;
         }
-      } catch (corsErr) {
-        // Přechod na extrakci přes APK Bridge kvůli CORS na Azure úložišti GitHubu
-      }
+      } catch (corsErr) {}
 
       log(`⚙️ Vytahuji čisté .APK z posledního buildu na GitHubu (cca 10–15 s)...`, "warn");
       if (typeof ensureRepoVaultSecret === "function") {
@@ -4590,7 +4620,6 @@ jobs:
       const vRepoRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys`, token);
       const vBranch = vRepoRes.ok ? ((await vRepoRes.json()).default_branch || "main") : "main";
 
-      // Samo-opravná kontrola existence apk_bridge.yml v ios-keys
       const wfCheck = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/contents/.github/workflows/apk_bridge.yml?ref=${vBranch}`, token);
       if (!wfCheck.ok) {
         await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/contents/.github/workflows/apk_bridge.yml`, token, {
@@ -4641,11 +4670,10 @@ jobs:
           throw new Error("Extrakce APK na serveru skončila chybou.");
         }
       } else {
-        throw new Error(" vypršel časový limit při přípravě .APK souboru.");
+        throw new Error("Vypršel časový limit při přípravě .APK souboru.");
       }
 
-      const finalRel = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys`, token) &&
-        await ghFetch(`https://api.github.com/repos/${owner}/${repo}/releases/tags/apk-latest?_cb=${Date.now()}`, token);
+      const finalRel = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/releases/tags/apk-latest?_cb=${Date.now()}`, token);
       if (finalRel && finalRel.ok) {
         const dlName = await downloadFromReleaseMeta(owner, token, isPrivate, await finalRel.json());
         if (dlName) {
@@ -4661,44 +4689,38 @@ jobs:
     }
   };
 
-  // Vložení tlačítka přímo do Kroku 1 pod roletku výběru projektu
-  const projSelect = document.getElementById("projectSelect");
-  if (projSelect && projSelect.parentElement) {
-    let topBtn = document.getElementById("btnDownloadLatestApkTop");
-    if (!topBtn) {
-      topBtn = document.createElement("button");
-      topBtn.id = "btnDownloadLatestApkTop";
-      topBtn.type = "button";
-      topBtn.style.cssText = "margin-top:8px;width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(52,211,153,0.45);background:linear-gradient(135deg,#059669,#0284c7);color:#ffffff;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 8px rgba(2,132,199,0.25);";
-      projSelect.insertAdjacentElement("afterend", topBtn);
-    }
-    topBtn.disabled = false;
-    topBtn.onclick = () => window.downloadLatestProjectApk();
-    if (!projSelect.dataset.apkLabelBound) {
-      projSelect.dataset.apkLabelBound = "1";
-      projSelect.addEventListener("change", updateApkButtonLabels);
-    }
-  }
-
-  // Vložení tlačítka také dolů do sekce "Stažení projektu z GitHubu & Záchrana" vedle Stáhnout .ZIP
+  // Vložení čistého tlačítka do levého spodního sektoru (SAMOSTATNÉ AKCE S PAMĚTÍ)
   const allBtns = Array.from(document.querySelectorAll("button"));
-  const zipDownloadBtn = allBtns.find(b => b.id !== "btnDownloadLatestApkBottom" && b.textContent.includes("⬇️") && b.textContent.includes(".ZIP"));
-  if (zipDownloadBtn && zipDownloadBtn.parentElement) {
-    let botBtn = document.getElementById("btnDownloadLatestApkBottom");
-    if (!botBtn) {
-      botBtn = document.createElement("button");
-      botBtn.id = "btnDownloadLatestApkBottom";
-      botBtn.type = "button";
-      botBtn.className = zipDownloadBtn.className;
-      botBtn.style.cssText = zipDownloadBtn.style.cssText;
-      botBtn.style.borderColor = "#10b981";
-      botBtn.textContent = "📲 Poslední .APK";
-      zipDownloadBtn.insertAdjacentElement("afterend", botBtn);
+  const jenNaGhBtn = allBtns.find(b => b.id !== "btnDownloadLatestApkLeft" && b.textContent.includes("Jen na GitHub"));
+  if (jenNaGhBtn && jenNaGhBtn.parentElement) {
+    const leftContainer = jenNaGhBtn.parentElement;
+    leftContainer.style.flexWrap = "wrap";
+    let leftBtn = document.getElementById("btnDownloadLatestApkLeft");
+    if (!leftBtn) {
+      leftBtn = document.createElement("button");
+      leftBtn.id = "btnDownloadLatestApkLeft";
+      leftBtn.type = "button";
+      leftBtn.className = jenNaGhBtn.className;
+      leftContainer.appendChild(leftBtn);
     }
-    botBtn.disabled = false;
-    botBtn.onclick = () => window.downloadLatestProjectApk();
+    leftBtn.style.cssText = "flex:1 1 100%;grid-column:1 / -1;width:100%;margin-top:2px;background:rgba(16,185,129,0.16);border:1px solid rgba(16,185,129,0.55);color:#ecfdf5;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;";
+    leftBtn.disabled = false;
+    leftBtn.onclick = () => window.downloadLatestProjectApk();
   }
 
-  updateApkButtonLabels();
+  // Napojení trvalého hlídače na roletku projektů v Kroku 1
+  const projSelect = getProjectSelectEl();
+  if (projSelect && !projSelect.__apkV2Bound) {
+    projSelect.__apkV2Bound = true;
+    projSelect.addEventListener("change", updateApkButtonLabels);
+    const obs = new MutationObserver(() => {
+      purgeSystemReposFromDropdown();
+    });
+    obs.observe(projSelect, { childList: true });
+  }
+
+  purgeSystemReposFromDropdown();
+  setTimeout(purgeSystemReposFromDropdown, 600);
+  setTimeout(purgeSystemReposFromDropdown, 2000);
 })();
 </script></body></html>
