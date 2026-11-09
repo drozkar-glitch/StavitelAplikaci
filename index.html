@@ -3201,6 +3201,8 @@ jobs:
 
   // 4. Jednotná neprůstřelná šablona .github/workflows/build.yml pro všechny projekty
   window.buildCzechUnifiedWorkflowYaml = function(appName, bundleId, appVersion, publishToStores, buildIos) {
+    const LT = String.fromCharCode(60);
+    const GT = String.fromCharCode(62);
     const aName = String(appName || "App").trim();
     const bId = String(bundleId || "cz.mares.app").trim();
     const aVer = String(appVersion || "1.0").trim();
