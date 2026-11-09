@@ -1,0 +1,49 @@
+name: Fix App Store Connect Metadata & Screenshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-asc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch Apple API Key and Fix All Apps
+        env:
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          SUPPORT_URL: "https://${{ github.repository_owner }}.github.io/StavitelAplikaci/support.html"
+        run: |
+          curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \
+            "https://api.github.com/repos/${OWNER}/ios-keys/contents/apple_api_key.p8.b64" | base64 --decode > /tmp/AuthKey.p8
+          curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \
+            "https://api.github.com/repos/${OWNER}/ios-keys/contents/apple_api_key.props" > /tmp/apple_api_key.props
+          while IFS='=' read -r key val; do
+            key=$(echo "$key" | tr -d '\r\n ')
+            val=$(echo "$val" | tr -d '\r\n')
+            if [ -n "$key" ]; then
+              export "${key}=${val}"
+            fi
+          done < /tmp/apple_api_key.props
+
+          pip3 install --quiet --break-system-packages pyjwt cryptography requests Pillow || \
+          pip3 install --quiet pyjwt cryptography requests Pillow
+
+          python3 tools/fix_appstore.py
+
+          if [ -f "appstore_fix_report.txt" ]; then
+            B64_REP=$(base64 -w 0 appstore_fix_report.txt || base64 appstore_fix_report.txt | tr -d '\r\n')
+            EXISTING_SHA=$(curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" "https://api.github.com/repos/${OWNER}/StavitelAplikaci/contents/appstore_fix_report.txt" | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null || true)
+            if [ -n "$EXISTING_SHA" ]; then
+              curl -sfL -X PUT -H "Authorization: Bearer $VAULT_TOKEN" -H "Content-Type: application/json" \
+                "https://api.github.com/repos/${OWNER}/StavitelAplikaci/contents/appstore_fix_report.txt" \
+                -d "{\"message\":\"Vysledek opravy App Store Connect [skip ci]\",\"content\":\"${B64_REP}\",\"sha\":\"${EXISTING_SHA}\"}" > /dev/null
+            else
+              curl -sfL -X PUT -H "Authorization: Bearer $VAULT_TOKEN" -H "Content-Type: application/json" \
+                "https://api.github.com/repos/${OWNER}/StavitelAplikaci/contents/appstore_fix_report.txt" \
+                -d "{\"message\":\"Vysledek opravy App Store Connect [skip ci]\",\"content\":\"${B64_REP}\"}" > /dev/null
+            fi
+          fi

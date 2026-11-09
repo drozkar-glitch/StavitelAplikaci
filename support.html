@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Podpora aplikací a Zásady ochrany soukromí | Pavel Mareš</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #38bdf8; --green: #34d399; }
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { margin: 0; padding: 24px 16px 60px; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .wrap { max-width: 860px; margin: 0 auto; }
+    .card { background: var(--card); border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+    h1 { margin-top: 0; font-size: 26px; color: var(--accent); }
+    h2 { margin-top: 0; font-size: 20px; color: var(--green); border-bottom: 1px solid #334155; padding-bottom: 8px; }
+    h3 { margin: 16px 0 6px; font-size: 17px; color: #e2e8f0; }
+    p, li { color: #cbd5e1; font-size: 15px; }
+    a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+    .contact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-top: 14px; }
+    .contact-item { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 14px; }
+    .contact-label { font-size: 12px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
+    .contact-val { font-size: 16px; font-weight: 700; margin-top: 4px; }
+    .badge { display: inline-block; background: rgba(56, 189, 248, 0.15); color: var(--accent); padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-right: 6px; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Zákaznická podpora aplikací / App Support Center</h1>
+      <p>Vítejte na oficiální stránce technické podpory pro mobilní aplikace vývojáře <strong>Pavel Mareš</strong>. Pokud máte jakýkoliv dotaz, návrh na vylepšení nebo potřebujete pomoc s nastavením aplikace, kontaktujte mě přímo pomocí údajů níže.</p>
+      <p><em>Welcome to the official support page for mobile applications developed by <strong>Pavel Mareš</strong>. For any questions, bug reports, or assistance, please contact the developer directly using the contact details below.</em></p>
+
+      <div class="contact-grid">
+        <div class="contact-item">
+          <div class="contact-label">E-mail podpory / Support Email</div>
+          <div class="contact-val"><a href="mailto:drozkar@gmail.com">drozkar@gmail.com</a></div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-label">Telefon / Phone Support</div>
+          <div class="contact-val"><a href="tel:+420606420002">+420 606 420 002</a></div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-label">Oficiální web / Website</div>
+          <div class="contact-val"><a href="https://606420002.com" target="_blank" rel="noopener">https://606420002.com</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Podporované aplikace / Supported Applications</h2>
+      <div>
+        <span class="badge">WaveCal</span>
+        <span class="badge">Rádio PM (Humorradio)</span>
+        <span class="badge">Sudoku PM</span>
+        <span class="badge">PDF Studio</span>
+        <span class="badge">Dr. Pilulka</span>
+        <span class="badge">Tětrísek</span>
+        <span class="badge">Garáž</span>
+      </div>
+
+      <h3>WaveCal – Kalendář událostí a jmenin (Event &amp; Name Day Calendar)</h3>
+      <p><strong>CZ:</strong> Přehledný kalendář s čísly týdnů (sudý/lichý), jmeninami a rychlou správou událostí. Přístup ke kalendáři a kontaktům probíhá výhradně lokálně přímo v zařízení uživatele (kontakty slouží pouze k lokálnímu žlutému zvýraznění jmenin přátel v kalendáři). Žádné kontakty ani události nejsou nikdy odesílány na žádný server.</p>
+      <p><strong>EN:</strong> Fast calendar app featuring ISO week numbers (even/odd), name days, and event management. Calendar (EventKit) and Contacts (CNContactStore) permissions are used strictly locally on the user's device. <strong>WaveCal does NOT upload, transmit, or share the user's contacts or calendar events to any external server.</strong> Contacts access is used solely on-device to highlight matching first names in the built-in Name Day calendar.</p>
+
+      <h3>Rádio PM – Přehrávač českých rozhlasových stanic</h3>
+      <p><strong>CZ / EN:</strong> Aplikace využívá internetové připojení výhradně pro přehrávání živých audio streamů rozhlasových stanic, zobrazení RDS informací a načtení veřejného katalogu stanic. Oblíbené předvolby a nastavení časovače se ukládají lokálně v zařízení.</p>
+
+      <h3>Sudoku PM, PDF Studio a ostatní nástroje</h3>
+      <p><strong>CZ / EN:</strong> Všechny dokumenty v aplikaci PDF Studio i herní postup v aplikacích Sudoku PM, Dr. Pilulka a Tětrísek jsou zpracovávány v zařízení uživatele bez nutnosti registrace a bez sledovacích či reklamních systémů třetích stran.</p>
+    </div>
+
+    <div class="card" id="privacy">
+      <h2>Zásady ochrany osobních údajů / Privacy Policy</h2>
+      <ul>
+        <li><strong>Žádný sběr osobních dat (No Personal Data Collection):</strong> Mobilní aplikace vývojáře Pavel Mareš neshromažďují, neukládají na externí servery, neprodávají ani nesdílejí žádné osobní údaje, kontakty, kalendářové události ani soubory uživatelů.</li>
+        <li><strong>Lokální zpracování kontaktů a kalendáře (Local-Only Processing):</strong> V aplikaci WaveCal slouží přístup ke kontaktům (<code>CNContactStore</code> / <code>READ_CONTACTS</code>) výhradně k lokálnímu porovnání křestního jména s kalendářem svátků v paměti telefonu. Data nikdy neopouštějí zařízení.</li>
+        <li><strong>Bez reklam a sledování (No Ads or Tracking):</strong> Aplikace neobsahují žádné reklamní SDK ani analytické sledování třetích stran.</li>
+        <li><strong>Kontakt pro dotazy k soukromí (Privacy Contact):</strong> Pavel Mareš, e-mail: <a href="mailto:drozkar@gmail.com">drozkar@gmail.com</a>, tel.: <a href="tel:+420606420002">+420 606 420 002</a>, web: <a href="https://606420002.com">https://606420002.com</a>.</li>
+      </ul>
+      <p style="color: var(--muted); font-size: 13px; margin-top: 20px;">© 2026 Created by Pavel Mareš</p>
+    </div>
+  </div>
+</body>
+</html>
