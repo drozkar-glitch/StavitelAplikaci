@@ -481,7 +481,7 @@
             <div class="form-group" style="flex: 2.2;">
                 <label>Vyber existující projekt nebo založ nový:</label>
                 <div style="display: flex; gap: 8px;">
-                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="bombman">📁 bombman</option><option value="bandita">📁 bandita</option><option value="JenPockej">📁 JenPockej</option><option value="kocicky">📁 kocicky</option><option value="StavitelAplikaci">📁 StavitelAplikaci</option><option value="TaxiMaresUser">📁 TaxiMaresUser</option><option value="Sudoku">📁 Sudoku</option><option value="DrPilulka">📁 DrPilulka</option><option value="Tetrisek">📁 Tetrisek</option><option value="Humorradio">📁 Humorradio</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="WaveCal">📁 WaveCal</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
+                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="Humorradio">📁 Humorradio</option><option value="WaveCal">📁 WaveCal</option><option value="StavitelAplikaci">📁 StavitelAplikaci</option><option value="bombman">📁 bombman</option><option value="bandita">📁 bandita</option><option value="JenPockej">📁 JenPockej</option><option value="kocicky">📁 kocicky</option><option value="TaxiMaresUser">📁 TaxiMaresUser</option><option value="Sudoku">📁 Sudoku</option><option value="DrPilulka">📁 DrPilulka</option><option value="Tetrisek">📁 Tetrisek</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
                     <button class="btn-secondary" style="white-space: nowrap;" title="Načte aktuální seznam tvých repozitářů přímo z GitHubu" onclick="fetchGitHubRepos(false)">🔄 Obnovit z GitHubu</button>
                     <button id="btnRemoveProject" class="btn-danger" style="white-space: nowrap;" title="Odebere vybraný název projektu z roletky (na GitHubu nic nemaže)" onclick="removeSelectedProjectFromList()">🗑️ Odebrat</button>
                 </div>
@@ -3375,7 +3375,7 @@ jobs:
       '              result = edit_request.execute(num_retries=5)',
       '              edit_id = result["id"]',
       '',
-      '              media = MediaFileUpload(aab_path, mimetype="application/octet-stream", chunksize=5*1024*1024, resumable=True)',
+      '              media = MediaFileUpload(aab_path, mimetype="application/octet-stream", resumable=True)',
       '              bundle_response = service.edits().bundles().upload(',
       '                  editId=edit_id,',
       '                  packageName=package_name,',
