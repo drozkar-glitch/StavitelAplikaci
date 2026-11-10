@@ -5080,4 +5080,61 @@ jobs:
   if (typeof stagedFiles !== 'undefined' && stagedFiles && stagedFiles['.github/workflows/build.yml']) {
     stagedFiles['.github/workflows/build.yml'] = window.applyModeToWorkflowYaml ? window.applyModeToWorkflowYaml(stagedFiles['.github/workflows/build.yml']) : patchYamlWithAscRecycle(stagedFiles['.github/workflows/build.yml']);
   }
+})();</script><script id="storeFullAutomationScript">/* === STAVITEL_STORE_FULL_AUTOMATION_V1 === */
+(function installStoreFullAutomationV1() {
+  function patchYamlWithFullStoreAutomation(yaml) {
+    if (typeof yaml !== 'string' || !yaml || yaml.includes('store_google_huawei.py')) return yaml;
+    let out = yaml;
+    const oldAndroidFetchLine = '              "https://api.github.com/repos/${OWNER}/ios-keys/contents/gplaykey.json.b64" -o "iosApp/signing/gplaykey.json.b64" || rm -f "iosApp/signing/gplaykey.json.b64"';
+    const newAndroidFetchBlock = [
+      oldAndroidFetchLine,
+      '            curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
+      '              "https://api.github.com/repos/${OWNER}/ios-keys/contents/store_google_huawei.py" -o "iosApp/signing/store_google_huawei.py" || rm -f "iosApp/signing/store_google_huawei.py"'
+    ].join('\n');
+    out = out.replace(oldAndroidFetchLine, newAndroidFetchBlock);
+    out = out.replace(
+      '      - name: Publish Android AAB to Google Play (Internal Testing)',
+      '      - name: Publish Android to Google Play & Huawei AppGallery'
+    );
+    const oldGpCond = '          elif [ -s "iosApp/signing/gplaykey.json.b64" ]; then';
+    const newGpCond = [
+      '          elif [ -s "iosApp/signing/store_google_huawei.py" ]; then',
+      '            pip3 install --quiet --break-system-packages google-api-python-client google-auth-httplib2 google-auth-oauthlib pyjwt cryptography requests Pillow resvg-py || pip3 install --quiet google-api-python-client google-auth-httplib2 google-auth-oauthlib pyjwt cryptography requests Pillow resvg-py || pip3 install --quiet --break-system-packages google-api-python-client google-auth-httplib2 google-auth-oauthlib pyjwt cryptography requests Pillow || pip3 install --quiet google-api-python-client google-auth-httplib2 google-auth-oauthlib pyjwt cryptography requests Pillow',
+      '            python3 iosApp/signing/store_google_huawei.py',
+      '          elif [ -s "iosApp/signing/gplaykey.json.b64" ]; then'
+    ].join('\n');
+    out = out.replace(oldGpCond, newGpCond);
+    const oldHwCond = '          elif [ -s "iosApp/signing/huawei_key.json.b64" ]; then';
+    const newHwCond = [
+      '          elif [ -s "iosApp/signing/store_google_huawei.py" ]; then',
+      '            echo "✅ Huawei AppGallery uz bylo zpracovano spolecnym skriptem store_google_huawei.py."',
+      '          elif [ -s "iosApp/signing/huawei_key.json.b64" ]; then'
+    ].join('\n');
+    out = out.replace(oldHwCond, newHwCond);
+    out = out.replace(
+      '            for f in ioskey.p12.b64 ioskey.pwd apple_api_key.p8.b64 apple_api_key.props; do',
+      '            for f in ioskey.p12.b64 ioskey.pwd apple_api_key.p8.b64 apple_api_key.props gplaykey.json.b64 store_ios_asc.py; do'
+    );
+    const oldIosAscIf = '            if [ "$UPLOAD_OK" = "1" ] && [ "$APP_NOT_IN_ASC" = "0" ]; then';
+    const newIosAscIf = [
+      '            if [ "$UPLOAD_OK" = "1" ] && [ "$APP_NOT_IN_ASC" = "0" ] && [ -s "iosApp/signing/store_ios_asc.py" ]; then',
+      '              pip3 install --quiet --break-system-packages google-api-python-client google-auth-httplib2 google-auth-oauthlib pyjwt cryptography requests Pillow || pip3 install --quiet google-api-python-client google-auth-httplib2 google-auth-oauthlib pyjwt cryptography requests Pillow || true',
+      '              python3 iosApp/signing/store_ios_asc.py',
+      '            elif [ "$UPLOAD_OK" = "1" ] && [ "$APP_NOT_IN_ASC" = "0" ]; then'
+    ].join('\n');
+    out = out.replace(oldIosAscIf, newIosAscIf);
+    return out;
+  }
+  window.__patchYamlWithFullStoreAutomation = patchYamlWithFullStoreAutomation;
+  if (typeof window.buildCzechUnifiedWorkflowYaml === 'function') {
+    const prevFn = window.__preStoreAutoBuildYaml || window.buildCzechUnifiedWorkflowYaml;
+    window.__preStoreAutoBuildYaml = prevFn;
+    window.buildCzechUnifiedWorkflowYaml = function(appName, bundleId, appVersion, publishToStores, buildIos) {
+      const raw = prevFn.call(this, appName, bundleId, appVersion, publishToStores, buildIos);
+      return patchYamlWithFullStoreAutomation(raw);
+    };
+  }
+  if (typeof stagedFiles !== 'undefined' && stagedFiles && stagedFiles['.github/workflows/build.yml']) {
+    stagedFiles['.github/workflows/build.yml'] = window.applyModeToWorkflowYaml ? window.applyModeToWorkflowYaml(stagedFiles['.github/workflows/build.yml']) : patchYamlWithFullStoreAutomation(stagedFiles['.github/workflows/build.yml']);
+  }
 })();</script></body></html>
