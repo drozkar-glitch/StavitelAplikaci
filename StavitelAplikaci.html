@@ -481,14 +481,14 @@
             <div class="form-group" style="flex: 2.2;">
                 <label>Vyber existující projekt nebo založ nový:</label>
                 <div style="display: flex; gap: 8px;">
-                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="kocicky">📁 kocicky</option><option value="WaveCal">📁 WaveCal</option><option value="Humorradio">📁 Humorradio</option><option value="bombman">📁 bombman</option><option value="bandita">📁 bandita</option><option value="JenPockej">📁 JenPockej</option><option value="TaxiMaresUser">📁 TaxiMaresUser</option><option value="Sudoku">📁 Sudoku</option><option value="DrPilulka">📁 DrPilulka</option><option value="Tetrisek">📁 Tetrisek</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
+                    <select id="projectSelect" onchange="onProjectSelectChange()"><option value="__NEW__">➕ Vytvořit nový projekt...</option><option value="JenPockej">📁 JenPockej</option><option value="kocicky">📁 kocicky</option><option value="WaveCal">📁 WaveCal</option><option value="Humorradio">📁 Humorradio</option><option value="bombman">📁 bombman</option><option value="bandita">📁 bandita</option><option value="TaxiMaresUser">📁 TaxiMaresUser</option><option value="Sudoku">📁 Sudoku</option><option value="DrPilulka">📁 DrPilulka</option><option value="Tetrisek">📁 Tetrisek</option><option value="Garaz">📁 Garaz</option><option value="PdfStudio">📁 PdfStudio</option><option value="taxi-mares-ios">📁 taxi-mares-ios</option></select>
                     <button class="btn-secondary" style="white-space: nowrap;" title="Načte aktuální seznam tvých repozitářů přímo z GitHubu" onclick="fetchGitHubRepos(false)">🔄 Obnovit z GitHubu</button>
                     <button id="btnRemoveProject" class="btn-danger" style="white-space: nowrap;" title="Odebere vybraný název projektu z roletky (na GitHubu nic nemaže)" onclick="removeSelectedProjectFromList()">🗑️ Odebrat</button>
                 </div>
             </div>
             <div class="form-group" style="flex: 0.7; min-width: 120px; max-width: 150px;">
                 <label>Hlavní verze:</label>
-                <input type="text" id="appVersion" placeholder="1.0" value="1.0" oninput="saveCurrentVersion()" title="Hlavní verze projektu kocicky na GitHubu: 1.1" style="transition: border-color 0.25s;">
+                <input type="text" id="appVersion" placeholder="1.0" value="1.0" oninput="saveCurrentVersion()" title="Hlavní verze projektu JenPockej na GitHubu: 1.1" style="transition: border-color 0.25s;">
             </div>
             <div class="form-group" style="flex: 1.8;">
                 <label>Popis změny (zpráva commitu):</label>
@@ -605,11 +605,11 @@
 
             <div class="tools-box">
                 <div class="tools-box-title">Stažení projektu z GitHubu &amp; Záchrana</div>
-                <div class="tools-buttons">
+                <div class="tools-buttons" style="flex-wrap: wrap;">
                     <button class="btn-secondary" onclick="downloadRepoFromGitHubToDisk()" title="Stáhne kompletní vybraný projekt z GitHubu do složky na tvém disku">📥 Stáhnout na disk</button>
                     <button class="btn-secondary" onclick="downloadRepoFromGitHubAsZip()" title="Stáhne kompletní vybraný projekt z GitHubu jako .ZIP">⬇️ Stáhnout .ZIP</button>
                     <button class="btn-warn" onclick="revertLastCommitOnGitHub()" title="Vrátí vybraný projekt na GitHubu o 1 commit zpět">⏪ Vrátit commit</button>
-                <button id="btnDownloadStavitelZipBottom" type="button" class="btn-warn" style="background: rgb(30, 58, 138); color: rgb(147, 197, 253); border: 1px solid rgb(59, 130, 246); cursor: pointer;" onclick="window.downloadStavitelZipFromGH()">📦 ZIP Stavitele z GH</button></div>
+                <button id="btnDownloadStavitelZipBottom" type="button" class="btn-warn" style="background: rgb(30, 58, 138); color: rgb(147, 197, 253); border: 1px solid rgb(59, 130, 246); cursor: pointer;" onclick="window.downloadStavitelZipFromGH()">📦 ZIP Stavitele z GH</button><button id="btnCheckStoresStatus" type="button" class="btn-secondary" title="Zkontroluje poslední build vybraného projektu a živý stav všech aplikací v Apple App Store, Google Play a Huawei AppGallery" onclick="window.checkAllStoresStatus()" style="flex: 1 1 100%; grid-column: 1 / -1; width: 100%; margin-top: 2px; background: rgba(59, 130, 246, 0.18); border: 1px solid rgba(96, 165, 250, 0.55); color: rgb(219, 234, 254); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; opacity: 1;">📊 Ověřit stav aplikací v obchodech</button></div>
             </div>
         </div>
     </div>
@@ -5137,4 +5137,120 @@ jobs:
   if (typeof stagedFiles !== 'undefined' && stagedFiles && stagedFiles['.github/workflows/build.yml']) {
     stagedFiles['.github/workflows/build.yml'] = window.applyModeToWorkflowYaml ? window.applyModeToWorkflowYaml(stagedFiles['.github/workflows/build.yml']) : patchYamlWithFullStoreAutomation(stagedFiles['.github/workflows/build.yml']);
   }
+})();</script><script id="storeStatusCheckerScript">/* === STAVITEL_STORE_STATUS_CHECKER_V1 === */
+(function installStoreStatusCheckerV1() {
+  function decodeB64Utf8Local(b64) {
+    const clean = String(b64 || '').replace(/\s+/g, '');
+    const bin = atob(clean);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i !== bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+  function getActiveRepoSafe() {
+    const sel = document.getElementById('projectSelect');
+    if (!sel) return '';
+    const val = String(sel.value || '').trim();
+    if (!val || val === '__NEW__' || /^(stavitelaplikaci|ios-keys)$/i.test(val)) return '';
+    return val;
+  }
+  window.checkAllStoresStatus = async function() {
+    const ghOwner = (localStorage.getItem('stavitel_gh_user') || document.getElementById('ghUsername')?.value || 'drozkar-glitch').trim();
+    const ghTok = (localStorage.getItem('stavitel_gh_token') || document.getElementById('ghToken')?.value || '').trim();
+    if (!ghOwner || !ghTok) {
+      document.getElementById('ghSettingsSection')?.classList.remove('hidden');
+      alert('Nejprve vyplň a ulož své GitHub jméno a Personal Access Token nahoře.');
+      return;
+    }
+    const btn = document.getElementById('btnCheckStoresStatus');
+    const selectedRepo = getActiveRepoSafe();
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+      btn.textContent = '⏳ Ověřuji obchody (cca 25 s)...';
+    }
+    try {
+      const logBox = document.getElementById('logBox');
+      if (logBox) {
+        logBox.style.display = 'block';
+        logBox.style.height = '460px';
+      }
+      log('📊 Spouštím živou kontrolu všech 3 obchodů (Apple + Google Play + Huawei)' + (selectedRepo ? ' + posledního buildu (' + selectedRepo + ')...' : '...'), 'warn');
+      if (typeof ensureRepoVaultSecret === 'function') {
+        await ensureRepoVaultSecret(ghOwner, 'ios-keys', ghTok);
+      }
+      const vRes = await ghFetch('https://api.github.com/repos/' + ghOwner + '/ios-keys?_cb=' + Date.now(), ghTok);
+      if (!vRes.ok) throw new Error('Nelze načíst trezor ios-keys (HTTP ' + vRes.status + ').');
+      const vBranch = (await vRes.json()).default_branch || 'main';
+      const beforeRes = await ghFetch('https://api.github.com/repos/' + ghOwner + '/ios-keys/actions/workflows/check_stores.yml/runs?per_page=8&_cb=' + Date.now(), ghTok);
+      const oldIds = new Set(beforeRes.ok ? (((await beforeRes.json()).workflow_runs || []).map(r => r.id)) : []);
+      const dispRes = await ghFetch('https://api.github.com/repos/' + ghOwner + '/ios-keys/actions/workflows/check_stores.yml/dispatches', ghTok, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: vBranch, inputs: { target_repo: selectedRepo } })
+      });
+      if (!dispRes.ok && dispRes.status !== 204) {
+        throw new Error('Nepodařilo se spustit kontrolu v ios-keys (HTTP ' + dispRes.status + ').');
+      }
+      let finishedRun = null;
+      for (let step = 1; step !== 42; step++) {
+        await new Promise(r => setTimeout(r, 4000));
+        const pollRes = await ghFetch('https://api.github.com/repos/' + ghOwner + '/ios-keys/actions/workflows/check_stores.yml/runs?per_page=8&_cb=' + Date.now(), ghTok);
+        if (!pollRes.ok) continue;
+        const cand = ((await pollRes.json()).workflow_runs || []).find(r => !oldIds.has(r.id));
+        if (!cand) continue;
+        if (cand.status === 'completed') {
+          finishedRun = cand;
+          break;
+        }
+      }
+      if (!finishedRun) {
+        throw new Error('Časový limit kontroly vypršel. Zkus kliknout znovu za pár sekund.');
+      }
+      await new Promise(r => setTimeout(r, 1500));
+      const repRes = await ghFetch('https://api.github.com/repos/' + ghOwner + '/ios-keys/contents/stores_status_report.txt?ref=' + encodeURIComponent(vBranch) + '&_cb=' + Date.now(), ghTok);
+      if (!repRes.ok) {
+        throw new Error('Výpis stores_status_report.txt se nepodařilo načíst.');
+      }
+      const repText = decodeB64Utf8Local((await repRes.json()).content || '');
+      repText.split(/\r?\n/).forEach(line => {
+        if (!line.trim()) return;
+        let st = '';
+        if (line.includes('🟢') || line.includes('✅')) st = 'ok';
+        else if (line.includes('🔴') || line.includes('❌')) st = 'err';
+        else if (line.includes('🟡') || line.includes('🟠') || line.includes('⚠️') || line.includes('👉')) st = 'warn';
+        log(line, st);
+      });
+      try {
+        await ghFetch('https://api.github.com/repos/' + ghOwner + '/ios-keys/actions/runs/' + finishedRun.id, ghTok, { method: 'DELETE' });
+      } catch (e) {}
+    } catch (err) {
+      log('❌ Chyba při kontrole obchodů: ' + err.message, 'err');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.textContent = '📊 Ověřit stav aplikací v obchodech';
+      }
+    }
+  };
+  function mountCheckStoresButton() {
+    const zipBot = document.getElementById('btnDownloadStavitelZipBottom');
+    const container = zipBot ? zipBot.parentElement : Array.from(document.querySelectorAll('.tools-buttons'))[1];
+    if (!container) return;
+    container.style.flexWrap = 'wrap';
+    let btn = document.getElementById('btnCheckStoresStatus');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'btnCheckStoresStatus';
+      btn.type = 'button';
+      btn.className = 'btn-secondary';
+      container.appendChild(btn);
+    }
+    btn.style.cssText = 'flex:1 1 100%;grid-column:1 / -1;width:100%;margin-top:2px;background:rgba(59,130,246,0.18);border:1px solid rgba(96,165,250,0.55);color:#dbeafe;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;';
+    btn.disabled = false;
+    btn.textContent = '📊 Ověřit stav aplikací v obchodech';
+    btn.title = 'Zkontroluje poslední build vybraného projektu a živý stav všech aplikací v Apple App Store, Google Play a Huawei AppGallery';
+    btn.setAttribute('onclick', 'window.checkAllStoresStatus()');
+  }
+  mountCheckStoresButton();
 })();</script></body></html>
