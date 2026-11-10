@@ -4822,4 +4822,72 @@ jobs:
     stagedFiles[".github/workflows/build.yml"] = patchYamlWithGradleResilience(stagedFiles[".github/workflows/build.yml"]);
   }
 })();
-</script></body></html>
+</script><script id="stavitelZipDownloaderScript">/* === STAVITEL_ZIP_DOWNLOADER_V1 === */
+(function installStavitelZipDownloaderV1() {
+  async function downloadStavitelZipFromGHImpl() {
+    const ghOwner = (localStorage.getItem('stavitel_gh_user') || document.getElementById('ghUsername')?.value || 'drozkar-glitch').trim();
+    const ghTok = (localStorage.getItem('stavitel_gh_token') || document.getElementById('ghToken')?.value || '').trim();
+    if (!ghOwner || !ghTok) {
+      document.getElementById('ghSettingsSection')?.classList.remove('hidden');
+      alert('Nejprve vyplň a ulož své GitHub jméno a Personal Access Token nahoře.');
+      return;
+    }
+    if (typeof JSZip === 'undefined') {
+      alert('Knihovna JSZip se ještě nenačetla. Obnov stránku (F5) a zkus to znovu.');
+      return;
+    }
+    const topBtn = document.getElementById('btnDownloadStavitelZipTop');
+    const botBtn = document.getElementById('btnDownloadStavitelZipBottom');
+    const topOrig = '📦 Stáhnout Stavitel (.ZIP z GH)';
+    const botOrig = '📦 ZIP Stavitele z GH';
+    if (topBtn) { topBtn.disabled = true; topBtn.textContent = '⏳ Stahuji ZIP...'; }
+    if (botBtn) { botBtn.disabled = true; botBtn.textContent = '⏳ Stahuji ZIP...'; }
+    try {
+      if (typeof log === 'function') log('📦 Stahuji kompletní repozitář "' + ghOwner + '/StavitelAplikaci" z GitHubu...');
+      const repoRes = await ghFetch('https://api.github.com/repos/' + ghOwner + '/StavitelAplikaci?_cb=' + Date.now(), ghTok);
+      if (!repoRes.ok) throw new Error('Repozitář StavitelAplikaci nelze načíst (HTTP ' + repoRes.status + ').');
+      const repoJson = await repoRes.json();
+      const branch = repoJson.default_branch || 'main';
+      const treeRes = await ghFetch('https://api.github.com/repos/' + ghOwner + '/StavitelAplikaci/git/trees/' + encodeURIComponent(branch) + '?recursive=1&_cb=' + Date.now(), ghTok);
+      if (!treeRes.ok) throw new Error('Nelze načíst seznam souborů Stavitele (HTTP ' + treeRes.status + ').');
+      const treeJson = await treeRes.json();
+      const blobs = (treeJson.tree || []).filter(item => item.type === 'blob' && !item.path.startsWith('iosApp/signing/'));
+      if (blobs.length === 0) throw new Error('Repozitář StavitelAplikaci je prázdný.');
+      const zip = new JSZip();
+      for (let i = 0; i < blobs.length; i += 6) {
+        const batch = blobs.slice(i, i + 6);
+        await Promise.all(batch.map(async (item) => {
+          const bRes = await ghFetch('https://api.github.com/repos/' + ghOwner + '/StavitelAplikaci/git/blobs/' + item.sha, ghTok);
+          if (!bRes.ok) throw new Error('Chyba stahování "' + item.path + '" (HTTP ' + bRes.status + ').');
+          const bJson = await bRes.json();
+          const cleanB64 = String(bJson.content || '').replace(/\s+/g, '');
+          const bin = atob(cleanB64);
+          const bytes = new Uint8Array(bin.length);
+          for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+          zip.file(item.path, bytes);
+        }));
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+      const dlUrl = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = dlUrl;
+      a.download = 'StavitelAplikaci.zip';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(dlUrl); a.remove(); }, 15000);
+      if (typeof log === 'function') log('🎉 Hotovo! Archiv StavitelAplikaci.zip (' + blobs.length + ' souborů) byl stažen do PC.', 'ok');
+    } catch (err) {
+      if (typeof log === 'function') log('❌ Chyba při stahování ZIPu Stavitele: ' + err.message, 'err');
+      else alert('Chyba při stahování ZIPu Stavitele: ' + err.message);
+    } finally {
+      if (topBtn) { topBtn.disabled = false; topBtn.textContent = topOrig; }
+      if (botBtn) { botBtn.disabled = false; botBtn.textContent = botOrig; }
+    }
+  }
+  window.downloadStavitelZipFromGH = downloadStavitelZipFromGHImpl;
+  window.downloadStavitelZipFromGitHub = downloadStavitelZipFromGHImpl;
+  const tBtn = document.getElementById('btnDownloadStavitelZipTop');
+  if (tBtn) { tBtn.disabled = false; tBtn.setAttribute('onclick', 'window.downloadStavitelZipFromGH()'); }
+  const bBtn = document.getElementById('btnDownloadStavitelZipBottom');
+  if (bBtn) { bBtn.disabled = false; bBtn.setAttribute('onclick', 'window.downloadStavitelZipFromGH()'); }
+})();</script></body></html>
