@@ -4890,10 +4890,58 @@ jobs:
   if (tBtn) { tBtn.disabled = false; tBtn.setAttribute('onclick', 'window.downloadStavitelZipFromGH()'); }
   const bBtn = document.getElementById('btnDownloadStavitelZipBottom');
   if (bBtn) { bBtn.disabled = false; bBtn.setAttribute('onclick', 'window.downloadStavitelZipFromGH()'); }
-})();</script><script id="ascSubmissionRecycleScript">/* === STAVITEL_ASC_RECYCLE_V1 === */
-(function installAscSubmissionRecycleV1() {
+})();</script><script id="ascSubmissionRecycleScript">/* === STAVITEL_ASC_RECYCLE_V2 === */
+(function installAscSubmissionRecycleV2() {
   function patchYamlWithAscRecycle(yaml) {
-    if (typeof yaml !== 'string' || !yaml || yaml.includes('prepare_reusable_submissions')) return yaml;
+    if (typeof yaml !== 'string' || !yaml || yaml.includes('_asc_retry_request')) return yaml;
+    const oldIpaElseBlock = [
+      '                PUB_ATTEMPT=$((PUB_ATTEMPT + 1))',
+      '              else',
+      '                cat /tmp/asc_publish.log; exit $PUB_EXIT',
+      '              fi'
+    ].join('\n');
+    const newIpaElseBlock = [
+      '                PUB_ATTEMPT=$((PUB_ATTEMPT + 1))',
+      '              elif grep -qiE "timed out|timeout|connection reset|connection aborted|500 internal|502 bad gateway|503 service|504 gateway|temporarily unavailable|network is unreachable|ssl|broken pipe" /tmp/asc_publish.log && [ $PUB_ATTEMPT -lt $MAX_PUB_ATTEMPTS ]; then',
+      '                echo "⚠️ Vypadek Apple serveru pri nahravani IPA (pokus $PUB_ATTEMPT/$MAX_PUB_ATTEMPTS), opakuji za 20 s..."',
+      '                sleep 20',
+      '                PUB_ATTEMPT=$((PUB_ATTEMPT + 1))',
+      '              else',
+      '                cat /tmp/asc_publish.log; exit $PUB_EXIT',
+      '              fi'
+    ].join('\n');
+    const oldBaseUrlLine = '          base_url = "https://api.appstoreconnect.apple.com/v1"';
+    const newBaseUrlBlock = [
+      '          base_url = "https://api.appstoreconnect.apple.com/v1"',
+      '          _raw_session = requests.Session()',
+      '          def _asc_retry_request(method, url, **kwargs):',
+      '              kwargs["timeout"] = max(int(kwargs.get("timeout", 60) or 60), 60)',
+      '              last_exc = None',
+      '              for attempt in range(1, 5):',
+      '                  if "headers" in kwargs and isinstance(kwargs["headers"], dict) and "Authorization" in kwargs["headers"]:',
+      '                      kwargs["headers"] = get_headers()',
+      '                  try:',
+      '                      resp = _raw_session.request(method, url, **kwargs)',
+      '                      if resp.status_code in (429, 500, 502, 503, 504) and attempt != 4:',
+      '                          wait_s = 5 * attempt',
+      '                          print(f"⚠️ Apple API HTTP {resp.status_code}, opakuji pokus {attempt}/4 za {wait_s} s...")',
+      '                          time.sleep(wait_s)',
+      '                          continue',
+      '                      return resp',
+      '                  except requests.exceptions.RequestException as exc:',
+      '                      last_exc = exc',
+      '                      if attempt != 4:',
+      '                          wait_s = 5 * attempt',
+      '                          print(f"⚠️ Vypadek spojeni s Apple API ({exc.__class__.__name__}), opakuji pokus {attempt}/4 za {wait_s} s...")',
+      '                          time.sleep(wait_s)',
+      '                      else:',
+      '                          raise',
+      '              raise last_exc',
+      '          requests.get = lambda url, **kw: _asc_retry_request("GET", url, **kw)',
+      '          requests.post = lambda url, **kw: _asc_retry_request("POST", url, **kw)',
+      '          requests.patch = lambda url, **kw: _asc_retry_request("PATCH", url, **kw)',
+      '          requests.delete = lambda url, **kw: _asc_retry_request("DELETE", url, **kw)'
+    ].join('\n');
     const oldCleanupBlock = [
       '              def cleanup_draft_submissions():',
       '                  for st_f in ["READY_FOR_REVIEW", "UNRESOLVED_ISSUES"]:',
@@ -4910,27 +4958,29 @@ jobs:
     ].join('\n');
     const newCleanupBlock = [
       '              def prepare_reusable_submissions():',
-      '                  sr_u = requests.get(f"{base_url}/reviewSubmissions", params={"filter[app]": app_id, "filter[state]": "UNRESOLVED_ISSUES", "limit": 20}, headers=get_headers(), timeout=30)',
+      '                  sr_u = requests.get(f"{base_url}/reviewSubmissions", params={"filter[app]": app_id, "filter[state]": "UNRESOLVED_ISSUES", "limit": 20}, headers=get_headers(), timeout=60)',
       '                  if sr_u.ok:',
       '                      for sub in sr_u.json().get("data", []):',
       '                          sid = sub["id"]',
-      '                          ir = requests.get(f"{base_url}/reviewSubmissions/{sid}/items", headers=get_headers(), timeout=30)',
+      '                          ir = requests.get(f"{base_url}/reviewSubmissions/{sid}/items", headers=get_headers(), timeout=60)',
       '                          if ir.ok:',
       '                              for it in ir.json().get("data", []):',
-      '                                  requests.delete(f"{base_url}/reviewSubmissionItems/{it[\'id\']}", headers=get_headers(), timeout=30)',
-      '                          requests.patch(f"{base_url}/reviewSubmissions/{sid}", json={"data": {"type": "reviewSubmissions", "id": sid, "attributes": {"canceled": True}}}, headers=get_headers(), timeout=30)',
+      '                                  it_id = it["id"]',
+      '                                  requests.delete(f"{base_url}/reviewSubmissionItems/{it_id}", headers=get_headers(), timeout=60)',
+      '                          requests.patch(f"{base_url}/reviewSubmissions/{sid}", json={"data": {"type": "reviewSubmissions", "id": sid, "attributes": {"canceled": True}}}, headers=get_headers(), timeout=60)',
       '                  ready_ids = []',
-      '                  sr_r = requests.get(f"{base_url}/reviewSubmissions", params={"filter[app]": app_id, "filter[state]": "READY_FOR_REVIEW", "limit": 20}, headers=get_headers(), timeout=30)',
+      '                  sr_r = requests.get(f"{base_url}/reviewSubmissions", params={"filter[app]": app_id, "filter[state]": "READY_FOR_REVIEW", "limit": 20}, headers=get_headers(), timeout=60)',
       '                  if sr_r.ok:',
       '                      for sub in sr_r.json().get("data", []):',
       '                          plat = (sub.get("attributes") or {}).get("platform")',
       '                          if plat and plat != "IOS":',
       '                              continue',
       '                          sid = sub["id"]',
-      '                          ir = requests.get(f"{base_url}/reviewSubmissions/{sid}/items", headers=get_headers(), timeout=30)',
+      '                          ir = requests.get(f"{base_url}/reviewSubmissions/{sid}/items", headers=get_headers(), timeout=60)',
       '                          if ir.ok:',
       '                              for it in ir.json().get("data", []):',
-      '                                  requests.delete(f"{base_url}/reviewSubmissionItems/{it[\'id\']}", headers=get_headers(), timeout=30)',
+      '                                  it_id = it["id"]',
+      '                                  requests.delete(f"{base_url}/reviewSubmissionItems/{it_id}", headers=get_headers(), timeout=60)',
       '                          ready_ids.append(sid)',
       '                  return ready_ids'
     ].join('\n');
@@ -4952,50 +5002,71 @@ jobs:
       '                      requests.patch(f"{base_url}/reviewSubmissions/{sub_id}", json={"data": {"type": "reviewSubmissions", "id": sub_id, "attributes": {"canceled": True}}}, headers=get_headers(), timeout=30)'
     ].join('\n');
     const newSubmitBlock = [
-      '              requests.patch(f"{base_url}/appStoreVersions/{version_id}", json={"data": {"type": "appStoreVersions", "id": version_id, "attributes": {"copyright": "© 2026 Created by Pavel Mareš", "releaseType": "AFTER_APPROVAL"}}}, headers=get_headers(), timeout=30)',
-      '              ai_res = requests.get(f"{base_url}/apps/{app_id}/appInfos", headers=get_headers(), timeout=30)',
+      '              tv_attrs = target_version.get("attributes") or {}',
+      '              if tv_attrs.get("copyright") != "© 2026 Created by Pavel Mareš" or tv_attrs.get("releaseType") != "AFTER_APPROVAL":',
+      '                  requests.patch(f"{base_url}/appStoreVersions/{version_id}", json={"data": {"type": "appStoreVersions", "id": version_id, "attributes": {"copyright": "© 2026 Created by Pavel Mareš", "releaseType": "AFTER_APPROVAL"}}}, headers=get_headers(), timeout=60)',
+      '              ai_res = requests.get(f"{base_url}/apps/{app_id}/appInfos", headers=get_headers(), timeout=60)',
       '              if ai_res.ok:',
+      '                  none_keys = ["alcoholTobaccoOrDrugUseOrReferences","contests","gamblingSimulated","gunsOrOtherWeapons","horrorOrFearThemes","matureOrSuggestiveThemes","medicalOrTreatmentInformation","profanityOrCrudeHumor","sexualContentGraphicAndNudity","sexualContentOrNudity","violenceCartoonOrFantasy","violenceRealistic","violenceRealisticProlongedGraphicOrSadistic"]',
+      '                  bool_keys = ["gambling","unrestrictedWebAccess","lootBox","messagingAndChat","userGeneratedContent","advertising","parentalControls","ageAssurance","healthOrWellnessTopics","socialMedia","socialMediaAgeRestricted"]',
       '                  for ai in ai_res.json().get("data", []):',
-      '                      ar_res = requests.get(f"{base_url}/appInfos/{ai[\'id\']}/ageRatingDeclaration", headers=get_headers(), timeout=30)',
+      '                      ai_id = ai["id"]',
+      '                      ar_res = requests.get(f"{base_url}/appInfos/{ai_id}/ageRatingDeclaration", headers=get_headers(), timeout=60)',
       '                      if ar_res.ok and ar_res.json().get("data"):',
-      '                          arid = ar_res.json()["data"]["id"]',
-      '                          core_ar = {k: "NONE" for k in ["alcoholTobaccoOrDrugUseOrReferences","contests","gamblingSimulated","gunsOrOtherWeapons","horrorOrFearThemes","matureOrSuggestiveThemes","medicalOrTreatmentInformation","profanityOrCrudeHumor","sexualContentGraphicAndNudity","sexualContentOrNudity","violenceCartoonOrFantasy","violenceRealistic","violenceRealisticProlongedGraphicOrSadistic"]}',
+      '                          ar_obj = ar_res.json()["data"]',
+      '                          arid = ar_obj["id"]',
+      '                          cur_ar = ar_obj.get("attributes") or {}',
+      '                          diff_ar = {k: "NONE" for k in none_keys if k in cur_ar and cur_ar.get(k) != "NONE"}',
+      '                          for bk in bool_keys:',
+      '                              if bk in cur_ar and cur_ar.get(bk) is not False:',
+      '                                  diff_ar[bk] = False',
+      '                          if not diff_ar:',
+      '                              break',
+      '                          if requests.patch(f"{base_url}/ageRatingDeclarations/{arid}", json={"data": {"type": "ageRatingDeclarations", "id": arid, "attributes": diff_ar}}, headers=get_headers(), timeout=60).ok:',
+      '                              break',
+      '                          core_ar = {k: "NONE" for k in none_keys if k in cur_ar}',
       '                          core_ar["gambling"] = False',
       '                          core_ar["unrestrictedWebAccess"] = False',
-      '                          if requests.patch(f"{base_url}/ageRatingDeclarations/{arid}", json={"data": {"type": "ageRatingDeclarations", "id": arid, "attributes": core_ar}}, headers=get_headers(), timeout=30).ok:',
-      '                              if not requests.patch(f"{base_url}/ageRatingDeclarations/{arid}", json={"data": {"type": "ageRatingDeclarations", "id": arid, "attributes": {"socialMedia": False}}}, headers=get_headers(), timeout=30).ok:',
-      '                                  requests.patch(f"{base_url}/ageRatingDeclarations/{arid}", json={"data": {"type": "ageRatingDeclarations", "id": arid, "attributes": {"socialMedia": False, "socialMediaAgeRestricted": False}}}, headers=get_headers(), timeout=30)',
-      '                              for xk in ["socialMediaAgeRestricted","messagingAndChat","userGeneratedContent","lootBox","advertising","parentalControls","ageAssurance","healthOrWellnessTopics"]:',
-      '                                  requests.patch(f"{base_url}/ageRatingDeclarations/{arid}", json={"data": {"type": "ageRatingDeclarations", "id": arid, "attributes": {xk: False}}}, headers=get_headers(), timeout=30)',
+      '                          if requests.patch(f"{base_url}/ageRatingDeclarations/{arid}", json={"data": {"type": "ageRatingDeclarations", "id": arid, "attributes": core_ar}}, headers=get_headers(), timeout=60).ok:',
+      '                              for bk in bool_keys[2:]:',
+      '                                  if cur_ar.get(bk) is not False:',
+      '                                      requests.patch(f"{base_url}/ageRatingDeclarations/{arid}", json={"data": {"type": "ageRatingDeclarations", "id": arid, "attributes": {bk: False}}}, headers=get_headers(), timeout=60)',
       '                              break',
-      '              rd_res = requests.get(f"{base_url}/appStoreVersions/{version_id}/appStoreReviewDetail", headers=get_headers(), timeout=30)',
+      '              rd_res = requests.get(f"{base_url}/appStoreVersions/{version_id}/appStoreReviewDetail", headers=get_headers(), timeout=60)',
       '              rd_attrs = {"contactFirstName": "Pavel", "contactLastName": "Mareš", "contactPhone": "+420606420002", "contactEmail": "drozkar@gmail.com", "demoAccountRequired": False}',
       '              if rd_res.ok and rd_res.json().get("data"):',
-      '                  rd_id = rd_res.json()["data"]["id"]',
-      '                  requests.patch(f"{base_url}/appStoreReviewDetails/{rd_id}", json={"data": {"type": "appStoreReviewDetails", "id": rd_id, "attributes": rd_attrs}}, headers=get_headers(), timeout=30)',
+      '                  rd_obj = rd_res.json()["data"]',
+      '                  rd_id = rd_obj["id"]',
+      '                  cur_rd = rd_obj.get("attributes") or {}',
+      '                  if any(cur_rd.get(k) != v for k, v in rd_attrs.items()):',
+      '                      requests.patch(f"{base_url}/appStoreReviewDetails/{rd_id}", json={"data": {"type": "appStoreReviewDetails", "id": rd_id, "attributes": rd_attrs}}, headers=get_headers(), timeout=60)',
       '              else:',
-      '                  requests.post(f"{base_url}/appStoreReviewDetails", json={"data": {"type": "appStoreReviewDetails", "attributes": rd_attrs, "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}}, headers=get_headers(), timeout=30)',
+      '                  requests.post(f"{base_url}/appStoreReviewDetails", json={"data": {"type": "appStoreReviewDetails", "attributes": rd_attrs, "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}}, headers=get_headers(), timeout=60)',
       '              ready_sub_ids = prepare_reusable_submissions()',
       '              cand_sub_ids = list(ready_sub_ids)',
       '              if not cand_sub_ids:',
-      '                  create_sub = requests.post(f"{base_url}/reviewSubmissions", json={"data": {"type": "reviewSubmissions", "attributes": {"platform": "IOS"}, "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}}, headers=get_headers(), timeout=30)',
+      '                  create_sub = requests.post(f"{base_url}/reviewSubmissions", json={"data": {"type": "reviewSubmissions", "attributes": {"platform": "IOS"}, "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}}, headers=get_headers(), timeout=60)',
       '                  if create_sub.ok:',
       '                      cand_sub_ids.append(create_sub.json()["data"]["id"])',
       '                  else:',
       '                      print(f"⚠️ APPLE APP STORE: Nelze zalozit reviewSubmission ({create_sub.status_code}): {create_sub.text[:300]}")',
       '              for sub_id in cand_sub_ids:',
-      '                  add_item = requests.post(f"{base_url}/reviewSubmissionItems", json={"data": {"type": "reviewSubmissionItems", "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub_id}}, "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}}, headers=get_headers(), timeout=30)',
+      '                  add_item = requests.post(f"{base_url}/reviewSubmissionItems", json={"data": {"type": "reviewSubmissionItems", "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub_id}}, "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}}, headers=get_headers(), timeout=60)',
       '                  if add_item.ok:',
       '                      item_id = add_item.json()["data"]["id"]',
-      '                      sub_patch = requests.patch(f"{base_url}/reviewSubmissions/{sub_id}", json={"data": {"type": "reviewSubmissions", "id": sub_id, "attributes": {"submitted": True}}}, headers=get_headers(), timeout=30)',
+      '                      sub_patch = requests.patch(f"{base_url}/reviewSubmissions/{sub_id}", json={"data": {"type": "reviewSubmissions", "id": sub_id, "attributes": {"submitted": True}}}, headers=get_headers(), timeout=60)',
       '                      if sub_patch.ok:',
       '                          print(f"✅ APPLE APP STORE: Verze {ver_str} (build {build_num}) odeslana do Waiting for Review!")',
       '                      else:',
-      '                          requests.delete(f"{base_url}/reviewSubmissionItems/{item_id}", headers=get_headers(), timeout=30)',
+      '                          requests.delete(f"{base_url}/reviewSubmissionItems/{item_id}", headers=get_headers(), timeout=60)',
       '                          print(f"ℹ️ APPLE APP STORE: Build {build_num} je prirazen k verzi {ver_str}, Apple zatim zamitl odeslani ({sub_patch.status_code}): {sub_patch.text[:400]}")',
       '                      break'
     ].join('\n');
-    return yaml.replace(oldCleanupBlock, newCleanupBlock).replace(oldSubmitBlock, newSubmitBlock);
+    return yaml
+      .replace(oldIpaElseBlock, newIpaElseBlock)
+      .replace(oldBaseUrlLine, newBaseUrlBlock)
+      .replace(oldCleanupBlock, newCleanupBlock)
+      .replace(oldSubmitBlock, newSubmitBlock);
   }
   window.__patchYamlWithAscRecycle = patchYamlWithAscRecycle;
   if (typeof window.buildCzechUnifiedWorkflowYaml === 'function') {
@@ -5007,6 +5078,6 @@ jobs:
     };
   }
   if (typeof stagedFiles !== 'undefined' && stagedFiles && stagedFiles['.github/workflows/build.yml']) {
-    stagedFiles['.github/workflows/build.yml'] = patchYamlWithAscRecycle(stagedFiles['.github/workflows/build.yml']);
+    stagedFiles['.github/workflows/build.yml'] = window.applyModeToWorkflowYaml ? window.applyModeToWorkflowYaml(stagedFiles['.github/workflows/build.yml']) : patchYamlWithAscRecycle(stagedFiles['.github/workflows/build.yml']);
   }
 })();</script></body></html>
