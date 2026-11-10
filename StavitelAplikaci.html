@@ -2886,8 +2886,8 @@ jobs:
 </script>
 
 
-<script id="coreUpgradesScript">/* === STAVITEL_PERMANENT_CORE_V13 === */
-(function installPermanentCoreV13() {
+<script id="coreUpgradesScript">/* === STAVITEL_PERMANENT_CORE_V14 === */
+(function installPermanentCoreV14() {
   const LT = String.fromCharCode(60);
   const GT = String.fromCharCode(62);
 
@@ -2900,7 +2900,7 @@ jobs:
 
   const huaweiCardP = document.querySelector("#huaweiVaultCardBox p");
   if (huaweiCardP) {
-    huaweiCardP.innerHTML = "Servisní JSON klíč (Developer-level) pro automatické publikování <code>.apk</code> do Huawei AppGallery Connect.";
+    huaweiCardP.innerHTML = "Servisní JSON klíč (Developer-level) pro automatické publikování " + LT + "code" + GT + ".apk" + LT + "/code" + GT + " do Huawei AppGallery Connect.";
   }
 
   const KNOWN_PKG_TO_REPO = {
@@ -2915,20 +2915,9 @@ jobs:
     "garaz": "Garaz",
     "jenpockej": "JenPockej",
     "bandita": "Bandita",
-    "bombman": "BombMan"
+    "bombman": "BombMan",
+    "kocicky": "kocicky"
   };
-
-  function compareSemVer(a, b) {
-    const pa = String(a || "1.0").split(".").map(x => parseInt(x, 10) || 0);
-    const pb = String(b || "1.0").split(".").map(x => parseInt(x, 10) || 0);
-    const len = Math.max(pa.length, pb.length);
-    for (let i = 0; i < len; i++) {
-      const va = pa[i] || 0;
-      const vb = pb[i] || 0;
-      if (va !== vb) return va - vb;
-    }
-    return 0;
-  }
 
   // 1. Trvalá kontrola všech 5 klíčů v trezoru ios-keys (včetně Huawei)
   window.checkVaultKeysStatus = async function(silent = false) {
@@ -2939,15 +2928,10 @@ jobs:
     try {
       const repoRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys`, token);
       if (!repoRes.ok) {
-        setPillStatus("statusAndroidKey", false);
-        setPillStatus("statusGplayKey", false);
-        setPillStatus("statusIosP12", false);
-        setPillStatus("statusAppleP8", false);
-        setPillStatus("huaweiVaultStatusBadge", false);
+        ["statusAndroidKey", "statusGplayKey", "statusIosP12", "statusAppleP8", "huaweiVaultStatusBadge"].forEach(id => setPillStatus(id, false));
         return;
       }
-      const repoData = await repoRes.json();
-      const branch = repoData.default_branch || "main";
+      const branch = (await repoRes.json()).default_branch || "main";
       const treeRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/git/trees/${branch}?recursive=1`, token);
       if (!treeRes.ok) return;
 
@@ -2962,12 +2946,7 @@ jobs:
       const hasHuawei = files.has("huawei_key.json.b64") || files.has("huaweikey.json.b64") || files.has("agconnect_key.json.b64");
 
       window.__huaweiVaultStatus = hasHuawei ? "OK" : "CHYBÍ";
-
-      setPillStatus(
-        "statusAndroidKey",
-        hasAndroid,
-        hasProjectAndroid ? `✔ Vlastní klíč (${activeProj})` : (hasDefaultAndroid ? "✔ Výchozí klíč v ios-keys" : "⚠ Chybí v ios-keys")
-      );
+      setPillStatus("statusAndroidKey", hasAndroid, hasProjectAndroid ? `✔ Vlastní klíč (${activeProj})` : (hasDefaultAndroid ? "✔ Výchozí klíč v ios-keys" : "⚠ Chybí v ios-keys"));
       setPillStatus("statusGplayKey", hasGplay);
       setPillStatus("statusIosP12", hasIosP12);
       setPillStatus("statusAppleP8", hasAppleP8);
@@ -2976,15 +2955,9 @@ jobs:
       const allReady = hasAndroid && hasGplay && hasIosP12 && hasAppleP8 && hasHuawei;
       const badge = document.getElementById("ghStatusBadge");
       if (badge) {
-        if (allReady) {
-          badge.classList.add("badge-green");
-          badge.innerText = "🔐 Trezor ios-keys: Všech 5 klíčů připraveno";
-        } else {
-          badge.classList.remove("badge-green");
-          badge.innerText = "⚙️ Trezor ios-keys: Doplnit klíče";
-        }
+        badge.classList.toggle("badge-green", allReady);
+        badge.innerText = allReady ? "🔐 Trezor ios-keys: Všech 5 klíčů připraveno" : "⚙️ Trezor ios-keys: Doplnit klíče";
       }
-
       if (!silent && typeof window.log === "function") {
         window.log(
           `🔐 Stav trezoru ios-keys: Android=${hasProjectAndroid ? `vlastní (${activeProj})` : (hasDefaultAndroid ? "výchozí" : "CHYBÍ")}, Google Play=${hasGplay ? "OK" : "CHYBÍ"}, Huawei=${hasHuawei ? "OK" : "CHYBÍ"}, iOS .p12=${hasIosP12 ? "OK" : "CHYBÍ"}, Apple .p8=${hasAppleP8 ? "OK" : "CHYBÍ"}`,
@@ -2994,7 +2967,7 @@ jobs:
     } catch (e) {}
   };
 
-  // 2. Trvalé ukládání všech 5 klíčů do trezoru ios-keys (včetně 5. Huawei JSON klíče)
+  // 2. Trvalé ukládání všech 5 klíčů do trezoru ios-keys (včetně Huawei)
   window.saveAllProvidedKeysToVault = async function() {
     const owner = (localStorage.getItem("stavitel_gh_user") || document.getElementById("ghUsername")?.value || "drozkar-glitch").trim();
     const token = (localStorage.getItem("stavitel_gh_token") || document.getElementById("ghToken")?.value || "").trim();
@@ -3012,16 +2985,11 @@ jobs:
     const androidAlias = (document.getElementById("androidKeyAlias")?.value || "").trim() || "key0";
     const androidKeyPwd = (document.getElementById("androidKeyPwd")?.value || "").trim() || androidKsPwd;
 
-    if (androidFileInput && androidFileInput.files && androidFileInput.files.length > 0) {
-      if (!androidKsPwd) {
-        alert("U Android Keystore prosím vyplň Heslo úložiště (Keystore password).");
-        return;
-      }
-      const buf = await androidFileInput.files[0].arrayBuffer();
-      const b64 = arrayBufferToBase64(buf) + "\n";
+    if (androidFileInput?.files?.length > 0) {
+      if (!androidKsPwd) { alert("U Android Keystore prosím vyplň Heslo úložiště."); return; }
+      const b64 = arrayBufferToBase64(await androidFileInput.files[0].arrayBuffer()) + "\n";
       const props = `CM_KEYSTORE_PASSWORD=${androidKsPwd}\nCM_KEY_ALIAS=${androidAlias}\nCM_KEY_PASSWORD=${androidKeyPwd}\n`;
-
-      if (activeProj && activeProj !== "ios-keys") {
+      if (activeProj && activeProj !== "ios-keys" && activeProj !== "StavitelAplikaci") {
         treeEntries.push({ path: `android_keystore_${activeProj}.b64`, mode: "100644", type: "blob", content: b64 });
         treeEntries.push({ path: `android_keystore_${activeProj}.props`, mode: "100644", type: "blob", content: props });
       }
@@ -3031,21 +2999,16 @@ jobs:
     }
 
     const gplayFileInput = document.getElementById("gplayJsonFile");
-    if (gplayFileInput && gplayFileInput.files && gplayFileInput.files.length > 0) {
-      const buf = await gplayFileInput.files[0].arrayBuffer();
-      treeEntries.push({ path: "gplaykey.json.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(buf) + "\n" });
+    if (gplayFileInput?.files?.length > 0) {
+      treeEntries.push({ path: "gplaykey.json.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(await gplayFileInput.files[0].arrayBuffer()) + "\n" });
       uploadedNames.push("Google Play JSON klíč");
     }
 
     const iosP12Input = document.getElementById("iosP12File");
     const iosP12Pwd = (document.getElementById("iosP12Password")?.value || "").trim();
-    if (iosP12Input && iosP12Input.files && iosP12Input.files.length > 0) {
-      if (!iosP12Pwd) {
-        alert("Zadej prosím heslo k iOS .p12 certifikátu.");
-        return;
-      }
-      const buf = await iosP12Input.files[0].arrayBuffer();
-      treeEntries.push({ path: "ioskey.p12.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(buf) + "\n" });
+    if (iosP12Input?.files?.length > 0) {
+      if (!iosP12Pwd) { alert("Zadej prosím heslo k iOS .p12 certifikátu."); return; }
+      treeEntries.push({ path: "ioskey.p12.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(await iosP12Input.files[0].arrayBuffer()) + "\n" });
       treeEntries.push({ path: "ioskey.pwd", mode: "100644", type: "blob", content: iosP12Pwd + "\n" });
       uploadedNames.push("iOS certifikát (.p12)");
     }
@@ -3053,22 +3016,17 @@ jobs:
     const appleP8Input = document.getElementById("appleP8File");
     const appleKeyId = (document.getElementById("appleKeyId")?.value || "").trim();
     const appleIssuerId = (document.getElementById("appleIssuerId")?.value || "").trim();
-    if (appleP8Input && appleP8Input.files && appleP8Input.files.length > 0) {
-      if (!appleKeyId || !appleIssuerId) {
-        alert("U Apple .p8 klíče prosím vyplň i Key ID a Issuer ID.");
-        return;
-      }
-      const buf = await appleP8Input.files[0].arrayBuffer();
+    if (appleP8Input?.files?.length > 0) {
+      if (!appleKeyId || !appleIssuerId) { alert("U Apple .p8 klíče prosím vyplň i Key ID a Issuer ID."); return; }
       const props = `APP_STORE_CONNECT_KEY_IDENTIFIER=${appleKeyId}\nAPP_STORE_CONNECT_ISSUER_ID=${appleIssuerId}\n`;
-      treeEntries.push({ path: "apple_api_key.p8.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(buf) + "\n" });
+      treeEntries.push({ path: "apple_api_key.p8.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(await appleP8Input.files[0].arrayBuffer()) + "\n" });
       treeEntries.push({ path: "apple_api_key.props", mode: "100644", type: "blob", content: props });
       uploadedNames.push("Apple API klíč (.p8)");
     }
 
     const huaweiFileInput = document.getElementById("huaweiVaultFileInput");
-    if (huaweiFileInput && huaweiFileInput.files && huaweiFileInput.files.length > 0) {
-      const buf = await huaweiFileInput.files[0].arrayBuffer();
-      treeEntries.push({ path: "huawei_key.json.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(buf) + "\n" });
+    if (huaweiFileInput?.files?.length > 0) {
+      treeEntries.push({ path: "huawei_key.json.b64", mode: "100644", type: "blob", content: arrayBufferToBase64(await huaweiFileInput.files[0].arrayBuffer()) + "\n" });
       uploadedNames.push("Huawei AppGallery JSON klíč");
     }
 
@@ -3080,7 +3038,6 @@ jobs:
     try {
       log(`🔒 Ukládám (${uploadedNames.join(", ")}) do soukromého trezoru "${owner}/ios-keys"...`);
       const { defaultBranch, latestCommitSha, baseTreeSha } = await ensureIosKeysRepo(owner, token);
-
       const treeRes = await ghFetch(`https://api.github.com/repos/${owner}/ios-keys/git/trees`, token, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -3093,7 +3050,7 @@ jobs:
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: `Aktualizace klicu: ${uploadedNames.join(", ")}`,
+          message: `Aktualizace klicu: ${uploadedNames.join(", ")} [skip ci]`,
           tree: treeData.sha,
           parents: [latestCommitSha]
         })
@@ -3107,18 +3064,10 @@ jobs:
         body: JSON.stringify({ sha: newCommitData.sha, force: true })
       });
 
-      if (androidFileInput) androidFileInput.value = "";
-      if (document.getElementById("androidKsPwd")) document.getElementById("androidKsPwd").value = "";
-      if (document.getElementById("androidKeyAlias")) document.getElementById("androidKeyAlias").value = "";
-      if (document.getElementById("androidKeyPwd")) document.getElementById("androidKeyPwd").value = "";
-      if (gplayFileInput) gplayFileInput.value = "";
-      if (iosP12Input) iosP12Input.value = "";
-      if (document.getElementById("iosP12Password")) document.getElementById("iosP12Password").value = "";
-      if (appleP8Input) appleP8Input.value = "";
-      if (document.getElementById("appleKeyId")) document.getElementById("appleKeyId").value = "";
-      if (document.getElementById("appleIssuerId")) document.getElementById("appleIssuerId").value = "";
-      if (huaweiFileInput) huaweiFileInput.value = "";
-
+      ["androidJksFile", "androidKsPwd", "androidKeyAlias", "androidKeyPwd", "gplayJsonFile", "iosP12File", "iosP12Password", "appleP8File", "appleKeyId", "appleIssuerId", "huaweiVaultFileInput"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
       log(`🎉 Klíče (${uploadedNames.join(", ")}) byly trvale uloženy do trezoru ios-keys!`, "ok");
       await window.checkVaultKeysStatus(false);
     } catch (err) {
@@ -3130,20 +3079,15 @@ jobs:
   window.detectProjectFromFiles = function(filesMap) {
     const mapToScan = filesMap || (typeof stagedFiles !== "undefined" ? stagedFiles : {});
     if (!mapToScan || typeof mapToScan !== "object") return null;
-    let appName = null;
-    let pkgSegment = null;
-    let fullPkg = null;
+    let appName = null, pkgSegment = null, fullPkg = null;
 
     for (const [path, rawContent] of Object.entries(mapToScan)) {
       const content = rawContent || "";
       if (path === ".github/workflows/build.yml" || path === "codemagic.yaml") {
         const mApp = content.match(/APP_NAME:\s*["']?([^"'\r\n]+)["']?/);
         if (mApp && mApp[1] && !mApp[1].includes(LT)) appName = mApp[1].trim();
-        const mBundle = content.match(/BUNDLE_ID:\s*["']?(cz\.(?:taxi)?mares\.([a-zA-Z0-9_]+))["']?/);
-        if (mBundle && mBundle[1]) {
-          fullPkg = mBundle[1].trim();
-          pkgSegment = mBundle[2].trim();
-        }
+        const mBundle = content.match(/BUNDLE_ID:\s*["']?(cz\.(?:taxi)?mares\.([a-zA-Z0-9_.]+))["']?/);
+        if (mBundle && mBundle[1]) { fullPkg = mBundle[1].trim(); pkgSegment = mBundle[2].trim(); }
       }
       if (path === "settings.gradle.kts") {
         const mRoot = content.match(/rootProject\.name\s*=\s*["']([^"']+)["']/);
@@ -3157,11 +3101,8 @@ jobs:
         }
       }
       if (!pkgSegment) {
-        const pkgMatch = content.match(/(?:package|namespace\s*=|applicationId\s*=|PRODUCT_BUNDLE_IDENTIFIER:)\s*["']?(cz\.(?:taxi)?mares\.([a-zA-Z0-9_]+))/);
-        if (pkgMatch && pkgMatch[1]) {
-          fullPkg = pkgMatch[1].trim();
-          pkgSegment = pkgMatch[2].trim();
-        }
+        const pkgMatch = content.match(/(?:package|namespace\s*=|applicationId\s*=|PRODUCT_BUNDLE_IDENTIFIER:)\s*["']?(cz\.(?:taxi)?mares\.([a-zA-Z0-9_.]+))/);
+        if (pkgMatch && pkgMatch[1]) { fullPkg = pkgMatch[1].trim(); pkgSegment = pkgMatch[2].trim(); }
       }
     }
 
@@ -3172,22 +3113,15 @@ jobs:
 
     const normApp = normalizeProjId(appName || mappedRepo);
     const normPkg = normalizeProjId(pkgSegment);
-    let matchedKnown = null;
     const kp = (typeof knownProjects !== "undefined" && Array.isArray(knownProjects)) ? knownProjects : [];
     const pa = (typeof projectAliases !== "undefined" && projectAliases) ? projectAliases : {};
+    let matchedKnown = null;
 
-    if (mappedRepo && kp.includes(mappedRepo)) {
-      matchedKnown = mappedRepo;
-    } else if (normApp && pa[normApp] && kp.includes(pa[normApp])) {
-      matchedKnown = pa[normApp];
-    } else if (normPkg && pa[normPkg] && kp.includes(pa[normPkg])) {
-      matchedKnown = pa[normPkg];
-    } else if (normApp) {
-      matchedKnown = kp.find(p => normalizeProjId(p) === normApp) || null;
-    }
-    if (!matchedKnown && normPkg) {
-      matchedKnown = kp.find(p => normalizeProjId(p) === normPkg) || null;
-    }
+    if (mappedRepo && kp.includes(mappedRepo)) matchedKnown = mappedRepo;
+    else if (normApp && pa[normApp] && kp.includes(pa[normApp])) matchedKnown = pa[normApp];
+    else if (normPkg && pa[normPkg] && kp.includes(pa[normPkg])) matchedKnown = pa[normPkg];
+    else if (normApp) matchedKnown = kp.find(p => normalizeProjId(p) === normApp) || null;
+    if (!matchedKnown && normPkg) matchedKnown = kp.find(p => normalizeProjId(p) === normPkg) || null;
 
     return {
       display: matchedKnown || rawDisplay,
@@ -3199,7 +3133,7 @@ jobs:
     };
   };
 
-  // 4. Jednotná neprůstřelná šablona .github/workflows/build.yml pro všechny projekty
+  // 4. Jednotná šablona .github/workflows/build.yml (V14)
   window.buildCzechUnifiedWorkflowYaml = function(appName, bundleId, appVersion, publishToStores, buildIos) {
     const LT = String.fromCharCode(60);
     const GT = String.fromCharCode(62);
@@ -3211,7 +3145,6 @@ jobs:
 
     return [
       'name: Build & Publish KMP (Android + iOS)',
-      '',
       'on:',
       '  push:',
       '    branches: [ "main", "master" ]',
@@ -3219,7 +3152,6 @@ jobs:
       '      - "**.md"',
       '      - "**.html"',
       '  workflow_dispatch:',
-      '',
       'env:',
       '  APP_NAME: "' + aName + '"',
       '  BUNDLE_ID: "' + bId + '"',
@@ -3227,7 +3159,6 @@ jobs:
       '  PUBLISH_TO_STORES: "' + pubStores + '"',
       '  BUILD_IOS: "' + bIos + '"',
       '  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"',
-      '',
       'jobs:',
       '  build-android:',
       '    name: Android Release (.apk & .aab)',
@@ -3235,13 +3166,11 @@ jobs:
       '    steps:',
       '      - name: Checkout repository',
       '        uses: actions/checkout@v4',
-      '',
       '      - name: Set up JDK 17',
       '        uses: actions/setup-java@v5',
       '        with:',
       '          distribution: \'temurin\'',
       '          java-version: \'17\'',
-      '',
       '      - name: Detect Package Name and Prepare Build Number',
       '        run: |',
       '          BUILD_NUM=$(( ${GITHUB_RUN_NUMBER:-1} + 100 ))',
@@ -3249,21 +3178,16 @@ jobs:
       '          if [ -f "composeApp/build.gradle.kts" ]; then',
       '            DETECTED_PKG=$(sed -n \'s/.*applicationId[[:space:]]*=[[:space:]]*"\\([^"]*\\)".*/\\1/p\' composeApp/build.gradle.kts | head -n 1 | tr -d \'\\r\\n \')',
       '            if [ -n "$DETECTED_PKG" ]; then',
-      '              echo "Automaticky rozpoznano applicationId: $DETECTED_PKG"',
       '              echo "BUNDLE_ID=${DETECTED_PKG}" ' + GT + GT + ' $GITHUB_ENV',
       '            fi',
       '          fi',
       '          if [ ! -f "gradlew" ] || [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then',
       '            mkdir -p /tmp/gw_init',
       '            echo \'rootProject.name = "init"\' ' + GT + ' /tmp/gw_init/settings.gradle.kts',
-      '            cd /tmp/gw_init',
-      '            gradle wrapper --gradle-version 8.7 --no-daemon',
-      '            cd - ' + GT + ' /dev/null',
-      '            cp -f /tmp/gw_init/gradlew .',
-      '            cp -rf /tmp/gw_init/gradle .',
+      '            cd /tmp/gw_init && gradle wrapper --gradle-version 8.7 --no-daemon && cd - ' + GT + ' /dev/null',
+      '            cp -f /tmp/gw_init/gradlew . && cp -rf /tmp/gw_init/gradle .',
       '          fi',
       '          chmod +x gradlew',
-      '',
       '      - name: Fetch Signing Keys from Private Vault (ios-keys)',
       '        env:',
       '          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}',
@@ -3275,24 +3199,21 @@ jobs:
       '              "https://api.github.com/repos/${OWNER}/ios-keys/contents/android_keystore_${APP_NAME}.b64" -o "iosApp/signing/android_keystore.b64" && \\',
       '              curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
       '              "https://api.github.com/repos/${OWNER}/ios-keys/contents/android_keystore_${APP_NAME}.props" -o "iosApp/signing/android_keystore.props"; then',
-      '              echo "✅ Nacten vlastni Android keystore pro projekt ${APP_NAME} z trezoru ios-keys."',
+      '              echo "✅ Nacten vlastni Android keystore pro projekt ${APP_NAME}."',
       '            else',
       '              for f in android_keystore.b64 android_keystore.props; do',
       '                curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
       '                  "https://api.github.com/repos/${OWNER}/ios-keys/contents/${f}" -o "iosApp/signing/${f}" || rm -f "iosApp/signing/${f}"',
       '              done',
-      '              echo "✅ Nacten vychozi Android keystore z trezoru ios-keys."',
+      '              echo "✅ Nacten vychozi Android keystore z ios-keys."',
       '            fi',
       '            curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
       '              "https://api.github.com/repos/${OWNER}/ios-keys/contents/gplaykey.json.b64" -o "iosApp/signing/gplaykey.json.b64" || rm -f "iosApp/signing/gplaykey.json.b64"',
       '            for hf in huawei_key.json.b64 huaweikey.json.b64 agconnect_key.json.b64; do',
       '              if curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
-      '                "https://api.github.com/repos/${OWNER}/ios-keys/contents/${hf}" -o "iosApp/signing/huawei_key.json.b64"; then',
-      '                break',
-      '              fi',
+      '                "https://api.github.com/repos/${OWNER}/ios-keys/contents/${hf}" -o "iosApp/signing/huawei_key.json.b64"; then break; fi',
       '            done',
       '          fi',
-      '',
       '      - name: Prepare Android Signing Keystore',
       '        run: |',
       '          if [ -s "iosApp/signing/android_keystore.b64" ] && [ -s "iosApp/signing/android_keystore.props" ]; then',
@@ -3301,21 +3222,11 @@ jobs:
       '            while IFS=\'=\' read -r key val; do',
       '              key=$(echo "$key" | tr -d \'\\r\\n \')',
       '              val=$(echo "$val" | tr -d \'\\r\\n\')',
-      '              if [ -n "$key" ]; then',
-      '                export "${key}=${val}"',
-      '                echo "${key}=${val}" ' + GT + GT + ' $GITHUB_ENV',
-      '              fi',
+      '              if [ -n "$key" ]; then export "${key}=${val}"; echo "${key}=${val}" ' + GT + GT + ' $GITHUB_ENV; fi',
       '            done ' + LT + ' iosApp/signing/android_keystore.props',
       '            DETECTED_ALIAS=$(keytool -J-Duser.language=en -list -v -keystore /tmp/android_keystore.jks -storepass "$CM_KEYSTORE_PASSWORD" 2' + GT + '/dev/null | sed -n \'s/^Alias name: //p\' | head -n 1 | tr -d \'\\r\\n \')',
-      '            if [ -n "$DETECTED_ALIAS" ]; then',
-      '              echo "✅ Automaticky rozpoznan alias v Android keystore: $DETECTED_ALIAS"',
-      '              echo "CM_KEY_ALIAS=$DETECTED_ALIAS" ' + GT + GT + ' $GITHUB_ENV',
-      '            fi',
-      '            echo "✅ Android podpisovy klic je pripraven."',
-      '          else',
-      '            echo "⚠️ UPOZORNENI: Android keystore nebyl nalezen, build pobezi bez produkcniho podpisu."',
+      '            if [ -n "$DETECTED_ALIAS" ]; then echo "CM_KEY_ALIAS=$DETECTED_ALIAS" ' + GT + GT + ' $GITHUB_ENV; fi',
       '          fi',
-      '',
       '      - name: Build Android Release AAB and APK',
       '        run: |',
       '          if [ -f "composeApp/build.gradle.kts" ]; then',
@@ -3323,12 +3234,9 @@ jobs:
       '            sed -i "s/versionName = \\"[0-9.]*\\\\.\\\\\\${ciBuildNumber}\\"/versionName = \\"${APP_VERSION}.\\\\\\${ciBuildNumber}\\"/g" composeApp/build.gradle.kts || true',
       '          fi',
       '          ./gradlew :composeApp:bundleRelease :composeApp:assembleRelease',
-      '          BUILD_NUM="${PROJECT_BUILD_NUMBER}"',
-      '          VERSION_NAME="${APP_VERSION}.${BUILD_NUM}"',
+      '          VERSION_NAME="${APP_VERSION}.${PROJECT_BUILD_NUMBER}"',
       '          mv composeApp/build/outputs/apk/release/composeApp-release.apk "composeApp/build/outputs/apk/release/${APP_NAME}-${VERSION_NAME}.apk"',
       '          mv composeApp/build/outputs/bundle/release/composeApp-release.aab "composeApp/build/outputs/bundle/release/${APP_NAME}-${VERSION_NAME}.aab"',
-      '          echo "✅ VYSLEDEK ANDROID BUILDU: Balicky ${APP_NAME}-${VERSION_NAME}.apk a .aab byly uspesne sestaveny!"',
-      '',
       '      - name: Upload Android Artifacts (.apk & .aab)',
       '        uses: actions/upload-artifact@v4',
       '        with:',
@@ -3336,294 +3244,133 @@ jobs:
       '          path: |',
       '            composeApp/build/outputs/apk/release/*.apk',
       '            composeApp/build/outputs/bundle/release/*.aab',
-      '',
       '      - name: Publish Android AAB to Google Play (Internal Testing)',
       '        run: |',
       '          if [ "$PUBLISH_TO_STORES" != "true" ]; then',
-      '            echo "ℹ️ VYSLEDEK GOOGLE PLAY: Publikace do obchodu je vypnuta (rezim bez publikace). Preskakuji Google Play."',
+      '            echo "ℹ️ Publikace do obchodu je vypnuta. Preskakuji Google Play."',
       '          elif [ -s "iosApp/signing/gplaykey.json.b64" ]; then',
-      '            echo "⏳ Pripojuji se ke Google Play Console a nahravam .aab (timeout nastaven na 300 s)..."',
       '            base64 --decode ' + LT + ' iosApp/signing/gplaykey.json.b64 ' + GT + ' /tmp/gplay_key.json',
-      '            pip3 install --quiet --break-system-packages google-api-python-client google-auth-httplib2 google-auth-oauthlib || \\',
-      '            pip3 install --quiet google-api-python-client google-auth-httplib2 google-auth-oauthlib',
-      '',
+      '            pip3 install --quiet --break-system-packages google-api-python-client google-auth-httplib2 google-auth-oauthlib || pip3 install --quiet google-api-python-client google-auth-httplib2 google-auth-oauthlib',
       '            python3 - ' + LT + LT + ' \'EOF\'',
       '          import os, time, socket',
-      '          import httplib2',
-      '          import google_auth_httplib2',
       '          from google.oauth2 import service_account',
       '          from googleapiclient.discovery import build',
       '          from googleapiclient.http import MediaFileUpload',
       '          from googleapiclient.errors import HttpError',
-      '',
       '          socket.setdefaulttimeout(300)',
-      '',
       '          package_name = os.environ.get("BUNDLE_ID")',
       '          build_num = os.environ.get("PROJECT_BUILD_NUMBER", "101")',
       '          app_name = os.environ.get("APP_NAME")',
       '          app_version = os.environ.get("APP_VERSION", "1.0")',
       '          aab_path = f"composeApp/build/outputs/bundle/release/{app_name}-{app_version}.{build_num}.aab"',
-      '',
       '          def upload_to_gplay():',
-      '              creds = service_account.Credentials.from_service_account_file(',
-      '                  "/tmp/gplay_key.json",',
-      '                  scopes=["https://www.googleapis.com/auth/androidpublisher"]',
-      '              )',
-      '              http = httplib2.Http(timeout=300)',
-      '              authed_http = google_auth_httplib2.AuthorizedHttp(creds, http=http)',
-      '              service = build("androidpublisher", "v3", http=authed_http, cache_discovery=False)',
-      '',
-      '              edit_request = service.edits().insert(body={}, packageName=package_name)',
-      '              result = edit_request.execute(num_retries=5)',
-      '              edit_id = result["id"]',
-      '',
+      '              creds = service_account.Credentials.from_service_account_file("/tmp/gplay_key.json", scopes=["https://www.googleapis.com/auth/androidpublisher"])',
+      '              service = build("androidpublisher", "v3", credentials=creds, cache_discovery=False)',
+      '              edit_id = service.edits().insert(body={}, packageName=package_name).execute(num_retries=5)["id"]',
       '              media = MediaFileUpload(aab_path, mimetype="application/octet-stream", resumable=True)',
-      '              bundle_response = service.edits().bundles().upload(',
-      '                  editId=edit_id,',
-      '                  packageName=package_name,',
-      '                  media_body=media',
-      '              ).execute(num_retries=5)',
-      '              version_code = bundle_response["versionCode"]',
-      '              print(f"📦 Soubor {os.path.basename(aab_path)} nahran do Google Play (kod verze: {version_code}).")',
-      '',
+      '              version_code = service.edits().bundles().upload(editId=edit_id, packageName=package_name, media_body=media).execute(num_retries=5)["versionCode"]',
       '              def commit_edit(eid, is_draft=False):',
       '                  try:',
       '                      service.edits().commit(editId=eid, packageName=package_name).execute(num_retries=5)',
-      '                      if is_draft:',
-      '                          print(f"✅ VYSLEDEK GOOGLE PLAY: Balicek .aab (verze {app_version}.{build_num}) byl ulozen jako koncept (Draft) v Google Play!")',
-      '                      else:',
-      '                          print(f"✅ VYSLEDEK GOOGLE PLAY: Balicek .aab (verze {app_version}.{build_num}) byl uspesne publikovan do Google Play!")',
+      '                      print(f"✅ VYSLEDEK GOOGLE PLAY: .aab ({app_version}.{build_num}) ulozen (draft={is_draft})!")',
       '                  except Exception as cerr:',
-      '                      err_str = str(cerr)',
-      '                      if "Only releases with status draft" in err_str:',
-      '                          raise cerr',
-      '                      service.edits().commit(',
-      '                          editId=eid,',
-      '                          packageName=package_name,',
-      '                          changesNotSentForReview=True',
-      '                      ).execute(num_retries=5)',
-      '                      print(f"✅ VYSLEDEK GOOGLE PLAY: Balicek .aab (verze {app_version}.{build_num}) byl ulozen do Google Play (changesNotSentForReview=True)!")',
-      '',
+      '                      if "Only releases with status draft" in str(cerr): raise cerr',
+      '                      service.edits().commit(editId=eid, packageName=package_name, changesNotSentForReview=True).execute(num_retries=5)',
+      '                      print(f"✅ VYSLEDEK GOOGLE PLAY: .aab ({app_version}.{build_num}) ulozen (changesNotSentForReview=True)!")',
       '              try:',
-      '                  service.edits().tracks().update(',
-      '                      editId=edit_id,',
-      '                      track="internal",',
-      '                      packageName=package_name,',
-      '                      body={"releases": [{"versionCodes": [str(version_code)], "status": "completed"}]}',
-      '                  ).execute(num_retries=5)',
+      '                  service.edits().tracks().update(editId=edit_id, track="internal", packageName=package_name, body={"releases": [{"versionCodes": [str(version_code)], "status": "completed"}]}).execute(num_retries=5)',
       '                  commit_edit(edit_id, is_draft=False)',
       '              except Exception:',
-      '                  service.edits().tracks().update(',
-      '                      editId=edit_id,',
-      '                      track="internal",',
-      '                      packageName=package_name,',
-      '                      body={"releases": [{"versionCodes": [str(version_code)], "status": "draft"}]}',
-      '                  ).execute(num_retries=5)',
+      '                  service.edits().tracks().update(editId=edit_id, track="internal", packageName=package_name, body={"releases": [{"versionCodes": [str(version_code)], "status": "draft"}]}).execute(num_retries=5)',
       '                  commit_edit(edit_id, is_draft=True)',
-      '',
-      '          max_attempts = 3',
-      '          for attempt in range(1, max_attempts + 1):',
+      '          for attempt in range(1, 4):',
       '              try:',
       '                  upload_to_gplay()',
       '                  break',
       '              except HttpError as e:',
-      '                  err_txt = str(e)',
       '                  if e.resp.status == 404:',
-      '                      print(f"⚠️ VYSLEDEK GOOGLE PLAY: Aplikace s balickem \'{package_name}\' zatim v Google Play Console neexistuje (404). Prvni .aab soubor je nutne nahrat do konzole rucne.")',
+      '                      print(f"⚠️ GOOGLE PLAY: Balicek \'{package_name}\' zatim v Google Play neexistuje (404).")',
       '                      break',
-      '                  elif "already been used" in err_txt or "version code" in err_txt.lower():',
-      '                      print(f"✅ VYSLEDEK GOOGLE PLAY: Verze s kodem {build_num} uz je v Google Play Console nahrana z predchoziho pokusu.")',
+      '                  elif "already been used" in str(e) or "version code" in str(e).lower():',
+      '                      print(f"✅ GOOGLE PLAY: Verze {build_num} uz je nahrana.")',
       '                      break',
-      '                  else:',
-      '                      print(f"⚠️ UPOZORNENI (pokus {attempt}/{max_attempts}): Google Play API vratilo stav {e.resp.status}: {err_txt}")',
-      '                      if attempt ' + LT + ' max_attempts:',
-      '                          time.sleep(10)',
+      '                  elif attempt ' + LT + ' 3: time.sleep(10)',
       '              except Exception as e:',
-      '                  print(f"⏳ UPOZORNENI (pokus {attempt}/{max_attempts}): Prodleva odpovedi Google Play ({e}).")',
-      '                  if attempt ' + LT + ' max_attempts:',
-      '                      print("Cekam 15 sekund a overuji stav zapisu v Google Play...")',
-      '                      time.sleep(15)',
-      '                  else:',
-      '                      print(f"⚠️ VYSLEDEK GOOGLE PLAY: Nepodarilo se dokoncit zapis do Google Play ani po {max_attempts} pokusech: {e}")',
+      '                  if attempt ' + LT + ' 3: time.sleep(15)',
+      '                  else: print(f"⚠️ GOOGLE PLAY: Nepodarilo se dokoncit zapis: {e}")',
       '          EOF',
-      '          else',
-      '            echo "⚠️ VYSLEDEK GOOGLE PLAY: Klic gplaykey.json nebyl v trezoru nalezen, preskakuji Google Play."',
       '          fi',
-      '',
       '      - name: Publish Android APK to Huawei AppGallery',
       '        run: |',
       '          if [ "$PUBLISH_TO_STORES" != "true" ]; then',
-      '            echo "ℹ️ VYSLEDEK HUAWEI APPGALLERY: Publikace do obchodu je vypnuta (rezim bez publikace). Preskakuji Huawei AppGallery."',
+      '            echo "ℹ️ Publikace do obchodu je vypnuta. Preskakuji Huawei AppGallery."',
       '          elif [ -s "iosApp/signing/huawei_key.json.b64" ]; then',
-      '            echo "⏳ Pripojuji se k Huawei AppGallery Connect pres Service Account JWT..."',
       '            base64 --decode ' + LT + ' iosApp/signing/huawei_key.json.b64 ' + GT + ' /tmp/huawei_key.json',
-      '            pip3 install --quiet --break-system-packages pyjwt cryptography requests || \\',
-      '            pip3 install --quiet pyjwt cryptography requests',
-      '',
+      '            pip3 install --quiet --break-system-packages pyjwt cryptography requests || pip3 install --quiet pyjwt cryptography requests',
       '            python3 - ' + LT + LT + ' \'EOF\'',
       '          import os, sys, json, time, jwt, requests',
-      '',
       '          package_name = os.environ.get("BUNDLE_ID", "").strip()',
       '          build_num = os.environ.get("PROJECT_BUILD_NUMBER", "101").strip()',
       '          app_name = os.environ.get("APP_NAME", "").strip()',
       '          app_version = os.environ.get("APP_VERSION", "1.0").strip()',
       '          apk_path = f"composeApp/build/outputs/apk/release/{app_name}-{app_version}.{build_num}.apk"',
-      '',
-      '          KNOWN_APP_IDS = {',
-      '              "cz.taximares.radiopm": "119618129",',
-      '              "cz.mares.radiopm": "119618129"',
-      '          }',
-      '',
-      '          if not os.path.exists(apk_path):',
-      '              print(f"⚠️ VYSLEDEK HUAWEI APPGALLERY: Soubor {apk_path} nebyl nalezen, preskakuji upload.")',
-      '              sys.exit(0)',
-      '',
+      '          KNOWN_APP_IDS = {"cz.taximares.radiopm": "119618129", "cz.mares.radiopm": "119618129"}',
+      '          if not os.path.exists(apk_path): sys.exit(0)',
       '          try:',
-      '              with open("/tmp/huawei_key.json", "r", encoding="utf-8") as f:',
-      '                  hk = json.load(f)',
-      '              key_id = str(hk.get("key_id", "")).strip()',
-      '              priv_key = str(hk.get("private_key", "")).strip()',
-      '              sub_account = str(hk.get("sub_account", "")).strip()',
+      '              hk = json.load(open("/tmp/huawei_key.json", "r", encoding="utf-8"))',
+      '              key_id, priv_key, sub_account = str(hk.get("key_id", "")).strip(), str(hk.get("private_key", "")).strip(), str(hk.get("sub_account", "")).strip()',
       '              token_uri = str(hk.get("token_uri", "https://connect-api.cloud.huawei.com/api/oauth2/v1/token")).strip()',
       '              base_agc = "https://connect-api.cloud.huawei.com/api"',
-      '',
-      '              now = int(time.time())',
-      '              candidates = []',
+      '              now, candidates = int(time.time()), []',
       '              if sub_account and priv_key:',
       '                  for alg in ["PS256", "RS256"]:',
-      '                      for aud_val in [',
-      '                          token_uri,',
-      '                          "https://oauth-login.cloud.huawei.com/oauth2/v3/token",',
-      '                          "https://connect-api.cloud.huawei.com/api/oauth2/v1/token",',
-      '                          "https://connect-api.cloud.huawei.com"',
-      '                      ]:',
+      '                      for aud_val in [token_uri, "https://oauth-login.cloud.huawei.com/oauth2/v3/token", "https://connect-api.cloud.huawei.com/api/oauth2/v1/token", "https://connect-api.cloud.huawei.com"]:',
       '                          try:',
-      '                              pl = {"iss": sub_account, "aud": aud_val, "iat": now - 30, "exp": now + 3000}',
-      '                              tok = jwt.encode(pl, priv_key, algorithm=alg, headers={"kid": key_id, "typ": "JWT", "alg": alg})',
-      '                              if isinstance(tok, bytes):',
-      '                                  tok = tok.decode("utf-8")',
-      '                              candidates.append((f"JWT-{alg}", {',
-      '                                  "Authorization": f"Bearer {tok}",',
-      '                                  "client_id": sub_account,',
-      '                                  "Content-Type": "application/json"',
-      '                              }))',
-      '                          except Exception:',
-      '                              pass',
-      '',
+      '                              tok = jwt.encode({"iss": sub_account, "aud": aud_val, "iat": now - 30, "exp": now + 3000}, priv_key, algorithm=alg, headers={"kid": key_id, "typ": "JWT", "alg": alg})',
+      '                              if isinstance(tok, bytes): tok = tok.decode("utf-8")',
+      '                              candidates.append((f"JWT-{alg}", {"Authorization": f"Bearer {tok}", "client_id": sub_account, "Content-Type": "application/json"}))',
+      '                          except Exception: pass',
       '              if "client_secret" in hk or "key" in hk:',
-      '                  c_sec = hk.get("client_secret") or hk.get("key")',
-      '                  c_id = hk.get("client_id") or sub_account',
+      '                  c_sec, c_id = hk.get("client_secret") or hk.get("key"), hk.get("client_id") or sub_account',
       '                  tr = requests.post(f"{base_agc}/oauth2/v1/token", json={"grant_type": "client_credentials", "client_id": c_id, "client_secret": c_sec}, timeout=30)',
       '                  if tr.ok and tr.json().get("access_token"):',
-      '                      at = tr.json()["access_token"]',
-      '                      candidates.insert(0, ("OAuth", {',
-      '                          "Authorization": f"Bearer {at}",',
-      '                          "client_id": str(c_id),',
-      '                          "Content-Type": "application/json"',
-      '                      }))',
-      '',
-      '              working_headers = None',
-      '              app_res = None',
-      '              known_id = KNOWN_APP_IDS.get(package_name, "")',
-      '',
+      '                      candidates.insert(0, ("OAuth", {"Authorization": f"Bearer {tr.json()[\'access_token\']}", "client_id": str(c_id), "Content-Type": "application/json"}))',
+      '              working_headers, app_res, known_id = None, None, KNOWN_APP_IDS.get(package_name, "")',
       '              for label, hdrs in candidates:',
       '                  test_r = requests.get(f"{base_agc}/publish/v2/appid-list", params={"packageName": package_name}, headers=hdrs, timeout=30)',
-      '                  if test_r.ok:',
-      '                      working_headers = hdrs',
-      '                      app_res = test_r',
-      '                      print(f"🔐 Prihlaseni k Huawei AppGallery Connect uspesne ({label}).")',
-      '                      break',
+      '                  if test_r.ok: working_headers, app_res = hdrs, test_r; break',
       '                  elif known_id:',
       '                      test_r2 = requests.get(f"{base_agc}/publish/v2/app-info", params={"appId": known_id}, headers=hdrs, timeout=30)',
-      '                      if test_r2.ok:',
-      '                          working_headers = hdrs',
-      '                          app_res = test_r2',
-      '                          print(f"🔐 Prihlaseni k Huawei AppGallery Connect uspesne pres App ID {known_id} ({label}).")',
-      '                          break',
-      '',
-      '              if not working_headers:',
-      '                  print("⚠️ VYSLEDEK HUAWEI APPGALLERY: Autorizace byla odmitnuta. Zkontroluj opravneni klice v AppGallery Connect.")',
-      '                  sys.exit(0)',
-      '',
+      '                      if test_r2.ok: working_headers, app_res = hdrs, test_r2; break',
+      '              if not working_headers: sys.exit(0)',
       '              huawei_app_id = ""',
-      '              if app_res and app_res.ok:',
-      '                  app_ids = app_res.json().get("appids", [])',
-      '                  if app_ids:',
-      '                      huawei_app_id = str(app_ids[0].get("value", ""))',
-      '',
-      '              if not huawei_app_id and known_id:',
-      '                  huawei_app_id = known_id',
-      '',
-      '              if not huawei_app_id:',
-      '                  print(f"⚠️ VYSLEDEK HUAWEI APPGALLERY: Aplikace s balickem \'{package_name}\' zatim v Huawei AppGallery Connect neni zalozena.")',
-      '                  sys.exit(0)',
-      '',
-      '              def print_huawei_result(resp, app_id_val, fname):',
-      '                  try:',
-      '                      rj = resp.json()',
-      '                  except Exception:',
-      '                      rj = {}',
-      '                  ret = rj.get("ret", {})',
-      '                  code = str(ret.get("code", ""))',
-      '                  msg = str(ret.get("msg", resp.text))',
-      '                  if resp.ok and code == "0":',
-      '                      print(f"✅ VYSLEDEK HUAWEI APPGALLERY: Balicek {fname} byl uspesne nahran a prirazen k aplikaci (App ID {app_id_val})!")',
-      '                  elif code == "204144647" or "can\'t be edited" in msg or "cannot be edited" in msg:',
-      '                      print(f"ℹ️ VYSLEDEK HUAWEI APPGALLERY: Aplikace (App ID {app_id_val}) prave ceka na schvaleni (Reviewing) a je uzamcena proti upravam. Ponechavam stavajici verzi ke schvaleni.")',
-      '                  elif code == "204144660" or "version code" in msg.lower():',
-      '                      print(f"ℹ️ VYSLEDEK HUAWEI APPGALLERY: Stejna nebo vyssi verze balicku .apk uz je v Huawei AppGallery nahrana (App ID {app_id_val}).")',
-      '                  else:',
-      '                      print(f"⚠️ VYSLEDEK HUAWEI APPGALLERY: Server vratil odpoved (kod {code}): {msg}")',
-      '',
-      '              print(f"📦 Nahravam {os.path.basename(apk_path)} do Huawei AppGallery (App ID: {huawei_app_id})...")',
-      '              url_res = requests.get(',
-      '                  f"{base_agc}/publish/v2/upload-url/for-obs",',
-      '                  params={"appId": huawei_app_id, "fileName": os.path.basename(apk_path), "contentLength": os.path.getsize(apk_path)},',
-      '                  headers=working_headers,',
-      '                  timeout=30',
-      '              )',
+      '              if app_res and app_res.ok and app_res.json().get("appids"):',
+      '                  huawei_app_id = str(app_res.json()["appids"][0].get("value", ""))',
+      '              if not huawei_app_id: huawei_app_id = known_id',
+      '              if not huawei_app_id: sys.exit(0)',
+      '              url_res = requests.get(f"{base_agc}/publish/v2/upload-url/for-obs", params={"appId": huawei_app_id, "fileName": os.path.basename(apk_path), "contentLength": os.path.getsize(apk_path)}, headers=working_headers, timeout=30)',
       '              if url_res.ok and url_res.json().get("urlInfo"):',
-      '                  url_info = url_res.json()["urlInfo"]',
-      '                  upload_url = url_info.get("url")',
-      '                  upload_headers = dict(url_info.get("headers", {}))',
+      '                  ui = url_res.json()["urlInfo"]',
       '                  with open(apk_path, "rb") as apk_f:',
-      '                      up_r = requests.put(upload_url, data=apk_f, headers=upload_headers, timeout=300)',
+      '                      up_r = requests.put(ui.get("url"), data=apk_f, headers=dict(ui.get("headers", {})), timeout=300)',
       '                  if up_r.ok:',
-      '                      file_info_body = {',
-      '                          "fileType": 5,',
-      '                          "files": [{"fileName": os.path.basename(apk_path), "fileDestUrl": url_info.get("objectId", "")}]',
-      '                      }',
-      '                      fi_r = requests.put(f"{base_agc}/publish/v2/app-file-info", params={"appId": huawei_app_id}, json=file_info_body, headers=working_headers, timeout=60)',
-      '                      print_huawei_result(fi_r, huawei_app_id, os.path.basename(apk_path))',
-      '                  else:',
-      '                      print(f"⚠️ VYSLEDEK HUAWEI APPGALLERY: Chyba pri nahravani souboru na uloziste Huawei OBS ({up_r.status_code}).")',
+      '                      fi_r = requests.put(f"{base_agc}/publish/v2/app-file-info", params={"appId": huawei_app_id}, json={"fileType": 5, "files": [{"fileName": os.path.basename(apk_path), "fileDestUrl": ui.get("objectId", "")}]}, headers=working_headers, timeout=60)',
+      '                      print(f"✅ HUAWEI APPGALLERY: Stav prirazeni APK ({fi_r.status_code}): {fi_r.text[:160]}")',
       '              else:',
-      '                  u2_res = requests.get(f"{base_agc}/publish/v2/upload-url", params={"appId": huawei_app_id, "suffix": "apk"}, headers=working_headers, timeout=30)',
-      '                  if u2_res.ok and u2_res.json().get("uploadUrl"):',
-      '                      u2_data = u2_res.json()',
+      '                  u2 = requests.get(f"{base_agc}/publish/v2/upload-url", params={"appId": huawei_app_id, "suffix": "apk"}, headers=working_headers, timeout=30)',
+      '                  if u2.ok and u2.json().get("uploadUrl"):',
+      '                      u2d = u2.json()',
       '                      with open(apk_path, "rb") as apk_f:',
-      '                          up2_r = requests.post(',
-      '                              u2_data["uploadUrl"],',
-      '                              files={"file": (os.path.basename(apk_path), apk_f, "application/octet-stream")},',
-      '                              data={"authCode": u2_data.get("authCode", ""), "fileCount": "1"},',
-      '                              timeout=300',
-      '                          )',
-      '                      if up2_r.ok:',
-      '                          flist = up2_r.json().get("result", {}).get("UploadFileRsp", {}).get("fileInfoList", [])',
+      '                          up2 = requests.post(u2d["uploadUrl"], files={"file": (os.path.basename(apk_path), apk_f, "application/octet-stream")}, data={"authCode": u2d.get("authCode", ""), "fileCount": "1"}, timeout=300)',
+      '                      if up2.ok:',
+      '                          flist = up2.json().get("result", {}).get("UploadFileRsp", {}).get("fileInfoList", [])',
       '                          if flist:',
-      '                              dest_url = flist[0].get("fileDestUlr") or flist[0].get("fileDestUrl")',
-      '                              fi_body = {"fileType": 5, "files": [{"fileName": os.path.basename(apk_path), "fileDestUrl": dest_url}]}',
-      '                              fi2_r = requests.put(f"{base_agc}/publish/v2/app-file-info", params={"appId": huawei_app_id}, json=fi_body, headers=working_headers, timeout=60)',
-      '                              print_huawei_result(fi2_r, huawei_app_id, os.path.basename(apk_path))',
-      '                  else:',
-      '                      print(f"⚠️ VYSLEDEK HUAWEI APPGALLERY: Nelze ziskat nahravaci URL z Huawei AppGallery ({u2_res.status_code}).")',
+      '                              durl = flist[0].get("fileDestUlr") or flist[0].get("fileDestUrl")',
+      '                              requests.put(f"{base_agc}/publish/v2/app-file-info", params={"appId": huawei_app_id}, json={"fileType": 5, "files": [{"fileName": os.path.basename(apk_path), "fileDestUrl": durl}]}, headers=working_headers, timeout=60)',
       '          except Exception as e:',
-      '              print(f"⚠️ VYSLEDEK HUAWEI APPGALLERY: Neocekavana chyba pri komunikaci s Huawei API: {e}")',
+      '              print(f"⚠️ HUAWEI APPGALLERY: {e}")',
       '          EOF',
-      '          else',
-      '            echo "⚠️ VYSLEDEK HUAWEI APPGALLERY: Klic huawei_key.json nebyl v trezoru nalezen, preskakuji Huawei upload."',
       '          fi',
-      '',
       '  build-ios:',
       '    name: iOS Release (.ipa & TestFlight)',
       '    runs-on: macos-latest',
@@ -3631,13 +3378,11 @@ jobs:
       '    steps:',
       '      - name: Checkout repository',
       '        uses: actions/checkout@v4',
-      '',
       '      - name: Set up JDK 17',
       '        uses: actions/setup-java@v5',
       '        with:',
       '          distribution: \'temurin\'',
       '          java-version: \'17\'',
-      '',
       '      - name: Fetch Signing Keys from Private Vault (ios-keys)',
       '        env:',
       '          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}',
@@ -3649,129 +3394,305 @@ jobs:
       '              curl -sfL -H "Authorization: Bearer $VAULT_TOKEN" -H "Accept: application/vnd.github.raw" \\',
       '                "https://api.github.com/repos/${OWNER}/ios-keys/contents/${f}" -o "iosApp/signing/${f}" || rm -f "iosApp/signing/${f}"',
       '            done',
-      '            echo "✅ Podpisove klice pro iOS (.p12 a Apple API .p8) nacteny z trezoru ios-keys."',
       '          fi',
-      '',
-      '      - name: Build KMP iOS Framework, Sign and Package IPA',
+      '      - name: Build KMP iOS Framework, Convert Icons, Sign and Publish IPA',
       '        env:',
       '          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}',
       '          REPO_FULL_NAME: ${{ github.repository }}',
       '        run: |',
-      '          if [ "$BUILD_IOS" != "true" ]; then',
-      '            echo "ℹ️ iOS build je vypnuty (rezim Pouze Android). Preskakuji."',
-      '            exit 0',
-      '          fi',
-      '          export PATH="$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.11/bin:$HOME/Library/Python/3.12/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"',
+      '          if [ "$BUILD_IOS" != "true" ]; then exit 0; fi',
+      '          export PATH="$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.11/bin:$HOME/Library/Python/3.12/bin:$HOME/Library/Python/3.13/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"',
       '          BUILD_NUM=$(( ${GITHUB_RUN_NUMBER:-1} + 100 ))',
       '          export PROJECT_BUILD_NUMBER="${BUILD_NUM}"',
       '          if [ -f "composeApp/build.gradle.kts" ]; then',
       '            DETECTED_PKG=$(sed -n \'s/.*applicationId[[:space:]]*=[[:space:]]*"\\([^"]*\\)".*/\\1/p\' composeApp/build.gradle.kts | head -n 1 | tr -d \'\\r\\n \')',
-      '            if [ -n "$DETECTED_PKG" ]; then',
-      '              export BUNDLE_ID="$DETECTED_PKG"',
-      '              echo "BUNDLE_ID=${DETECTED_PKG}" ' + GT + GT + ' $GITHUB_ENV',
-      '            fi',
+      '            if [ -n "$DETECTED_PKG" ]; then export BUNDLE_ID="$DETECTED_PKG"; echo "BUNDLE_ID=${DETECTED_PKG}" ' + GT + GT + ' $GITHUB_ENV; fi',
       '          fi',
       '          INITIAL_APP_VERSION="$APP_VERSION"',
-      '',
       '          if [ ! -f "gradlew" ] || [ ! -f "gradle/wrapper/gradle-wrapper.jar" ]; then',
       '            mkdir -p /tmp/gw_init',
       '            echo \'rootProject.name = "init"\' ' + GT + ' /tmp/gw_init/settings.gradle.kts',
-      '            cd /tmp/gw_init',
-      '            gradle wrapper --gradle-version 8.7 --no-daemon',
-      '            cd - ' + GT + ' /dev/null',
-      '            cp -f /tmp/gw_init/gradlew .',
-      '            cp -rf /tmp/gw_init/gradle .',
+      '            cd /tmp/gw_init && gradle wrapper --gradle-version 8.7 --no-daemon && cd - ' + GT + ' /dev/null',
+      '            cp -f /tmp/gw_init/gradlew . && cp -rf /tmp/gw_init/gradle .',
       '          fi',
       '          chmod +x gradlew',
-      '',
       '          ./gradlew :composeApp:linkReleaseFrameworkIosArm64',
-      '',
-      '          if ! command -v xcodegen &' + GT + ' /dev/null; then',
-      '            HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen',
-      '          fi',
-      '',
-      '          pip3 install --quiet --break-system-packages Pillow || pip3 install --quiet Pillow',
+      '          if ! command -v xcodegen &' + GT + ' /dev/null; then HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen; fi',
+      '          pip3 install --quiet --break-system-packages Pillow resvg-py || pip3 install --quiet Pillow resvg-py || pip3 install --quiet --break-system-packages Pillow || pip3 install --quiet Pillow',
       '          python3 - ' + LT + LT + ' \'PYEOF\'',
-      '          import os, glob, json',
-      '          from PIL import Image, ImageDraw',
-      '',
+      '          import os, io, re, math, glob, json, shutil, subprocess',
+      '          import xml.etree.ElementTree as ET',
+      '          from PIL import Image, ImageDraw, ImageFont',
+      '          O, C = chr(60), chr(62)',
       '          assets_dir = "iosApp/iosApp/Assets.xcassets"',
       '          icon_dir = os.path.join(assets_dir, "AppIcon.appiconset")',
       '          os.makedirs(icon_dir, exist_ok=True)',
-      '',
       '          with open(os.path.join(assets_dir, "Contents.json"), "w") as f:',
       '              json.dump({"info": {"version": 1, "author": "xcode"}}, f, indent=2)',
-      '',
+      '          def is_detailed_icon(pil_img):',
+      '              rgb = pil_img.convert("RGB").resize((1024, 1024), Image.Resampling.LANCZOS)',
+      '              ext = rgb.crop((260, 260, 764, 764)).getextrema()',
+      '              return sum((hi - lo) for (lo, hi) in ext) ' + GT + '= 18',
+      '          def flatten_icon(pil_img, bg_rgb=(15, 23, 42)):',
+      '              rgba = pil_img.convert("RGBA").resize((1024, 1024), Image.Resampling.LANCZOS)',
+      '              bg = Image.new("RGBA", (1024, 1024), bg_rgb + (255,))',
+      '              return Image.alpha_composite(bg, rgba).convert("RGB")',
+      '          ANDR_NS = "{http://schemas.android.com/apk/res/android}"',
+      '          res_roots = [d for d in ["composeApp/src/androidMain/res", "app/src/main/res"] if os.path.isdir(d)]',
+      '          color_map = {}',
+      '          for rroot in res_roots:',
+      '              for vxml in glob.glob(os.path.join(rroot, "values*", "*.xml")):',
+      '                  try:',
+      '                      for cel in ET.parse(vxml).getroot().findall(".//color"):',
+      '                          if cel.attrib.get("name") and cel.text:',
+      '                              color_map[cel.attrib["name"].strip()] = cel.text.strip()',
+      '                  except Exception: pass',
+      '          def ltag(el): return el.tag.split("}", 1)[-1] if "}" in el.tag else el.tag',
+      '          def ga(el, name, default=None):',
+      '              for k in (ANDR_NS + name, "android:" + name, name):',
+      '                  if k in el.attrib: return el.attrib[k]',
+      '              return default',
+      '          def pnum(val, default=0.0):',
+      '              if val is None: return default',
+      '              m = re.match(r"^\\s*([+-]?(?:\\d+\\.?\\d*|\\.\\d+))", str(val))',
+      '              return float(m.group(1)) if m else default',
+      '          def parse_col(raw, depth=0):',
+      '              if not raw or depth ' + GT + ' 6: return ("none", 0.0)',
+      '              s = str(raw).strip()',
+      '              if s.startswith("@color/"):',
+      '                  cname = s.split("/", 1)[1]',
+      '                  return parse_col(color_map[cname], depth + 1) if cname in color_map else ("#0F172A", 1.0)',
+      '              if s == "@android:color/white": return ("#FFFFFF", 1.0)',
+      '              if s == "@android:color/black": return ("#000000", 1.0)',
+      '              if s == "@android:color/transparent": return ("none", 0.0)',
+      '              if s.startswith("#"):',
+      '                  h = s[1:]',
+      '                  if len(h) == 3: return (f"#{h[0]*2}{h[1]*2}{h[2]*2}", 1.0)',
+      '                  if len(h) == 4:',
+      '                      a = int(h[0], 16) / 15.0',
+      '                      return ("none", 0.0) if a == 0 else (f"#{h[1]*2}{h[2]*2}{h[3]*2}", a)',
+      '                  if len(h) == 6: return (f"#{h}", 1.0)',
+      '                  if len(h) == 8:',
+      '                      a = int(h[0:2], 16) / 255.0',
+      '                      return ("none", 0.0) if a == 0 else (f"#{h[2:8]}", a)',
+      '              return ("none", 0.0)',
+      '          def resolve_drawable(ref):',
+      '              if not ref: return None',
+      '              s = str(ref).strip()',
+      '              if s.startswith(("@color/", "#", "@android:color/")): return ("color", s)',
+      '              kind, name = s.lstrip("@").split("/", 1) if "/" in s else ("drawable", s)',
+      '              subdirs = [f"{kind}-xxxhdpi", f"{kind}-xxhdpi", f"{kind}-xhdpi", f"{kind}-anydpi-v26", kind, "drawable-xxxhdpi", "drawable-anydpi-v26", "drawable", "mipmap-xxxhdpi", "mipmap-anydpi-v26", "mipmap"]',
+      '              for rroot in res_roots:',
+      '                  for sd in subdirs:',
+      '                      for ext in (".xml", ".png", ".webp", ".jpg", ".jpeg"):',
+      '                          cand = os.path.join(rroot, sd, name + ext)',
+      '                          if os.path.isfile(cand): return ("xml" if ext == ".xml" else "raster", cand)',
+      '              return None',
+      '          def next_id(prefix, state):',
+      '              state[0] += 1',
+      '              return f"{prefix}_{state[0]}"',
+      '          def grad_to_def(gel, state, shape_box=108.0, is_shape=False):',
+      '              gid = next_id("grad", state)',
+      '              gtype = (ga(gel, "type", "linear") or "linear").lower()',
+      '              stops = []',
+      '              for item in gel:',
+      '                  if ltag(item) == "item":',
+      '                      col, calpha = parse_col(ga(item, "color", "#FFFFFF"))',
+      '                      stops.append((pnum(ga(item, "offset", "0"), 0.0), "#000000" if col == "none" else col, calpha))',
+      '              if not stops:',
+      '                  for pos, attr_n in [(0.0, "startColor"), (0.5, "centerColor"), (1.0, "endColor")]:',
+      '                      rv = ga(gel, attr_n)',
+      '                      if rv:',
+      '                           cv, av = parse_col(rv)',
+      '                           stops.append((pos, "#000000" if cv == "none" else cv, av))',
+      '              if not stops: stops = [(0.0, "#1E293B", 1.0), (1.0, "#0F172A", 1.0)]',
+      '              stop_tags = "".join(f\'{O}stop offset="{off:.4f}" stop-color="{col}" stop-opacity="{a:.4f}"/{C}\' for (off, col, a) in stops)',
+      '              if gtype == "radial":',
+      '                  cx, cy, rad = pnum(ga(gel, "centerX"), shape_box / 2.0), pnum(ga(gel, "centerY"), shape_box / 2.0), pnum(ga(gel, "gradientRadius"), shape_box * 0.7)',
+      '                  if is_shape and cx ' + LT + '= 1.0 and cy ' + LT + '= 1.0: cx *= shape_box; cy *= shape_box',
+      '                  return gid, f\'{O}radialGradient id="{gid}" gradientUnits="userSpaceOnUse" cx="{cx}" cy="{cy}" r="{max(1.0, rad)}"{C}{stop_tags}{O}/radialGradient{C}\'',
+      '              if is_shape and ga(gel, "startX") is None:',
+      '                  rad_a = math.radians(pnum(ga(gel, "angle", "0"), 0.0) % 360.0)',
+      '                  return gid, f\'{O}linearGradient id="{gid}" x1="{0.5 - 0.5*math.cos(rad_a):.4f}" y1="{0.5 + 0.5*math.sin(rad_a):.4f}" x2="{0.5 + 0.5*math.cos(rad_a):.4f}" y2="{0.5 - 0.5*math.sin(rad_a):.4f}"{C}{stop_tags}{O}/linearGradient{C}\'',
+      '              return gid, f\'{O}linearGradient id="{gid}" gradientUnits="userSpaceOnUse" x1="{pnum(ga(gel, \'startX\'), 0.0)}" y1="{pnum(ga(gel, \'startY\'), 0.0)}" x2="{pnum(ga(gel, \'endX\'), shape_box)}" y2="{pnum(ga(gel, \'endY\'), shape_box)}"{C}{stop_tags}{O}/linearGradient{C}\'',
+      '          def walk_nodes(children, defs, state, tint_col=None):',
+      '              out, idx, ch_list = [], 0, list(children)',
+      '              while idx ' + LT + ' len(ch_list):',
+      '                  el = ch_list[idx]',
+      '                  t = ltag(el)',
+      '                  if t == "clip-path":',
+      '                      pdata = " ".join(str(ga(el, "pathData", "")).split())',
+      '                      if pdata:',
+      '                          cid = next_id("cp", state)',
+      '                          crule = "evenodd" if str(ga(el, "fillType", "nonZero")).lower() == "evenodd" else "nonzero"',
+      '                          defs.append(f\'{O}clipPath id="{cid}"{C}{O}path d="{pdata}" clip-rule="{crule}"/{C}{O}/clipPath{C}\')',
+      '                          out.append(f\'{O}g clip-path="url(#{cid})"{C}{"".join(walk_nodes(ch_list[idx + 1:], defs, state, tint_col))}{O}/g{C}\')',
+      '                          break',
+      '                  elif t == "group":',
+      '                      tx, ty, px, py = pnum(ga(el, "translateX"), 0.0), pnum(ga(el, "translateY"), 0.0), pnum(ga(el, "pivotX"), 0.0), pnum(ga(el, "pivotY"), 0.0)',
+      '                      rot, sx, sy = pnum(ga(el, "rotation"), 0.0), pnum(ga(el, "scaleX"), 1.0), pnum(ga(el, "scaleY"), 1.0)',
+      '                      tparts = []',
+      '                      if tx != 0.0 or ty != 0.0: tparts.append(f"translate({tx},{ty})")',
+      '                      if rot != 0.0 or sx != 1.0 or sy != 1.0:',
+      '                          if px != 0.0 or py != 0.0: tparts.append(f"translate({px},{py})")',
+      '                          if rot != 0.0: tparts.append(f"rotate({rot})")',
+      '                          if sx != 1.0 or sy != 1.0: tparts.append(f"scale({sx},{sy})")',
+      '                          if px != 0.0 or py != 0.0: tparts.append(f"translate({-px},{-py})")',
+      '                      tattr = f\' transform="{" ".join(tparts)}"\' if tparts else ""',
+      '                      out.append(f\'{O}g{tattr}{C}{"".join(walk_nodes(list(el), defs, state, tint_col))}{O}/g{C}\')',
+      '                  elif t == "path":',
+      '                      pdata = " ".join(str(ga(el, "pathData", "")).split())',
+      '                      if pdata:',
+      '                          fill_val, fill_op, stroke_val, stroke_op = "none", 1.0, "none", 1.0',
+      '                          for child in el:',
+      '                              if ltag(child) == "attr":',
+      '                                  aname = child.attrib.get("name", "")',
+      '                                  gchild = next((x for x in child if ltag(x) == "gradient"), None)',
+      '                                  if gchild is not None:',
+      '                                      gid, gdef = grad_to_def(gchild, state)',
+      '                                      defs.append(gdef)',
+      '                                      if "fillColor" in aname: fill_val = f"url(#{gid})"',
+      '                                      elif "strokeColor" in aname: stroke_val = f"url(#{gid})"',
+      '                          if fill_val == "none" and ga(el, "fillColor"):',
+      '                              c_hex, c_a = parse_col(ga(el, "fillColor"))',
+      '                              fill_val, fill_op = (tint_col if (tint_col and c_hex != "none") else c_hex), c_a',
+      '                          fill_op *= pnum(ga(el, "fillAlpha"), 1.0)',
+      '                          if stroke_val == "none" and ga(el, "strokeColor"):',
+      '                              stroke_val, stroke_op = parse_col(ga(el, "strokeColor"))',
+      '                          stroke_op *= pnum(ga(el, "strokeAlpha"), 1.0)',
+      '                          sw = pnum(ga(el, "strokeWidth"), 0.0)',
+      '                          attrs = [f\'d="{pdata}"\', f\'fill="{fill_val}"\']',
+      '                          if fill_val != "none" and fill_op ' + LT + ' 0.999: attrs.append(f\'fill-opacity="{max(0.0, min(1.0, fill_op)):.4f}"\')',
+      '                          if str(ga(el, "fillType", "nonZero")).lower() == "evenodd": attrs.append(\'fill-rule="evenodd"\')',
+      '                          if stroke_val != "none" and sw ' + GT + ' 0.0:',
+      '                              attrs.extend([f\'stroke="{stroke_val}"\', f\'stroke-width="{sw}"\'])',
+      '                              if stroke_op ' + LT + ' 0.999: attrs.append(f\'stroke-opacity="{max(0.0, min(1.0, stroke_op)):.4f}"\')',
+      '                              if ga(el, "strokeLineCap") in ("butt", "round", "square"): attrs.append(f\'stroke-linecap="{ga(el, \'strokeLineCap\')}"\')',
+      '                              if ga(el, "strokeLineJoin") in ("miter", "round", "bevel"): attrs.append(f\'stroke-linejoin="{ga(el, \'strokeLineJoin\')}"\')',
+      '                          out.append(f\'{O}path {" ".join(attrs)}/{C}\')',
+      '                  idx += 1',
+      '              return out',
+      '          def svg_to_rgba_1024(svg_text):',
+      '              try:',
+      '                  import resvg_py',
+      '                  return Image.open(io.BytesIO(resvg_py.svg_to_bytes(svg_string=svg_text, width=1024, height=1024))).convert("RGBA")',
+      '              except Exception: pass',
+      '              svg_tmp, png_tmp = "/tmp/kmp_app_icon.svg", "/tmp/kmp_app_icon.png"',
+      '              open(svg_tmp, "w", encoding="utf-8").write(svg_text)',
+      '              rsvg_bin = shutil.which("rsvg-convert")',
+      '              if not rsvg_bin:',
+      '                  subprocess.run(["brew", "install", "librsvg"], env={**os.environ, "HOMEBREW_NO_AUTO_UPDATE": "1"}, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)',
+      '                  rsvg_bin = shutil.which("rsvg-convert")',
+      '              if rsvg_bin and subprocess.run([rsvg_bin, "-w", "1024", "-h", "1024", svg_tmp, "-o", png_tmp]).returncode == 0 and os.path.exists(png_tmp):',
+      '                  return Image.open(png_tmp).convert("RGBA")',
+      '              return None',
+      '          def render_resolved_layer(resolved, adaptive_crop=True):',
+      '              if not resolved: return None',
+      '              kind, target = resolved',
+      '              if kind == "color":',
+      '                  chex, calpha = parse_col(target)',
+      '                  if chex == "none": return Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))',
+      '                  return Image.new("RGBA", (1024, 1024), (int(chex[1:3], 16), int(chex[3:5], 16), int(chex[5:7], 16), int(round(calpha * 255))))',
+      '              if kind == "raster":',
+      '                  im = Image.open(target).convert("RGBA")',
+      '                  if adaptive_crop:',
+      '                      w0, h0 = im.size',
+      '                      im = im.crop((int(w0 * 12 / 108), int(h0 * 12 / 108), int(w0 * 96 / 108), int(h0 * 96 / 108)))',
+      '                  return im.resize((1024, 1024), Image.Resampling.LANCZOS)',
+      '              if kind == "xml":',
+      '                  root = ET.parse(target).getroot()',
+      '                  rt, state, defs = ltag(root), [0], []',
+      '                  if rt == "shape":',
+      '                      gel = next((x for x in root if ltag(x) == "gradient"), None)',
+      '                      sel = next((x for x in root if ltag(x) == "solid"), None)',
+      '                      fill_attr, fill_op = "#0F172A", 1.0',
+      '                      if gel is not None:',
+      '                          gid, gdef = grad_to_def(gel, state, 108.0, is_shape=True)',
+      '                          defs.append(gdef); fill_attr = f"url(#{gid})"',
+      '                      elif sel is not None:',
+      '                          c_h, c_a = parse_col(ga(sel, "color", "#0F172A"))',
+      '                          if c_h != "none": fill_attr, fill_op = c_h, c_a',
+      '                      return svg_to_rgba_1024(f\'{O}svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 108 108"{C}{O}defs{C}{"".join(defs)}{O}/defs{C}{O}rect x="0" y="0" width="108" height="108" fill="{fill_attr}" fill-opacity="{fill_op:.4f}"/{C}{O}/svg{C}\')',
+      '                  if rt == "vector":',
+      '                      vw, vh = max(1.0, pnum(ga(root, "viewportWidth"), 108.0)), max(1.0, pnum(ga(root, "viewportHeight"), 108.0))',
+      '                      raw_tint = ga(root, "tint")',
+      '                      tint_hex = parse_col(raw_tint)[0] if raw_tint else None',
+      '                      if tint_hex == "none": tint_hex = None',
+      '                      body = walk_nodes(list(root), defs, state, tint_hex)',
+      '                      if adaptive_crop:',
+      '                          mx, my = vw * (12.0 / 108.0), vh * (12.0 / 108.0)',
+      '                          vbox = f"{mx:.3f} {my:.3f} {vw - 2*mx:.3f} {vh - 2*my:.3f}"',
+      '                      else: vbox = f"0 0 {vw} {vh}"',
+      '                      return svg_to_rgba_1024(f\'{O}svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="{vbox}"{C}{O}defs{C}{"".join(defs)}{O}/defs{C}{"".join(body)}{O}/svg{C}\')',
+      '                  if rt in ("adaptive-icon", "layer-list"):',
+      '                      canvas = Image.new("RGBA", (1024, 1024), (15, 23, 42, 255))',
+      '                      for item in root:',
+      '                          if ltag(item) in ("background", "foreground", "item"):',
+      '                              sub_im = render_resolved_layer(resolve_drawable(ga(item, "drawable")), adaptive_crop=(rt == "adaptive-icon"))',
+      '                              if sub_im is not None: canvas = Image.alpha_composite(canvas, sub_im)',
+      '                      return canvas',
+      '              return None',
+      '          def try_build_android_icon():',
+      '              for rroot in res_roots:',
+      '                  for rel_xml in ["mipmap-anydpi-v26/ic_launcher.xml", "mipmap-anydpi-v26/ic_launcher_round.xml", "drawable/ic_launcher.xml"]:',
+      '                      xp = os.path.join(rroot, rel_xml)',
+      '                      if os.path.isfile(xp):',
+      '                          try:',
+      '                              im = render_resolved_layer(("xml", xp), adaptive_crop=False)',
+      '                              if im is not None and is_detailed_icon(flatten_icon(im)): return flatten_icon(im)',
+      '                          except Exception: pass',
+      '              fg_res = resolve_drawable("@drawable/ic_launcher_foreground") or resolve_drawable("@mipmap/ic_launcher_foreground")',
+      '              if fg_res:',
+      '                  bg_res = resolve_drawable("@drawable/ic_launcher_background") or resolve_drawable("@color/ic_launcher_background")',
+      '                  try:',
+      '                      canvas = Image.new("RGBA", (1024, 1024), (15, 23, 42, 255))',
+      '                      bg_im = render_resolved_layer(bg_res, adaptive_crop=True) if bg_res else None',
+      '                      if bg_im is not None: canvas = Image.alpha_composite(canvas, bg_im)',
+      '                      fg_im = render_resolved_layer(fg_res, adaptive_crop=True)',
+      '                      if fg_im is not None: canvas = Image.alpha_composite(canvas, fg_im)',
+      '                      if is_detailed_icon(canvas.convert("RGB")): return canvas.convert("RGB")',
+      '                  except Exception: pass',
+      '              return None',
       '          base = None',
       '          gradle_icon = os.path.join(icon_dir, "app-icon-1024.png")',
-      '          if os.path.exists(gradle_icon) and os.path.getsize(gradle_icon) ' + GT + ' 1000:',
-      '              try:',
-      '                  src = Image.open(gradle_icon).convert("RGBA")',
-      '                  bg = Image.new("RGBA", src.size, (15, 23, 42, 255))',
-      '                  base = Image.alpha_composite(bg, src).convert("RGB").resize((1024, 1024), Image.Resampling.LANCZOS)',
-      '              except Exception:',
-      '                  base = None',
-      '',
+      '          for hi_cand in ["composeApp/src/androidMain/ic_launcher-playstore.png", "app/src/main/ic_launcher-playstore.png", gradle_icon]:',
+      '              if os.path.isfile(hi_cand) and os.path.getsize(hi_cand) ' + GT + ' 1000:',
+      '                  try:',
+      '                      cand_im = flatten_icon(Image.open(hi_cand))',
+      '                      if is_detailed_icon(cand_im): base = cand_im; print(f"✅ Pouzita 1024px ikona: {hi_cand}"); break',
+      '                  except Exception: pass',
       '          if base is None:',
-      '              candidates = []',
-      '              for pattern in [',
-      '                  "app/src/main/ic_launcher-playstore.png",',
-      '                  "composeApp/src/androidMain/res/mipmap-xxxhdpi/ic_launcher.*",',
-      '                  "composeApp/src/androidMain/res/mipmap-xxhdpi/ic_launcher.*",',
-      '                  "app/src/main/res/mipmap-xxxhdpi/ic_launcher.*"',
-      '              ]:',
-      '                  for p in glob.glob(pattern):',
-      '                      if p.lower().endswith((".png", ".webp", ".jpg", ".jpeg")):',
-      '                          candidates.append(p)',
-      '              if candidates:',
-      '                  best_path = max(candidates, key=lambda p: os.path.getsize(p))',
-      '                  src = Image.open(best_path).convert("RGBA")',
-      '                  bg = Image.new("RGBA", src.size, (15, 23, 42, 255))',
-      '                  base = Image.alpha_composite(bg, src).convert("RGB").resize((1024, 1024), Image.Resampling.LANCZOS)',
-      '              else:',
-      '                  base = Image.new("RGB", (1024, 1024), (15, 23, 42))',
-      '                  draw = ImageDraw.Draw(base)',
-      '                  draw.rounded_rectangle([180, 180, 844, 844], radius=140, fill=(2, 132, 199))',
-      '',
-      '          specs = [',
-      '              ("iphone", "20x20", "2x", 40),',
-      '              ("iphone", "20x20", "3x", 60),',
-      '              ("iphone", "29x29", "2x", 58),',
-      '              ("iphone", "29x29", "3x", 87),',
-      '              ("iphone", "40x40", "2x", 80),',
-      '              ("iphone", "40x40", "3x", 120),',
-      '              ("iphone", "60x60", "2x", 120),',
-      '              ("iphone", "60x60", "3x", 180),',
-      '              ("ipad", "20x20", "1x", 20),',
-      '              ("ipad", "20x20", "2x", 40),',
-      '              ("ipad", "29x29", "1x", 29),',
-      '              ("ipad", "29x29", "2x", 58),',
-      '              ("ipad", "40x40", "1x", 40),',
-      '              ("ipad", "40x40", "2x", 80),',
-      '              ("ipad", "76x76", "1x", 76),',
-      '              ("ipad", "76x76", "2x", 152),',
-      '              ("ipad", "83.5x83.5", "2x", 167),',
-      '              ("ios-marketing", "1024x1024", "1x", 1024),',
-      '          ]',
-      '',
+      '              base = try_build_android_icon()',
+      '              if base is not None: print("✅ Automaticky vyrenderovana iOS ikona z Android XML zdroju!")',
+      '          if base is None:',
+      '              cands = [p for pat in ["composeApp/src/androidMain/res/mipmap-xxxhdpi/ic_launcher.*", "composeApp/src/androidMain/res/mipmap-xxhdpi/ic_launcher.*"] for p in glob.glob(pat) if p.lower().endswith((".png", ".webp", ".jpg", ".jpeg"))]',
+      '              if cands:',
+      '                  cand_im = flatten_icon(Image.open(max(cands, key=lambda p: os.path.getsize(p))))',
+      '                  if is_detailed_icon(cand_im): base = cand_im',
+      '          if base is None:',
+      '              base = Image.new("RGB", (1024, 1024), (15, 23, 42))',
+      '              draw = ImageDraw.Draw(base)',
+      '              draw.rounded_rectangle([140, 140, 884, 884], radius=180, fill=(2, 132, 199), outline=(125, 211, 252), width=18)',
+      '              words = re.findall(r"[A-Za-z0-9ÁČĎÉĚÍŇÓŘŠŤÚŮÝŽáčďéěíňóřšťúůýž]+", os.environ.get("APP_NAME", "PM").strip() or "PM")',
+      '              initials = (words[0][0] + (words[1][0] if len(words) ' + GT + ' 1 else (words[0][1] if len(words[0]) ' + GT + ' 1 else ""))).upper()',
+      '              fnt = ImageFont.load_default()',
+      '              for fp in ["/System/Library/Fonts/Supplemental/Arial Bold.ttf", "/System/Library/Fonts/Helvetica.ttc"]:',
+      '                  if os.path.exists(fp):',
+      '                      try: fnt = ImageFont.truetype(fp, 360); break',
+      '                      except Exception: pass',
+      '              bb = draw.textbbox((0, 0), initials, font=fnt)',
+      '              draw.text(((1024 - (bb[2] - bb[0])) / 2 - bb[0], (1024 - (bb[3] - bb[1])) / 2 - bb[1]), initials, fill=(255, 255, 255), font=fnt)',
+      '          specs = [("iphone","20x20","2x",40),("iphone","20x20","3x",60),("iphone","29x29","2x",58),("iphone","29x29","3x",87),("iphone","40x40","2x",80),("iphone","40x40","3x",120),("iphone","60x60","2x",120),("iphone","60x60","3x",180),("ipad","20x20","1x",20),("ipad","20x20","2x",40),("ipad","29x29","1x",29),("ipad","29x29","2x",58),("ipad","40x40","1x",40),("ipad","40x40","2x",80),("ipad","76x76","1x",76),("ipad","76x76","2x",152),("ipad","83.5x83.5","2x",167),("ios-marketing","1024x1024","1x",1024)]',
       '          images_json = []',
       '          for idiom, size_str, scale, px in specs:',
       '              fname = f"icon_{idiom}_{size_str}_{scale}.png"',
-      '              img = base.resize((px, px), Image.Resampling.LANCZOS).convert("RGB")',
-      '              img.save(os.path.join(icon_dir, fname), format="PNG")',
-      '              images_json.append({',
-      '                  "idiom": idiom,',
-      '                  "size": size_str,',
-      '                  "scale": scale,',
-      '                  "filename": fname',
-      '              })',
-      '',
+      '              base.resize((px, px), Image.Resampling.LANCZOS).convert("RGB").save(os.path.join(icon_dir, fname), format="PNG")',
+      '              images_json.append({"idiom": idiom, "size": size_str, "scale": scale, "filename": fname})',
       '          base.save(gradle_icon, format="PNG")',
       '          with open(os.path.join(icon_dir, "Contents.json"), "w") as f:',
       '              json.dump({"images": images_json, "info": {"version": 1, "author": "xcode"}}, f, indent=2)',
-      '          print("✅ Vygenerovano vsech 18 velikosti iOS ikon pro iPhone a iPad.")',
+      '          print("✅ Vygenerovano vsech 18 velikosti iOS ikon.")',
       '          PYEOF',
-      '',
       '          if [ -f "iosApp/iosApp/Info.plist" ]; then',
       '            plutil -replace CFBundleExecutable -string \'$(EXECUTABLE_NAME)\' iosApp/iosApp/Info.plist || true',
       '            plutil -replace CFBundleIdentifier -string \'$(PRODUCT_BUNDLE_IDENTIFIER)\' iosApp/iosApp/Info.plist || true',
@@ -3781,7 +3702,6 @@ jobs:
       '            plutil -replace CFBundleVersion -string \'$(CURRENT_PROJECT_VERSION)\' iosApp/iosApp/Info.plist || true',
       '            plutil -replace CFBundleIconName -string \'AppIcon\' iosApp/iosApp/Info.plist || true',
       '          fi',
-      '',
       '          FW_PATH="$(pwd)/composeApp/build/bin/iosArm64/releaseFramework"',
       '          cat ' + LT + LT + ' EOF ' + GT + ' iosApp/project.yml',
       '          name: iosApp',
@@ -3832,48 +3752,21 @@ jobs:
       '                targets:',
       '                  iosApp: all',
       '          EOF',
-      '',
-      '          cd iosApp',
-      '          xcodegen generate',
-      '          sed -i \'\' \'s/objectVersion = [0-9]*;/objectVersion = 56;/g\' iosApp.xcodeproj/project.pbxproj',
-      '          cd ..',
-      '',
-      '          if [ ! -s "iosApp/signing/ioskey.p12.b64" ] || [ ! -s "iosApp/signing/apple_api_key.p8.b64" ]; then',
-      '            echo "❌ CHYBA: V trezoru ios-keys chybi iOS certifikat (.p12) nebo Apple API klic (.p8)!"',
-      '            exit 1',
-      '          fi',
-      '',
-      '          pip3 install --quiet --break-system-packages codemagic-cli-tools pyjwt cryptography requests || \\',
-      '          pip3 install --quiet codemagic-cli-tools pyjwt cryptography requests',
-      '',
+      '          cd iosApp && xcodegen generate && sed -i \'\' \'s/objectVersion = [0-9]*;/objectVersion = 56;/g\' iosApp.xcodeproj/project.pbxproj && cd ..',
+      '          if [ ! -s "iosApp/signing/ioskey.p12.b64" ] || [ ! -s "iosApp/signing/apple_api_key.p8.b64" ]; then echo "❌ Chybi iOS klice v ios-keys!"; exit 1; fi',
+      '          pip3 install --quiet --break-system-packages codemagic-cli-tools pyjwt cryptography requests || pip3 install --quiet codemagic-cli-tools pyjwt cryptography requests',
       '          base64 --decode ' + LT + ' iosApp/signing/ioskey.p12.b64 ' + GT + ' /tmp/certificate.p12',
       '          CERT_PWD=$(cat iosApp/signing/ioskey.pwd | tr -d \'\\r\\n\')',
-      '',
       '          base64 --decode ' + LT + ' iosApp/signing/apple_api_key.p8.b64 ' + GT + ' /tmp/AuthKey.p8',
       '          while IFS=\'=\' read -r key val; do',
-      '            key=$(echo "$key" | tr -d \'\\r\\n \')',
-      '            val=$(echo "$val" | tr -d \'\\r\\n\')',
-      '            if [ -n "$key" ]; then',
-      '              export "${key}=${val}"',
-      '            fi',
+      '            key=$(echo "$key" | tr -d \'\\r\\n \'); val=$(echo "$val" | tr -d \'\\r\\n\')',
+      '            if [ -n "$key" ]; then export "${key}=${val}"; fi',
       '          done ' + LT + ' iosApp/signing/apple_api_key.props',
-      '',
-      '          openssl pkcs12 -in /tmp/certificate.p12 -nocerts -nodes -passin pass:"$CERT_PWD" -out /tmp/cert_key_raw.pem || \\',
-      '          openssl pkcs12 -legacy -in /tmp/certificate.p12 -nocerts -nodes -passin pass:"$CERT_PWD" -out /tmp/cert_key_raw.pem',
+      '          openssl pkcs12 -in /tmp/certificate.p12 -nocerts -nodes -passin pass:"$CERT_PWD" -out /tmp/cert_key_raw.pem || openssl pkcs12 -legacy -in /tmp/certificate.p12 -nocerts -nodes -passin pass:"$CERT_PWD" -out /tmp/cert_key_raw.pem',
       '          openssl pkey -in /tmp/cert_key_raw.pem -out /tmp/cert_key.pem',
-      '',
       '          keychain initialize',
-      '',
-      '          app-store-connect fetch-signing-files "$BUNDLE_ID" \\',
-      '            --type IOS_APP_STORE \\',
-      '            --certificate-key=@file:/tmp/cert_key.pem \\',
-      '            --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \\',
-      '            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \\',
-      '            --private-key "@file:/tmp/AuthKey.p8" \\',
-      '            --create',
-      '',
-      '          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"',
-      '          mkdir -p "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"',
+      '          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --certificate-key=@file:/tmp/cert_key.pem --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" --private-key "@file:/tmp/AuthKey.p8" --create',
+      '          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"',
       '          for prof in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"/*.mobileprovision; do',
       '            if [ -f "$prof" ]; then',
       '              cp -f "$prof" "$HOME/Library/MobileDevice/Provisioning Profiles/"',
@@ -3884,63 +3777,23 @@ jobs:
       '              fi',
       '            fi',
       '          done',
-      '',
-      '          keychain add-certificates \\',
-      '            --certificate /tmp/certificate.p12 \\',
-      '            --certificate-password "$CERT_PWD"',
-      '',
+      '          keychain add-certificates --certificate /tmp/certificate.p12 --certificate-password "$CERT_PWD"',
       '          xcode-project use-profiles --project "iosApp/iosApp.xcodeproj"',
-      '',
       '          mkdir -p build/ios/xcarchive build/ios/ipa',
-      '          xcodebuild -project iosApp/iosApp.xcodeproj \\',
-      '            -scheme iosApp \\',
-      '            -configuration Release \\',
-      '            -destination "generic/platform=iOS" \\',
-      '            -archivePath build/ios/xcarchive/iosApp.xcarchive \\',
-      '            archive \\',
-      '            COMPILER_INDEX_STORE_ENABLE=NO',
-      '',
-      '          xcodebuild -exportArchive \\',
-      '            -archivePath build/ios/xcarchive/iosApp.xcarchive \\',
-      '            -exportPath build/ios/ipa \\',
-      '            -exportOptionsPlist "$HOME/export_options.plist"',
-      '          echo "✅ VYSLEDEK IOS BUILDU: Balicek .ipa byl uspesne sestaven a podepsan!"',
-      '',
+      '          xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Release -destination "generic/platform=iOS" -archivePath build/ios/xcarchive/iosApp.xcarchive archive COMPILER_INDEX_STORE_ENABLE=NO',
+      '          xcodebuild -exportArchive -archivePath build/ios/xcarchive/iosApp.xcarchive -exportPath build/ios/ipa -exportOptionsPlist "$HOME/export_options.plist"',
       '          if [ "$PUBLISH_TO_STORES" = "true" ]; then',
-      '            MAX_PUB_ATTEMPTS=5',
-      '            PUB_ATTEMPT=1',
-      '            APP_NOT_IN_ASC=0',
-      '            UPLOAD_OK=0',
+      '            MAX_PUB_ATTEMPTS=5; PUB_ATTEMPT=1; APP_NOT_IN_ASC=0; UPLOAD_OK=0',
       '            while [ $PUB_ATTEMPT -le $MAX_PUB_ATTEMPTS ]; do',
-      '              echo "⏳ Pokus $PUB_ATTEMPT/$MAX_PUB_ATTEMPTS: Nahravam .ipa (verze $APP_VERSION, build $BUILD_NUM) do Apple App Store Connect (TestFlight)..."',
       '              set +e',
-      '              app-store-connect publish \\',
-      '                --path build/ios/ipa/*.ipa \\',
-      '                --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \\',
-      '                --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \\',
-      '                --private-key "@file:/tmp/AuthKey.p8" ' + GT + ' /tmp/asc_publish.log 2' + GT + '&1',
-      '              PUB_EXIT=$?',
-      '              set -e',
-      '',
-      '              if [ $PUB_EXIT -eq 0 ]; then',
-      '                echo "✅ VYSLEDEK APPLE TESTFLIGHT: Balicek .ipa (verze $APP_VERSION, build $BUILD_NUM) byl bez chyb nahran do App Store Connect!"',
-      '                UPLOAD_OK=1',
-      '                break',
-      '              fi',
-      '',
+      '              app-store-connect publish --path build/ios/ipa/*.ipa --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" --private-key "@file:/tmp/AuthKey.p8" ' + GT + ' /tmp/asc_publish.log 2' + GT + '&1',
+      '              PUB_EXIT=$?; set -e',
+      '              if [ $PUB_EXIT -eq 0 ]; then UPLOAD_OK=1; echo "✅ TESTFLIGHT: .ipa (verze $APP_VERSION, build $BUILD_NUM) nahrana!"; break; fi',
       '              if grep -qE "Cannot determine the Apple ID from Bundle ID|No suitable application records were found" /tmp/asc_publish.log; then',
-      '                echo "⚠️ VYSLEDEK APPLE APP STORE: Aplikace s Bundle ID \'$BUNDLE_ID\' zatim neni v App Store Connect zalozena."',
-      '                echo "👉 Zaloz v App Store Connect novou aplikaci (Apps -' + GT + ' + -' + GT + ' New App) s Bundle ID \'$BUNDLE_ID\' a spust build znovu."',
-      '                APP_NOT_IN_ASC=1',
-      '                break',
+      '                echo "⚠️ Aplikace \'$BUNDLE_ID\' zatim neni v App Store Connect zalozena."; APP_NOT_IN_ASC=1; break',
       '              fi',
-      '',
       '              if grep -qE "90062|90186|closed for new build submissions|must contain a higher version" /tmp/asc_publish.log; then',
-      '                if [ $PUB_ATTEMPT -eq $MAX_PUB_ATTEMPTS ]; then',
-      '                  echo "❌ VYSLEDEK APPLE APP STORE: Nepodarilo se najit volnou verzi ani po $MAX_PUB_ATTEMPTS pokusech."',
-      '                  cat /tmp/asc_publish.log',
-      '                  exit 1',
-      '                fi',
+      '                if [ $PUB_ATTEMPT -eq $MAX_PUB_ATTEMPTS ]; then cat /tmp/asc_publish.log; exit 1; fi',
       '                NEW_VER=$(python3 - ' + LT + LT + ' \'PYEOF\'',
       '          import re, os',
       '          log_txt = open("/tmp/asc_publish.log", "r", errors="ignore").read()',
@@ -3948,229 +3801,135 @@ jobs:
       '          matches = re.findall(r"previously approved version \\[([0-9.]+)\\]|train version \'([0-9.]+)\'", log_txt)',
       '          base = cur',
       '          for g1, g2 in matches:',
-      '              v = g1 or g2',
-      '              if v:',
-      '                  base = v',
-      '          def parse_v(s):',
-      '              parts = [int(x) for x in s.split(".") if x.isdigit()]',
-      '              while len(parts) ' + LT + ' 2:',
-      '                  parts.append(0)',
-      '              return parts',
-      '          p_cur = parse_v(cur)',
-      '          p_base = parse_v(base)',
-      '          target = list(p_base if p_base ' + GT + '= p_cur else p_cur)',
-      '          target[-1] += 1',
-      '          print(".".join(str(x) for x in target))',
+      '              if g1 or g2: base = g1 or g2',
+      '          def pv(s):',
+      '              p = [int(x) for x in s.split(".") if x.isdigit()]',
+      '              return p + [0]*(2 - len(p)) if len(p) ' + LT + ' 2 else p',
+      '          t = list(pv(base) if pv(base) ' + GT + '= pv(cur) else pv(cur))',
+      '          t[-1] += 1',
+      '          print(".".join(str(x) for x in t))',
       '          PYEOF',
       '                )',
       '                NEW_VER=$(echo "$NEW_VER" | tr -d \'\\r\\n \')',
-      '                echo "ℹ️ VYSLEDEK APPLE APP STORE: Verze $APP_VERSION uz byla v App Store schvalena a je uzavrena (kod 90062)."',
-      '                echo "🔄 Automaticky zvysuji verzi aplikace na $NEW_VER a prebaluji .ipa..."',
-      '                export APP_VERSION="$NEW_VER"',
-      '                echo "APP_VERSION=$NEW_VER" ' + GT + GT + ' $GITHUB_ENV',
-      '',
+      '                export APP_VERSION="$NEW_VER"; echo "APP_VERSION=$NEW_VER" ' + GT + GT + ' $GITHUB_ENV',
       '                plutil -replace ApplicationProperties.CFBundleShortVersionString -string "$NEW_VER" build/ios/xcarchive/iosApp.xcarchive/Info.plist || true',
       '                for app_plist in build/ios/xcarchive/iosApp.xcarchive/Products/Applications/*.app/Info.plist; do',
-      '                  if [ -f "$app_plist" ]; then',
-      '                    plutil -replace CFBundleShortVersionString -string "$NEW_VER" "$app_plist" || true',
-      '                  fi',
+      '                  if [ -f "$app_plist" ]; then plutil -replace CFBundleShortVersionString -string "$NEW_VER" "$app_plist" || true; fi',
       '                done',
-      '',
       '                rm -rf build/ios/ipa/*.ipa',
-      '                xcodebuild -exportArchive \\',
-      '                  -archivePath build/ios/xcarchive/iosApp.xcarchive \\',
-      '                  -exportPath build/ios/ipa \\',
-      '                  -exportOptionsPlist "$HOME/export_options.plist" ' + GT + ' /dev/null 2' + GT + '&1',
-      '',
+      '                xcodebuild -exportArchive -archivePath build/ios/xcarchive/iosApp.xcarchive -exportPath build/ios/ipa -exportOptionsPlist "$HOME/export_options.plist" ' + GT + ' /dev/null 2' + GT + '&1',
       '                PUB_ATTEMPT=$((PUB_ATTEMPT + 1))',
       '              else',
-      '                echo "❌ VYSLEDEK APPLE APP STORE: Chyba pri nahravani .ipa do App Store Connect (kod $PUB_EXIT):"',
-      '                cat /tmp/asc_publish.log',
-      '                exit $PUB_EXIT',
+      '                cat /tmp/asc_publish.log; exit $PUB_EXIT',
       '              fi',
       '            done',
-      '',
       '            if [ "$UPLOAD_OK" = "1" ] && [ "$APP_VERSION" != "$INITIAL_APP_VERSION" ] && [ -n "$VAULT_TOKEN" ]; then',
       '              python3 - ' + LT + LT + ' \'PYEOF\'',
-      '          import os, base64, requests',
-      '          repo = os.environ.get("REPO_FULL_NAME", "").strip()',
-      '          token = os.environ.get("VAULT_TOKEN", "").strip()',
-      '          new_ver = os.environ.get("APP_VERSION", "").strip()',
+      '          import os, base64, requests, re',
+      '          repo, token, new_ver = os.environ.get("REPO_FULL_NAME", "").strip(), os.environ.get("VAULT_TOKEN", "").strip(), os.environ.get("APP_VERSION", "").strip()',
       '          if repo and token and new_ver:',
       '              url = f"https://api.github.com/repos/{repo}/contents/.github/workflows/build.yml"',
       '              hdrs = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}',
       '              r = requests.get(url, headers=hdrs, timeout=30)',
       '              if r.ok:',
-      '                  d = r.json()',
-      '                  raw = base64.b64decode(d["content"]).decode("utf-8")',
-      '                  import re',
+      '                  d = r.json(); raw = base64.b64decode(d["content"]).decode("utf-8")',
       '                  updated = re.sub(r\'(APP_VERSION:\\s*"[^"]*")\', f\'APP_VERSION: "{new_ver}"\', raw)',
       '                  if updated != raw:',
-      '                      put_r = requests.put(url, headers=hdrs, json={',
-      '                          "message": f"Automaticka aktualizace hlavni verze na {new_ver} [skip ci]",',
-      '                          "content": base64.b64encode(updated.encode("utf-8")).decode("utf-8"),',
-      '                          "sha": d["sha"]',
-      '                      }, timeout=30)',
-      '                      if put_r.ok:',
-      '                          print(f"🔄 Nova hlavni verze {new_ver} byla automaticky ulozena do .github/workflows/build.yml na GitHubu.")',
+      '                      requests.put(url, headers=hdrs, json={"message": f"Automaticka aktualizace hlavni verze na {new_ver} [skip ci]", "content": base64.b64encode(updated.encode("utf-8")).decode("utf-8"), "sha": d["sha"]}, timeout=30)',
       '          PYEOF',
       '            fi',
-      '',
       '            if [ "$UPLOAD_OK" = "1" ] && [ "$APP_NOT_IN_ASC" = "0" ]; then',
-      '              echo "⏳ Kontroluji stav verze $APP_VERSION v App Store Connect a pripravuji odeslani ke schvaleni..."',
       '              python3 - ' + LT + LT + ' \'PYEOF\'',
       '          import os, sys, time, jwt, requests',
-      '',
       '          key_id = os.environ.get("APP_STORE_CONNECT_KEY_IDENTIFIER", "").strip()',
       '          issuer_id = os.environ.get("APP_STORE_CONNECT_ISSUER_ID", "").strip()',
       '          bundle_id = os.environ.get("BUNDLE_ID", "").strip()',
       '          build_num = os.environ.get("PROJECT_BUILD_NUMBER", "101").strip()',
       '          app_ver = os.environ.get("APP_VERSION", "1.0").strip()',
-      '          key_path = "/tmp/AuthKey.p8"',
-      '',
-      '          if not key_id or not issuer_id or not os.path.exists(key_path):',
-      '              sys.exit(0)',
-      '',
-      '          with open(key_path, "r") as f:',
-      '              private_key = f.read()',
-      '',
+      '          if not key_id or not issuer_id or not os.path.exists("/tmp/AuthKey.p8"): sys.exit(0)',
+      '          private_key = open("/tmp/AuthKey.p8", "r").read()',
       '          def get_headers():',
       '              now = int(time.time())',
-      '              payload = {"iss": issuer_id, "iat": now - 30, "exp": now + 1100, "aud": "appstoreconnect-v1"}',
-      '              token = jwt.encode(payload, private_key, algorithm="ES256", headers={"kid": key_id, "typ": "JWT"})',
-      '              if isinstance(token, bytes):',
-      '                  token = token.decode("utf-8")',
-      '              return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}',
-      '',
+      '              tok = jwt.encode({"iss": issuer_id, "iat": now - 30, "exp": now + 1100, "aud": "appstoreconnect-v1"}, private_key, algorithm="ES256", headers={"kid": key_id, "typ": "JWT"})',
+      '              return {"Authorization": f"Bearer {tok.decode(\'utf-8\') if isinstance(tok, bytes) else tok}", "Content-Type": "application/json"}',
       '          base_url = "https://api.appstoreconnect.apple.com/v1"',
-      '',
       '          try:',
       '              r = requests.get(f"{base_url}/apps", params={"filter[bundleId]": bundle_id}, headers=get_headers(), timeout=30)',
       '              apps = r.json().get("data", []) if r.ok else []',
-      '              if not apps:',
-      '                  print(f"ℹ️ VYSLEDEK APPLE APP STORE: Aplikace ({bundle_id}) zatim neni v App Store Connect zalozena. Build je nahrany v TestFlightu.")',
-      '                  sys.exit(0)',
+      '              if not apps: sys.exit(0)',
       '              app_id = apps[0]["id"]',
-      '',
-      '              def cleanup_empty_draft_submissions():',
-      '                  sub_res = requests.get(f"{base_url}/reviewSubmissions", params={"filter[app]": app_id, "filter[state]": "READY_FOR_REVIEW,UNRESOLVED_ISSUES"}, headers=get_headers(), timeout=30)',
-      '                  if not sub_res.ok:',
-      '                      return',
-      '                  for sub in sub_res.json().get("data", []):',
-      '                      sub_id = sub["id"]',
-      '                      items_res = requests.get(f"{base_url}/reviewSubmissions/{sub_id}/items", headers=get_headers(), timeout=30)',
-      '                      items = items_res.json().get("data", []) if items_res.ok else []',
-      '                      if len(items) == 0:',
-      '                          requests.patch(f"{base_url}/reviewSubmissions/{sub_id}", json={"data": {"type": "reviewSubmissions", "id": sub_id, "attributes": {"canceled": True}}}, headers=get_headers(), timeout=30)',
-      '',
-      '              cleanup_empty_draft_submissions()',
-      '',
+      '              def cleanup_draft_submissions():',
+      '                  for st_f in ["READY_FOR_REVIEW", "UNRESOLVED_ISSUES"]:',
+      '                      sr = requests.get(f"{base_url}/reviewSubmissions", params={"filter[app]": app_id, "filter[state]": st_f}, headers=get_headers(), timeout=30)',
+      '                      if sr.ok:',
+      '                          for sub in sr.json().get("data", []):',
+      '                              sid = sub["id"]',
+      '                              ir = requests.get(f"{base_url}/reviewSubmissions/{sid}/items", headers=get_headers(), timeout=30)',
+      '                              if ir.ok:',
+      '                                  for it in ir.json().get("data", []):',
+      '                                      requests.delete(f"{base_url}/reviewSubmissionItems/{it[\'id\']}", headers=get_headers(), timeout=30)',
+      '                              requests.patch(f"{base_url}/reviewSubmissions/{sid}", json={"data": {"type": "reviewSubmissions", "id": sid, "attributes": {"canceled": True}}}, headers=get_headers(), timeout=30)',
+      '              cleanup_draft_submissions()',
       '              ver_res = requests.get(f"{base_url}/apps/{app_id}/appStoreVersions", params={"filter[platform]": "IOS"}, headers=get_headers(), timeout=30)',
       '              versions = ver_res.json().get("data", []) if ver_res.ok else []',
-      '',
       '              review_states = {"WAITING_FOR_REVIEW", "IN_REVIEW", "PENDING_DEVELOPER_RELEASE", "PENDING_APPLE_RELEASE", "PROCESSING_FOR_APP_STORE"}',
       '              for v in versions:',
       '                  st = v.get("attributes", {}).get("appStoreState") or v.get("attributes", {}).get("appVersionState") or ""',
-      '                  v_str = v.get("attributes", {}).get("versionString", "")',
       '                  if st in review_states:',
-      '                      print(f"ℹ️ VYSLEDEK APPLE APP STORE: Verze {v_str} uz v App Store Connect ceka na schvaleni (stav: {st}). Ponechavam aktualni stav.")',
+      '                      print(f"ℹ️ Verze {v.get(\'attributes\', {}).get(\'versionString\', \'\')} uz ceka na schvaleni ({st}).")',
       '                      sys.exit(0)',
-      '',
       '              editable_states = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED", "INVALID_BINARY"}',
-      '              target_version = None',
-      '              for v in versions:',
-      '                  st = v.get("attributes", {}).get("appStoreState") or v.get("attributes", {}).get("appVersionState") or ""',
-      '                  v_str = v.get("attributes", {}).get("versionString", "")',
-      '                  if v_str == app_ver or st in editable_states:',
-      '                      target_version = v',
-      '                      break',
-      '',
+      '              target_version = next((v for v in versions if (v.get("attributes", {}).get("versionString") == app_ver or (v.get("attributes", {}).get("appStoreState") or v.get("attributes", {}).get("appVersionState") or "") in editable_states)), None)',
       '              if not target_version:',
-      '                  create_ver_body = {',
-      '                      "data": {',
-      '                          "type": "appStoreVersions",',
-      '                          "attributes": {"platform": "IOS", "versionString": app_ver},',
-      '                          "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}',
-      '                      }',
-      '                  }',
-      '                  cv_res = requests.post(f"{base_url}/appStoreVersions", json=create_ver_body, headers=get_headers(), timeout=30)',
-      '                  if cv_res.ok:',
-      '                      target_version = cv_res.json().get("data")',
-      '                      print(f"➕ V App Store Connect byla automaticky zalozena nova karta verze {app_ver}.")',
-      '                  else:',
-      '                      print(f"ℹ️ VYSLEDEK APPLE APP STORE: Novou verzi {app_ver} se nepodarilo automaticky zalozit ({cv_res.status_code}). Build {build_num} je pripraven v TestFlightu.")',
-      '                      sys.exit(0)',
-      '',
+      '                  cv_res = requests.post(f"{base_url}/appStoreVersions", json={"data": {"type": "appStoreVersions", "attributes": {"platform": "IOS", "versionString": app_ver}, "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}}, headers=get_headers(), timeout=30)',
+      '                  if cv_res.ok: target_version = cv_res.json().get("data")',
+      '                  else: sys.exit(0)',
       '              version_id = target_version["id"]',
       '              ver_str = target_version.get("attributes", {}).get("versionString", app_ver)',
       '              state = target_version.get("attributes", {}).get("appStoreState") or target_version.get("attributes", {}).get("appVersionState") or "PREPARE_FOR_SUBMISSION"',
-      '',
       '              if state in editable_states and ver_str != app_ver:',
-      '                  upd_v = requests.patch(f"{base_url}/appStoreVersions/{version_id}", json={"data": {"type": "appStoreVersions", "id": version_id, "attributes": {"versionString": app_ver}}}, headers=get_headers(), timeout=30)',
-      '                  if upd_v.ok:',
+      '                  if requests.patch(f"{base_url}/appStoreVersions/{version_id}", json={"data": {"type": "appStoreVersions", "id": version_id, "attributes": {"versionString": app_ver}}}, headers=get_headers(), timeout=30).ok:',
       '                      ver_str = app_ver',
-      '',
       '              loc_res = requests.get(f"{base_url}/appStoreVersions/{version_id}/appStoreVersionLocalizations", headers=get_headers(), timeout=30)',
       '              if loc_res.ok:',
       '                  for loc in loc_res.json().get("data", []):',
-      '                      loc_id = loc["id"]',
-      '                      wn = loc.get("attributes", {}).get("whatsNew")',
-      '                      if not wn or not str(wn).strip():',
-      '                          requests.patch(f"{base_url}/appStoreVersionLocalizations/{loc_id}", json={',
-      '                              "data": {',
-      '                                  "type": "appStoreVersionLocalizations",',
-      '                                  "id": loc_id,',
-      '                                  "attributes": {"whatsNew": "Oprava chyb, vylepšení stability a aktualizace funkcí aplikace."}',
-      '                              }',
-      '                          }, headers=get_headers(), timeout=30)',
-      '',
+      '                      if not str(loc.get("attributes", {}).get("whatsNew") or "").strip() and ver_str != "1.0":',
+      '                          requests.patch(f"{base_url}/appStoreVersionLocalizations/{loc[\'id\']}", json={"data": {"type": "appStoreVersionLocalizations", "id": loc["id"], "attributes": {"whatsNew": "Oprava chyb, vylepšení vzhledu a zvýšení stability aplikace."}}}, headers=get_headers(), timeout=30)',
       '              valid_build_id = None',
-      '              print(f"⏳ Cekam na zpracovani buildu {build_num} u Applu pro prirazeni k verzi {ver_str}...")',
-      '              for attempt in range(1, 15):',
+      '              for _ in range(15):',
       '                  b_res = requests.get(f"{base_url}/builds", params={"filter[app]": app_id, "filter[version]": build_num}, headers=get_headers(), timeout=30)',
       '                  builds = b_res.json().get("data", []) if b_res.ok else []',
-      '                  if builds:',
-      '                      b_state = builds[0].get("attributes", {}).get("processingState", "")',
-      '                      if b_state == "VALID":',
-      '                          valid_build_id = builds[0]["id"]',
-      '                          print(f"✅ Build {build_num} je u Applu zpracovany a platny (VALID).")',
-      '                          break',
+      '                  if builds and builds[0].get("attributes", {}).get("processingState") == "VALID":',
+      '                      valid_build_id = builds[0]["id"]',
+      '                      if builds[0].get("attributes", {}).get("usesNonExemptEncryption") is None:',
+      '                          requests.patch(f"{base_url}/builds/{valid_build_id}", json={"data": {"type": "builds", "id": valid_build_id, "attributes": {"usesNonExemptEncryption": False}}}, headers=get_headers(), timeout=30)',
+      '                      break',
       '                  time.sleep(15)',
-      '',
       '              if valid_build_id:',
-      '                  rel_res = requests.patch(f"{base_url}/appStoreVersions/{version_id}/relationships/build", json={"data": {"type": "builds", "id": valid_build_id}}, headers=get_headers(), timeout=30)',
-      '                  if rel_res.ok:',
-      '                      print(f"🔗 Build {build_num} byl prirazen k iOS verzi {ver_str}.")',
-      '',
-      '              cleanup_empty_draft_submissions()',
-      '              create_sub_body = {"data": {"type": "reviewSubmissions", "attributes": {"platform": "IOS"}, "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}}',
-      '              sub_create_res = requests.post(f"{base_url}/reviewSubmissions", json=create_sub_body, headers=get_headers(), timeout=30)',
-      '              if sub_create_res.ok:',
-      '                  new_sub_id = sub_create_res.json()["data"]["id"]',
-      '                  item_body = {"data": {"type": "reviewSubmissionItems", "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": new_sub_id}}, "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}}',
-      '                  item_res = requests.post(f"{base_url}/reviewSubmissionItems", json=item_body, headers=get_headers(), timeout=30)',
-      '                  if item_res.ok:',
-      '                      submit_res = requests.patch(f"{base_url}/reviewSubmissions/{new_sub_id}", json={"data": {"type": "reviewSubmissions", "id": new_sub_id, "attributes": {"submitted": True}}}, headers=get_headers(), timeout=30)',
-      '                      if submit_res.ok:',
-      '                          print(f"✅ VYSLEDEK APPLE APP STORE: Verze {ver_str} (build {build_num}) byla automaticky odeslana ke schvaleni (Waiting for Review)!")',
+      '                  requests.patch(f"{base_url}/appStoreVersions/{version_id}/relationships/build", json={"data": {"type": "builds", "id": valid_build_id}}, headers=get_headers(), timeout=30)',
+      '                  print(f"🔗 Build {build_num} prirazen k iOS verzi {ver_str}.")',
+      '              create_sub = requests.post(f"{base_url}/reviewSubmissions", json={"data": {"type": "reviewSubmissions", "attributes": {"platform": "IOS"}, "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}}, headers=get_headers(), timeout=30)',
+      '              if create_sub.ok:',
+      '                  sub_id = create_sub.json()["data"]["id"]',
+      '                  add_item = requests.post(f"{base_url}/reviewSubmissionItems", json={"data": {"type": "reviewSubmissionItems", "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub_id}}, "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}}, headers=get_headers(), timeout=30)',
+      '                  if add_item.ok:',
+      '                      item_id = add_item.json()["data"]["id"]',
+      '                      sub_patch = requests.patch(f"{base_url}/reviewSubmissions/{sub_id}", json={"data": {"type": "reviewSubmissions", "id": sub_id, "attributes": {"submitted": True}}}, headers=get_headers(), timeout=30)',
+      '                      if sub_patch.ok:',
+      '                          print(f"✅ APPLE APP STORE: Verze {ver_str} (build {build_num}) odeslana do Waiting for Review!")',
       '                      else:',
-      '                          print(f"ℹ️ VYSLEDEK APPLE APP STORE: Build {build_num} je prirazen k verzi {ver_str}, ale automaticke odeslani vyzaduje doplneni udaju v App Store Connect ({submit_res.status_code}).")',
-      '                          item_id = item_res.json().get("data", {}).get("id")',
-      '                          if item_id:',
-      '                              requests.delete(f"{base_url}/reviewSubmissionItems/{item_id}", headers=get_headers(), timeout=30)',
-      '                          requests.patch(f"{base_url}/reviewSubmissions/{new_sub_id}", json={"data": {"type": "reviewSubmissions", "id": new_sub_id, "attributes": {"canceled": True}}}, headers=get_headers(), timeout=30)',
+      '                          requests.delete(f"{base_url}/reviewSubmissionItems/{item_id}", headers=get_headers(), timeout=30)',
+      '                          requests.patch(f"{base_url}/reviewSubmissions/{sub_id}", json={"data": {"type": "reviewSubmissions", "id": sub_id, "attributes": {"canceled": True}}}, headers=get_headers(), timeout=30)',
+      '                          print(f"ℹ️ APPLE APP STORE: Build {build_num} je prirazen k verzi {ver_str} (dokonci odeslani v App Store Connect).")',
       '                  else:',
-      '                      requests.patch(f"{base_url}/reviewSubmissions/{new_sub_id}", json={"data": {"type": "reviewSubmissions", "id": new_sub_id, "attributes": {"canceled": True}}}, headers=get_headers(), timeout=30)',
-      '              cleanup_empty_draft_submissions()',
+      '                      requests.patch(f"{base_url}/reviewSubmissions/{sub_id}", json={"data": {"type": "reviewSubmissions", "id": sub_id, "attributes": {"canceled": True}}}, headers=get_headers(), timeout=30)',
       '          except Exception as e:',
-      '              print(f"⚠️ VYSLEDEK APPLE APP STORE: Upozorneni pri komunikaci s App Store Connect API: {e}")',
+      '              print(f"⚠️ Upozorneni pri komunikaci s App Store Connect: {e}")',
       '          PYEOF',
       '            fi',
-      '          else',
-      '            echo "ℹ️ VYSLEDEK APPLE APP STORE: Publikace do obchodu je vypnuta (rezim bez publikace). Preskakuji TestFlight upload."',
       '          fi',
-      '',
       '      - name: Upload iOS Artifact (.ipa)',
+      '        if: env.BUILD_IOS == \'true\'',
       '        uses: actions/upload-artifact@v4',
       '        with:',
       '          name: ${{ env.APP_NAME }}-iOS-IPA',
@@ -4178,65 +3937,58 @@ jobs:
     ].join('\n') + '\n';
   };
 
-  window.buildUnifiedWorkflowYaml = window.buildCzechUnifiedWorkflowYaml;
-  window.injectHuaweiIntoBuildYml = function(yml) { return yml; };
-
-  window.upgradeWorkflowYaml = function(yamlStr) {
-    if (typeof yamlStr !== "string" || (!yamlStr.includes("Build & Publish KMP") && !yamlStr.includes("BUNDLE_ID:"))) {
-      return yamlStr;
+  // 5. Napojení šablony V14 na generování a přepínání režimů ve Staviteli
+  function resolveActiveModeFlags(modeOverride) {
+    let m = (typeof modeOverride === "string" && /^(android_only|build_only|publish)$/.test(modeOverride))
+      ? modeOverride
+      : (typeof selectedBuildMode !== "undefined" ? selectedBuildMode : (typeof currentBuildMode !== "undefined" ? currentBuildMode : (typeof selectedMode !== "undefined" ? selectedMode : "")));
+    if (!m) {
+      const cards = Array.from(document.querySelectorAll("[data-mode], .mode-card"));
+      const act = cards.find(c => c.classList.contains("active") || c.classList.contains("selected") || /Aktivní/.test(c.textContent || ""));
+      if (act) {
+        m = act.getAttribute("data-mode") || (/Pouze Android/i.test(act.textContent) ? "android_only" : (/bez obchod/i.test(act.textContent) ? "build_only" : "publish"));
+      }
     }
-    const mApp = yamlStr.match(/APP_NAME:\s*"([^"]+)"/);
-    const mBun = yamlStr.match(/BUNDLE_ID:\s*"([^"]+)"/);
-    const mVer = yamlStr.match(/APP_VERSION:\s*"([^"]+)"/);
-    const mPub = yamlStr.match(/PUBLISH_TO_STORES:\s*"([^"]+)"/);
-    const mIos = yamlStr.match(/BUILD_IOS:\s*"([^"]+)"/);
-    return window.buildCzechUnifiedWorkflowYaml(
-      mApp ? mApp[1] : "App",
-      mBun ? mBun[1] : "cz.mares.app",
-      mVer ? mVer[1] : "1.0",
-      mPub ? mPub[1] : "true",
-      mIos ? mIos[1] : "true"
-    );
+    if (m === "android_only") return { buildIos: "false", publishToStores: "false" };
+    if (m === "build_only") return { buildIos: "true", publishToStores: "false" };
+    return { buildIos: "true", publishToStores: "true" };
+  }
+
+  function readUiVersionOrDefault(fallbackVer) {
+    const vEl = document.getElementById("appVersion") || document.getElementById("appVersionInput") || document.getElementById("mainVersion");
+    const vVal = (vEl && vEl.value ? String(vEl.value).trim() : "");
+    return vVal || fallbackVer || "1.0";
+  }
+
+  window.getDefaultGitHubWorkflowYaml = function(appName, bundleId, appVersion) {
+    const proj = appName || (typeof getActiveProjectName === "function" ? getActiveProjectName() : "App") || "App";
+    const det = window.detectProjectFromFiles ? window.detectProjectFromFiles() : null;
+    const pkg = bundleId || (det && det.pkg) || ("cz.mares." + String(proj).toLowerCase().replace(/[^a-z0-9]/g, ""));
+    const ver = appVersion || readUiVersionOrDefault("1.0");
+    const flags = resolveActiveModeFlags();
+    return window.buildCzechUnifiedWorkflowYaml(proj, pkg, ver, flags.publishToStores, flags.buildIos);
   };
 
-  window.getDefaultGitHubWorkflowYaml = function(appName, bundleId, appVersion, mode) {
-    const cleanVer = String(appVersion || "1.0").trim();
-    const pubStr = (mode === "publish") ? "true" : "false";
-    const iosStr = (mode === "android_only") ? "false" : "true";
-    return window.buildCzechUnifiedWorkflowYaml(appName, bundleId, cleanVer, pubStr, iosStr);
-  };
-
-  window.applyModeToWorkflowYaml = function(yamlText, mode, appVersion = null) {
-    const cleanVer = String(appVersion || document.getElementById("appVersion")?.value || "1.0").trim();
-    let appName = typeof getActiveProjectName === "function" ? getActiveProjectName() : "App";
-    let bundleId = (appName === "Humorradio" || appName === "RadioPM")
-      ? "cz.taximares.radiopm"
-      : `cz.mares.${normalizeProjId(appName)}`;
-
-    if (yamlText) {
-      const mApp = yamlText.match(/APP_NAME:\s*["']?([^"'\r\n]+)["']?/);
-      const mBundle = yamlText.match(/BUNDLE_ID:\s*["']?([^"'\r\n]+)["']?/);
-      if (mApp && mApp[1] && !mApp[1].includes(LT)) appName = mApp[1].trim();
-      if (mBundle && mBundle[1] && !mBundle[1].includes(LT)) bundleId = mBundle[1].trim();
+  window.applyModeToWorkflowYaml = function(arg1, arg2) {
+    const hasYamlStr = (typeof arg1 === "string" && (arg1.includes("jobs:") || arg1.includes("APP_NAME:")));
+    const modeArg = hasYamlStr ? arg2 : arg1;
+    const rawYaml = hasYamlStr ? arg1 : ((typeof stagedFiles !== "undefined" && stagedFiles && stagedFiles[".github/workflows/build.yml"]) || "");
+    const mApp = rawYaml.match(/APP_NAME:\s*["']?([^"'\r\n]+)["']?/);
+    const mPkg = rawYaml.match(/BUNDLE_ID:\s*["']?([^"'\r\n]+)["']?/);
+    const mVer = rawYaml.match(/APP_VERSION:\s*["']?([^"'\r\n]+)["']?/);
+    const activeProj = (typeof getActiveProjectName === "function" ? getActiveProjectName() : "") || "";
+    const det = window.detectProjectFromFiles ? window.detectProjectFromFiles() : null;
+    const aName = (mApp && mApp[1] ? mApp[1].trim() : "") || activeProj || "App";
+    const bId = (det && det.pkg) || (mPkg && mPkg[1] ? mPkg[1].trim() : "") || ("cz.mares." + String(aName).toLowerCase().replace(/[^a-z0-9]/g, ""));
+    const aVer = readUiVersionOrDefault(mVer && mVer[1] ? mVer[1].trim() : "1.0");
+    const flags = resolveActiveModeFlags(modeArg);
+    const updatedYaml = window.buildCzechUnifiedWorkflowYaml(aName, bId, aVer, flags.publishToStores, flags.buildIos);
+    if (!hasYamlStr && typeof stagedFiles !== "undefined" && stagedFiles && stagedFiles[".github/workflows/build.yml"]) {
+      stagedFiles[".github/workflows/build.yml"] = updatedYaml;
     }
-
-    const det = window.detectProjectFromFiles(typeof stagedFiles !== "undefined" ? stagedFiles : {});
-    if (det && det.pkg) bundleId = det.pkg;
-
-    return window.getDefaultGitHubWorkflowYaml(appName, bundleId, cleanVer, mode);
+    return updatedYaml;
   };
-
-  window.checkVaultKeysStatus(true);
 })();
-
-;(function filterOutStavitelRepo(){
-    const sel = document.getElementById("projectSelect");
-    if (sel) {
-      Array.from(sel.options).forEach(o => {
-        if (o.value === "StavitelAplikaci" || o.value === "ios-keys") o.remove();
-      });
-    }
-  })();
 </script><script id="apkDownloaderScript">/* === STAVITEL_APK_DOWNLOADER_V2 === */
 (function installApkDownloaderV2() {
   const LT = String.fromCharCode(60);
