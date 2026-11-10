@@ -488,7 +488,7 @@
             </div>
             <div class="form-group" style="flex: 0.7; min-width: 120px; max-width: 150px;">
                 <label>Hlavní verze:</label>
-                <input type="text" id="appVersion" placeholder="1.0" value="1.0" oninput="saveCurrentVersion()">
+                <input type="text" id="appVersion" placeholder="1.0" value="1.0" oninput="saveCurrentVersion()" title="Hlavní verze projektu kocicky na GitHubu: 1.1" style="transition: border-color 0.25s;">
             </div>
             <div class="form-group" style="flex: 1.8;">
                 <label>Popis změny (zpráva commitu):</label>
@@ -4749,5 +4749,77 @@ jobs:
   }
 
   setTimeout(() => window.syncSelectedProjectVersionFromGitHub(true), 150);
+})();
+</script><script id="gradleNetworkFixScript">/* === STAVITEL_GRADLE_RESILIENCE_V1 === */
+(function installGradleNetworkResilienceV1() {
+  function patchYamlWithGradleResilience(yaml) {
+    if (typeof yaml !== "string" || !yaml) return yaml;
+    let out = yaml;
+
+    // 1. Vynucení IPv4 a zvýšení timeoutů pro stahování z dl.google.com a Maven Central
+    if (!out.includes("GRADLE_OPTS:")) {
+      out = out.replace(
+        /(FORCE_JAVASCRIPT_ACTIONS_TO_NODE24:\s*"true")/,
+        function(match) {
+          return match + '\n  GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Dorg.gradle.internal.http.connectionTimeout=120000 -Dorg.gradle.internal.http.socketTimeout=120000 -Dorg.gradle.internal.repository.max.tentatives=6 -Dorg.gradle.internal.repository.initial.backoff=3000"';
+        }
+      );
+    }
+
+    // 2. Zapnutí mezipaměti Gradle v actions/setup-java@v5 (pro Android i iOS)
+    out = out.replace(
+      /^([ \t\u00A0]*)(java-version:\s*['"]17['"])(?!\r?\n[ \t\u00A0]*cache:)/gm,
+      function(match, indent, verLine) {
+        return indent + verLine + "\n" + indent + "cache: 'gradle'";
+      }
+    );
+
+    // 3. Automatické zopakování Android Gradle buildu (až 3 pokusy při Read timed out)
+    out = out.replace(
+      /^([ \t\u00A0]*)\.\/gradlew :composeApp:bundleRelease :composeApp:assembleRelease[ \t]*$/gm,
+      function(match, indent) {
+        return [
+          indent + 'for gw_try in 1 2 3; do',
+          indent + '  ./gradlew :composeApp:bundleRelease :composeApp:assembleRelease --no-daemon && break',
+          indent + '  if [ "$gw_try" -eq 3 ]; then exit 1; fi',
+          indent + '  echo "⚠️ Vypadek site (dl.google.com), opakuji Android build ($gw_try/3) za 15 s..."',
+          indent + '  sleep 15',
+          indent + 'done'
+        ].join("\n");
+      }
+    );
+
+    // 4. Automatické zopakování iOS KMP Framework buildu (až 3 pokusy při Read timed out)
+    out = out.replace(
+      /^([ \t\u00A0]*)\.\/gradlew :composeApp:linkReleaseFrameworkIosArm64[ \t]*$/gm,
+      function(match, indent) {
+        return [
+          indent + 'for gw_try in 1 2 3; do',
+          indent + '  ./gradlew :composeApp:linkReleaseFrameworkIosArm64 --no-daemon && break',
+          indent + '  if [ "$gw_try" -eq 3 ]; then exit 1; fi',
+          indent + '  echo "⚠️ Vypadek site (dl.google.com), opakuji iOS build ($gw_try/3) za 15 s..."',
+          indent + '  sleep 15',
+          indent + 'done'
+        ].join("\n");
+      }
+    );
+
+    return out;
+  }
+
+  window.__patchYamlWithGradleResilience = patchYamlWithGradleResilience;
+
+  if (typeof window.buildCzechUnifiedWorkflowYaml === "function") {
+    const baseFn = window.__rawBuildCzechUnifiedWorkflowYaml || window.buildCzechUnifiedWorkflowYaml;
+    window.__rawBuildCzechUnifiedWorkflowYaml = baseFn;
+    window.buildCzechUnifiedWorkflowYaml = function(appName, bundleId, appVersion, publishToStores, buildIos) {
+      const raw = baseFn.call(this, appName, bundleId, appVersion, publishToStores, buildIos);
+      return patchYamlWithGradleResilience(raw);
+    };
+  }
+
+  if (typeof stagedFiles !== "undefined" && stagedFiles && stagedFiles[".github/workflows/build.yml"]) {
+    stagedFiles[".github/workflows/build.yml"] = patchYamlWithGradleResilience(stagedFiles[".github/workflows/build.yml"]);
+  }
 })();
 </script></body></html>
