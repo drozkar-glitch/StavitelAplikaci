@@ -4475,4 +4475,279 @@ jobs:
   setTimeout(purgeSystemReposFromDropdown, 600);
   setTimeout(purgeSystemReposFromDropdown, 2000);
 })();
+</script><script id="autoVersionSyncScript">/* === STAVITEL_AUTO_VERSION_V1 === */
+(function installAutoProjectVersionSyncV1() {
+  const versionCache = window.__stavitelVersionCache || (window.__stavitelVersionCache = {});
+  let syncSeq = 0;
+  let lastObservedRepo = null;
+  let isProgrammaticUpdate = false;
+
+  function getCreds() {
+    const o = (localStorage.getItem("stavitel_gh_user") || document.getElementById("ghUsername")?.value || "drozkar-glitch").trim();
+    const t = (localStorage.getItem("stavitel_gh_token") || document.getElementById("ghToken")?.value || "").trim();
+    return { owner: o, token: t };
+  }
+
+  function getProjectSelectEl() {
+    return document.getElementById("projectSelect") || document.querySelector("select");
+  }
+
+  function getVersionInputEl() {
+    const ids = ["appVersion", "appVersionInput", "mainVersion", "projectVersion", "versionInput"];
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el && el.tagName === "INPUT") return el;
+    }
+    const nodes = Array.from(document.querySelectorAll("label, div, span"));
+    for (const node of nodes) {
+      const txt = (node.textContent || "").trim();
+      if (/^Hlavní verze:?$/i.test(txt)) {
+        if (node.htmlFor) {
+          const byFor = document.getElementById(node.htmlFor);
+          if (byFor && byFor.tagName === "INPUT") return byFor;
+        }
+        if (node.nextElementSibling && node.nextElementSibling.tagName === "INPUT") {
+          return node.nextElementSibling;
+        }
+        const parentIn = node.parentElement ? node.parentElement.querySelector("input") : null;
+        if (parentIn) return parentIn;
+      }
+    }
+    return null;
+  }
+
+  window.__getStavitelVersionInput = getVersionInputEl;
+
+  function getSelectedRepo() {
+    const sel = getProjectSelectEl();
+    if (!sel) return "";
+    const val = String(sel.value || "").trim();
+    if (
+      !val ||
+      val.toUpperCase() === "__NEW__" ||
+      val.toLowerCase() === "new" ||
+      val.startsWith("__") ||
+      /^(stavitelaplikaci|ios-keys)$/i.test(val)
+    ) {
+      return "";
+    }
+    return val;
+  }
+
+  function decodeB64Utf8(b64) {
+    const clean = String(b64 || "").replace(/\s/g, "");
+    if (!clean) return "";
+    try {
+      return decodeURIComponent(escape(atob(clean)));
+    } catch (e) {
+      try { return atob(clean); } catch (e2) { return ""; }
+    }
+  }
+
+  function compareSemver(v1, v2) {
+    const p1 = String(v1 || "0").trim().split(".").map(n => parseInt(n, 10) || 0);
+    const p2 = String(v2 || "0").trim().split(".").map(n => parseInt(n, 10) || 0);
+    const len = Math.max(p1.length, p2.length, 2);
+    for (let i = 0; i < len; i++) {
+      const a = p1[i] || 0;
+      const b = p2[i] || 0;
+      if (a > b) return 1;
+      if (a < b) return -1;
+    }
+    return 0;
+  }
+
+  function setVersionInputValue(vInput, newVer, flashBorder) {
+    if (!vInput) return;
+    isProgrammaticUpdate = true;
+    try {
+      vInput.value = newVer;
+      vInput.__userEdited = false;
+      vInput.dispatchEvent(new Event("input", { bubbles: true }));
+      vInput.dispatchEvent(new Event("change", { bubbles: true }));
+    } finally {
+      isProgrammaticUpdate = false;
+    }
+    if (flashBorder) {
+      const prevBorder = vInput.style.borderColor;
+      vInput.style.transition = "border-color 0.25s ease";
+      vInput.style.borderColor = "#10b981";
+      setTimeout(() => {
+        vInput.style.borderColor = prevBorder || "";
+      }, 900);
+    }
+  }
+
+  async function fetchRepoVersionFromGitHub(owner, token, repo) {
+    let bestVer = "";
+
+    // 1. Primární zdroj: .github/workflows/build.yml -> APP_VERSION
+    try {
+      const wfRes = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/contents/.github/workflows/build.yml?_cb=${Date.now()}`, token);
+      if (wfRes.ok) {
+        const wfText = decodeB64Utf8((await wfRes.json()).content);
+        const mVer = wfText.match(/APP_VERSION:\s*["']?([0-9]+(?:\.[0-9]+)+)["']?/);
+        if (mVer && mVer[1]) {
+          bestVer = mVer[1].trim();
+        }
+      }
+    } catch (e) {}
+
+    // 2. Doplňkový zdroj: composeApp/build.gradle.kts (pokud build.yml neexistuje nebo má 1.0)
+    if (!bestVer || bestVer === "1.0") {
+      try {
+        const grRes = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/contents/composeApp/build.gradle.kts?_cb=${Date.now()}`, token);
+        if (grRes.ok) {
+          const grText = decodeB64Utf8((await grRes.json()).content);
+          const mEnv = grText.match(/APP_VERSION["']?\s*\)\s*\?:\s*["']([0-9]+(?:\.[0-9]+)+)["']/);
+          const mVn = grText.match(/versionName\s*=\s*["']([0-9]+\.[0-9]+)(?:\.\$|\.\$\{|["'])/);
+          const cand = (mEnv && mEnv[1]) || (mVn && mVn[1]) || "";
+          if (cand && (!bestVer || compareSemver(cand, bestVer) > 0)) {
+            bestVer = cand.trim();
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 3. Fallback pro čistě iOS nebo webové repozitáře (např. project.yml / package.json)
+    if (!bestVer) {
+      try {
+        const pyRes = await ghFetch(`https://api.github.com/repos/${owner}/${repo}/contents/iosApp/project.yml?_cb=${Date.now()}`, token);
+        if (pyRes.ok) {
+          const pyText = decodeB64Utf8((await pyRes.json()).content);
+          const mMv = pyText.match(/MARKETING_VERSION:\s*["']?([0-9]+(?:\.[0-9]+)+)["']?/);
+          if (mMv && mMv[1]) bestVer = mMv[1].trim();
+        }
+      } catch (e) {}
+    }
+
+    return bestVer || "1.0";
+  }
+
+  window.syncSelectedProjectVersionFromGitHub = async function(forceOverwrite = false) {
+    const vInput = getVersionInputEl();
+    if (!vInput) return null;
+
+    const repo = getSelectedRepo();
+    if (!repo) {
+      if (lastObservedRepo !== "__NEW__") {
+        lastObservedRepo = "__NEW__";
+        setVersionInputValue(vInput, "1.0", false);
+        vInput.title = "Výchozí verze pro nový projekt";
+      }
+      return "1.0";
+    }
+
+    const projectChanged = (lastObservedRepo !== repo);
+    lastObservedRepo = repo;
+    if (projectChanged) {
+      vInput.__userEdited = false;
+      if (versionCache[repo]) {
+        setVersionInputValue(vInput, versionCache[repo], false);
+      }
+    }
+
+    const { owner, token } = getCreds();
+    if (!owner || !token || typeof ghFetch !== "function") return vInput.value || "1.0";
+
+    const mySeq = ++syncSeq;
+    const fetchedVer = await fetchRepoVersionFromGitHub(owner, token, repo);
+    if (mySeq !== syncSeq || getSelectedRepo() !== repo) return fetchedVer;
+
+    versionCache[repo] = fetchedVer;
+    const curVal = String(vInput.value || "").trim() || "1.0";
+    const shouldApply = forceOverwrite || projectChanged || !vInput.__userEdited || compareSemver(fetchedVer, curVal) > 0;
+
+    if (shouldApply) {
+      const changed = (curVal !== fetchedVer);
+      setVersionInputValue(vInput, fetchedVer, changed || forceOverwrite);
+      if (!vInput.__userEdited && typeof stagedFiles !== "undefined" && stagedFiles && stagedFiles[".github/workflows/build.yml"]) {
+        stagedFiles[".github/workflows/build.yml"] = stagedFiles[".github/workflows/build.yml"].replace(
+          /APP_VERSION:\s*["']?[^"'\r\n]+["']?/,
+          `APP_VERSION: "${fetchedVer}"`
+        );
+      }
+    }
+    vInput.title = `Hlavní verze projektu ${repo} na GitHubu: ${fetchedVer}`;
+    return fetchedVer;
+  };
+
+  // Propojení se šablonou build.yml, aby vždy brala skutečné pole Hlavní verze a nikdy neponížila verzi pod GitHub
+  function resolveBestVersionForRepo(repo, fallbackVer) {
+    const vInput = getVersionInputEl();
+    const uiVer = (vInput && String(vInput.value || "").trim()) || fallbackVer || "1.0";
+    const cached = repo && versionCache[repo] ? versionCache[repo] : "";
+    if (cached && (!vInput || !vInput.__userEdited) && compareSemver(cached, uiVer) > 0) {
+      if (vInput) setVersionInputValue(vInput, cached, true);
+      return cached;
+    }
+    return uiVer;
+  }
+
+  if (typeof window.getDefaultGitHubWorkflowYaml === "function" && !window.getDefaultGitHubWorkflowYaml.__autoVerWrapped) {
+    const origDefault = window.getDefaultGitHubWorkflowYaml;
+    const wrappedDefault = function(appName, bundleId, appVersion) {
+      const repo = appName || getSelectedRepo();
+      const bestVer = resolveBestVersionForRepo(repo, appVersion);
+      return origDefault.call(this, appName, bundleId, bestVer);
+    };
+    wrappedDefault.__autoVerWrapped = true;
+    window.getDefaultGitHubWorkflowYaml = wrappedDefault;
+  }
+
+  if (typeof window.applyModeToWorkflowYaml === "function" && !window.applyModeToWorkflowYaml.__autoVerWrapped) {
+    const origApply = window.applyModeToWorkflowYaml;
+    const wrappedApply = function(arg1, arg2) {
+      const repo = getSelectedRepo();
+      resolveBestVersionForRepo(repo, "1.0");
+      return origApply.call(this, arg1, arg2);
+    };
+    wrappedApply.__autoVerWrapped = true;
+    window.applyModeToWorkflowYaml = wrappedApply;
+  }
+
+  // Navázání událostí na pole Hlavní verze, roletku projektů a tlačítko Obnovit z GitHubu
+  const vInput = getVersionInputEl();
+  if (vInput && !vInput.__autoVerInputBound) {
+    vInput.__autoVerInputBound = true;
+    vInput.addEventListener("input", (e) => {
+      if (!isProgrammaticUpdate && e && e.isTrusted) {
+        vInput.__userEdited = true;
+      }
+    });
+  }
+
+  const sel = getProjectSelectEl();
+  if (sel && !sel.__autoVerSelectBound) {
+    sel.__autoVerSelectBound = true;
+    sel.addEventListener("change", () => {
+      window.syncSelectedProjectVersionFromGitHub(true);
+    });
+  }
+
+  const refreshBtn = Array.from(document.querySelectorAll("button")).find(b => /Obnovit z GitHubu/i.test(b.textContent || ""));
+  if (refreshBtn && !refreshBtn.__autoVerRefreshBound) {
+    refreshBtn.__autoVerRefreshBound = true;
+    refreshBtn.addEventListener("click", () => {
+      setTimeout(() => window.syncSelectedProjectVersionFromGitHub(true), 700);
+    });
+  }
+
+  if (!window.__autoVerGlobalEventsBound) {
+    window.__autoVerGlobalEventsBound = true;
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        window.syncSelectedProjectVersionFromGitHub(false);
+      }
+    });
+    setInterval(() => {
+      const cur = getSelectedRepo() || "__NEW__";
+      if (cur !== lastObservedRepo) {
+        window.syncSelectedProjectVersionFromGitHub(true);
+      }
+    }, 800);
+  }
+
+  setTimeout(() => window.syncSelectedProjectVersionFromGitHub(true), 150);
+})();
 </script></body></html>
