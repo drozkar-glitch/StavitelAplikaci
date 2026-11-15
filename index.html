@@ -5265,11 +5265,13 @@ jobs:
   }
 })();</script>
 <script id="selectiveStorePublishScript">
-/* === STAVITEL_SELECTIVE_STORE_PUBLISH_V3 === */
-(function installSelectiveStorePublishV3() {
+/* === STAVITEL_SELECTIVE_STORE_PUBLISH_V4 === */
+(function installSelectiveStorePublishV4() {
   const KEY_GP = 'stavitel_pub_google';
   const KEY_IOS = 'stavitel_pub_ios';
   const KEY_HW = 'stavitel_pub_huawei';
+  const KEY_CHAN = 'stavitel_pub_channel';
+  const KEY_SHOTS = 'stavitel_force_refresh_shots';
 
   function isMobileOrNoFsDevice() {
     return (
@@ -5304,10 +5306,15 @@ jobs:
     const gp = localStorage.getItem(KEY_GP);
     const ios = localStorage.getItem(KEY_IOS);
     const hw = localStorage.getItem(KEY_HW);
+    const chan = localStorage.getItem(KEY_CHAN);
+    const fShots = localStorage.getItem(KEY_SHOTS);
+    const internalOnly = chan === null ? true : (chan === 'internal');
     return {
       google: gp === null ? true : gp === 'true',
       ios: ios === null ? true : ios === 'true',
-      huawei: hw === null ? false : hw === 'true'
+      huawei: hw === null ? false : hw === 'true',
+      internalOnly: internalOnly,
+      forceShots: (!internalOnly && fShots === 'true')
     };
   }
 
@@ -5316,12 +5323,23 @@ jobs:
     if (map[storeKey]) localStorage.setItem(map[storeKey], enabled ? 'true' : 'false');
   }
 
+  function setPublishChannel(isInternal) {
+    localStorage.setItem(KEY_CHAN, isInternal ? 'internal' : 'production');
+    if (isInternal) {
+      localStorage.setItem(KEY_SHOTS, 'false');
+    }
+  }
+
+  function setForceShotsToggle(enabled) {
+    localStorage.setItem(KEY_SHOTS, enabled ? 'true' : 'false');
+  }
+
   function formatSelectedStoresSummary(stObj) {
     const st = stObj || getStoreToggles();
     const active = [];
-    if (st.google) active.push('Google Play');
-    if (st.ios) active.push('Apple iOS');
-    if (st.huawei) active.push('Huawei');
+    if (st.google) active.push(st.internalOnly ? 'GP Internal' : 'Google Play');
+    if (st.ios) active.push(st.internalOnly ? 'TestFlight' : 'Apple iOS');
+    if (st.huawei && !st.internalOnly) active.push('Huawei');
     return active.length > 0 ? active.join(' + ') : 'ŽÁDNÝ OBCHOD';
   }
 
@@ -5354,7 +5372,6 @@ jobs:
     const phone = isCompactPhoneScreen();
     document.documentElement.classList.toggle('stavitel-mobile-ui', phone);
 
-    // 1. Hlavicka: zkratit titulek na mobilu a skryt Disk stitek + horni ZIP tlacitko
     const h1 = document.querySelector('h1');
     if (h1) {
       if (!h1.dataset.pcTitle) h1.dataset.pcTitle = h1.textContent || '';
@@ -5377,7 +5394,6 @@ jobs:
       }
     });
 
-    // 2. Hlavicky kroku 1, 2, 3: uvolnit 100% sirky nadpisum skrytim praveho popisku na mobilu
     Array.from(document.querySelectorAll('h2, h3')).forEach(function(hd) {
       let row = hd.parentElement;
       if (row && row.parentElement && row.children.length <= 2 && row.parentElement.children.length === 2) {
@@ -5401,13 +5417,11 @@ jobs:
       }
     });
 
-    // 3. Krok 1: Roletka projektu na vlastni 100% radek, Obnovit + Odebrat pod ni vedle sebe
     const projSel = document.getElementById('projectSelect');
     if (projSel && projSel.parentElement) {
       projSel.parentElement.classList.add('stavitel-step1-proj-row');
     }
 
-    // 4. Vstupy v Kroku 1 (verze, commit, nazev repa) a detekce projektu pod sebe na 100% sirky
     ['appVersion', 'commitMsg', 'repoName'].forEach(function(id) {
       const inp = document.getElementById(id);
       if (!inp) return;
@@ -5426,7 +5440,6 @@ jobs:
       linkBtn.parentElement.classList.add('stavitel-stack-mobile');
     }
 
-    // 5. Krok 2: Karty rezimu pod sebe na 100% sirky
     const pubCard = findPublishModeCard();
     if (pubCard && pubCard.parentElement) {
       pubCard.parentElement.classList.add('stavitel-modes-container');
@@ -5435,7 +5448,6 @@ jobs:
     const modeOnlyBtn = document.querySelector('button[onclick*="pushPublishModeOnly"]');
     if (modeOnlyBtn) modeOnlyBtn.classList.add('stavitel-wrap-btn');
 
-    // 6. Krok 3 a spodni panely nastroju
     const clearBtn = document.querySelector('button[onclick*="clearFiles"]');
     if (clearBtn && clearBtn.parentElement) {
       clearBtn.parentElement.classList.add('stavitel-wrap-row');
@@ -5469,6 +5481,8 @@ jobs:
       document.body.appendChild(st);
     }
     st.textContent = [
+      '#selectiveChannelRow { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important; width: 100% !important; box-sizing: border-box !important; }',
+      '#selectiveChannelRow > button { width: 100% !important; min-width: 0 !important; min-height: 38px !important; padding: 6px 6px !important; font-size: 12px !important; line-height: 1.2 !important; white-space: nowrap !important; display: flex !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; }',
       '#selectiveStoreTogglesRow { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 6px !important; width: 100% !important; box-sizing: border-box !important; }',
       '#selectiveStoreTogglesRow > button { width: 100% !important; min-width: 0 !important; min-height: 40px !important; padding: 6px 4px !important; font-size: 12px !important; line-height: 1.2 !important; white-space: nowrap !important; display: flex !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; }',
       'html body div.tools-buttons > #btnDownloadLatestApkLeft, html body div.tools-buttons > #btnPublishLatestHuawei, html body div.tools-buttons > #btnCheckStoresStatus { flex: 1 1 100% !important; grid-column: 1 / -1 !important; width: 100% !important; min-height: 44px !important; box-sizing: border-box !important; }',
@@ -5504,18 +5518,22 @@ jobs:
 
   function patchYamlWithSelectiveStores(yaml, isPub, st, effBuildIos) {
     if (typeof yaml !== 'string' || !yaml) return yaml;
-    let out = yaml.replace(/^[ \t]*PUBLISH_(?:GOOGLE|IOS|HUAWEI):.*\r?\n?/gm, '');
+    let out = yaml.replace(/^[ \t]*(?:PUBLISH_(?:GOOGLE|IOS|HUAWEI|INTERNAL_ONLY)|FORCE_REFRESH_SCREENSHOTS):.*\r?\n?/gm, '');
     const pg = (isPub && st.google) ? 'true' : 'false';
     const pi = (isPub && st.ios) ? 'true' : 'false';
-    const ph = (isPub && st.huawei) ? 'true' : 'false';
-    const anyStr = (isPub && (st.google || st.ios || st.huawei)) ? 'true' : 'false';
+    const ph = (isPub && !st.internalOnly && st.huawei) ? 'true' : 'false';
+    const pInt = (isPub && st.internalOnly) ? 'true' : 'false';
+    const pShots = (isPub && !st.internalOnly && st.forceShots) ? 'true' : 'false';
+    const anyStr = (isPub && (st.google || st.ios || (!st.internalOnly && st.huawei))) ? 'true' : 'false';
 
     out = out.replace(/^([ \t]*)PUBLISH_TO_STORES:\s*["']?(?:true|false)["']?/m, function(_, indent) {
       return [
         indent + 'PUBLISH_TO_STORES: "' + anyStr + '"',
         indent + 'PUBLISH_GOOGLE: "' + pg + '"',
         indent + 'PUBLISH_IOS: "' + pi + '"',
-        indent + 'PUBLISH_HUAWEI: "' + ph + '"'
+        indent + 'PUBLISH_HUAWEI: "' + ph + '"',
+        indent + 'PUBLISH_INTERNAL_ONLY: "' + pInt + '"',
+        indent + 'FORCE_REFRESH_SCREENSHOTS: "' + pShots + '"'
       ].join('\n');
     });
 
@@ -5546,17 +5564,22 @@ jobs:
     window.buildCzechUnifiedWorkflowYaml = function(appName, bundleId, appVersion, publishToStores, buildIos) {
       const isPub = !(publishToStores === false || publishToStores === 'false');
       const st = getStoreToggles();
-      const anyStore = isPub && (st.google || st.ios || st.huawei);
+      const anyStore = isPub && (st.google || st.ios || (!st.internalOnly && st.huawei));
       const effPubStores = anyStore ? 'true' : 'false';
-      const effBuildIos = isPub ? (st.ios ? 'true' : 'false') : ((buildIos === false || buildIos === 'false') ? 'false' : 'true');
+      const needMacForShots = (isPub && !st.internalOnly && st.google && st.forceShots);
+      const effBuildIos = isPub ? ((st.ios || needMacForShots) ? 'true' : 'false') : ((buildIos === false || buildIos === 'false') ? 'false' : 'true');
       const raw = baseBuildYaml.call(this, appName, bundleId, appVersion, effPubStores, effBuildIos);
       return patchYamlWithSelectiveStores(raw, isPub, st, effBuildIos);
     };
   }
 
-  function styleStoreBtn(btn, isOn, activeBg, activeBorder, activeColor, iconOn, labelTxt) {
+  function styleStoreBtn(btn, isOn, activeBg, activeBorder, activeColor, iconOn, labelTxt, disabledLook) {
     if (!btn) return;
     btn.textContent = (isOn ? iconOn : '⚪') + ' ' + labelTxt + (isOn ? ' ✔' : '');
+    if (disabledLook) {
+      btn.style.cssText = 'border-radius:9px;font-weight:500;cursor:not-allowed;background:rgba(15,23,42,0.35);border:1px dashed rgba(100,116,139,0.28);color:#64748b;opacity:0.5;';
+      return;
+    }
     btn.style.cssText = isOn
       ? 'border-radius:9px;font-weight:700;cursor:pointer;transition:all 0.15s ease;background:' + activeBg + ';border:1px solid ' + activeBorder + ';color:' + activeColor + ';box-shadow:0 1px 5px rgba(0,0,0,0.25);'
       : 'border-radius:9px;font-weight:500;cursor:pointer;transition:all 0.15s ease;background:rgba(15,23,42,0.55);border:1px dashed rgba(148,163,184,0.4);color:#94a3b8;opacity:0.82;';
@@ -5566,38 +5589,73 @@ jobs:
     applyMobileDomStructureTags();
     const st = getStoreToggles();
     const onMob = isCompactPhoneScreen();
-    styleStoreBtn(document.getElementById('btnToggleStoreGoogle'), st.google, 'rgba(16,185,129,0.24)', '#10b981', '#ecfdf5', '🟢', onMob ? 'Play' : 'Google Play');
-    styleStoreBtn(document.getElementById('btnToggleStoreIos'), st.ios, 'rgba(59,130,246,0.26)', '#60a5fa', '#eff6ff', '🍎', 'iOS');
-    styleStoreBtn(document.getElementById('btnToggleStoreHuawei'), st.huawei, 'rgba(244,63,94,0.26)', '#fb7185', '#fff1f2', '🔴', 'Huawei');
+
+    styleStoreBtn(document.getElementById('btnChannelInternal'), st.internalOnly, 'rgba(245,158,11,0.24)', '#f59e0b', '#fef3c7', '🧪', onMob ? 'Interní test' : 'Interní test (bez fotek)', false);
+    styleStoreBtn(document.getElementById('btnChannelProd'), !st.internalOnly, 'rgba(16,185,129,0.24)', '#10b981', '#ecfdf5', '🌍', 'Ostrá produkce', false);
+
+    styleStoreBtn(document.getElementById('btnToggleStoreGoogle'), st.google, 'rgba(16,185,129,0.24)', '#10b981', '#ecfdf5', '🟢', onMob ? 'Play' : 'Google Play', false);
+    styleStoreBtn(document.getElementById('btnToggleStoreIos'), st.ios, 'rgba(59,130,246,0.26)', '#60a5fa', '#eff6ff', '🍎', 'iOS', false);
+    styleStoreBtn(document.getElementById('btnToggleStoreHuawei'), (!st.internalOnly && st.huawei), 'rgba(244,63,94,0.26)', '#fb7185', '#fff1f2', '🔴', 'Huawei', st.internalOnly);
+
+    const shotsBtn = document.getElementById('btnToggleForceShots');
+    if (shotsBtn) {
+      shotsBtn.style.display = st.internalOnly ? 'none' : 'flex';
+      shotsBtn.textContent = st.forceShots ? '📸 Přefotit snímky v obchodech: ZAPNUTO ✔' : '📸 Přefotit snímky v obchodech (volitelné)';
+      shotsBtn.style.cssText = (st.internalOnly ? 'display:none;' : 'display:flex;align-items:center;justify-content:center;width:100%;min-height:34px;padding:5px 8px;border-radius:8px;font-size:11.5px;cursor:pointer;box-sizing:border-box;') + (
+        st.forceShots
+          ? 'font-weight:700;background:rgba(139,92,246,0.26);border:1px solid #a78bfa;color:#f5f3ff;'
+          : 'font-weight:500;background:rgba(15,23,42,0.45);border:1px dashed rgba(148,163,184,0.35);color:#94a3b8;'
+      );
+    }
 
     const modeVal = (document.getElementById('cmPublishMode') && document.getElementById('cmPublishMode').value) || 'build_only';
     const hint = document.getElementById('selectiveStoresActiveHint');
+    const anyOn = st.google || st.ios || (!st.internalOnly && st.huawei);
+    const summaryTxt = formatSelectedStoresSummary(st);
+
     if (hint) {
-      const anyOn = st.google || st.ios || st.huawei;
       if (modeVal === 'publish') {
-        hint.textContent = anyOn ? ('Cíl: ' + formatSelectedStoresSummary(st)) : '⚠️ Zapni alespoň jeden cílový obchod!';
-        hint.style.color = anyOn ? '#6ee7b7' : '#fbbf24';
+        if (!anyOn) {
+          hint.textContent = '⚠️ Zapni alespoň jeden cílový obchod!';
+          hint.style.color = '#fbbf24';
+        } else if (st.internalOnly) {
+          hint.textContent = '🧪 Jen binárka pro testery (' + summaryTxt + ') — bez fotek a bez schvalování';
+          hint.style.color = '#fde68a';
+        } else {
+          hint.textContent = '🌍 Veřejné vydání ke schválení: ' + summaryTxt;
+          hint.style.color = '#6ee7b7';
+        }
       } else {
-        hint.textContent = 'Při publikaci: ' + formatSelectedStoresSummary(st);
+        hint.textContent = 'Při publikaci: ' + (st.internalOnly ? '🧪 ' : '🌍 ') + summaryTxt;
         hint.style.color = '#94a3b8';
       }
     }
 
     const btnAll = document.getElementById('btnAll');
     if (btnAll) {
+      const chanPrefix = st.internalOnly ? '🧪 Interní test: ' : '🌍 Ostrá produkce: ';
       if (isMobileOrNoFsDevice()) {
         btnAll.textContent = (modeVal === 'publish')
-          ? ('🚀 Publikovat na GitHub (' + formatSelectedStoresSummary(st) + ')')
+          ? ('🚀 ' + chanPrefix + summaryTxt)
           : '🚀 Odeslat na GitHub a spustit build';
       } else {
         btnAll.textContent = (modeVal === 'publish')
-          ? ('🚀 Uložit na disk A publikovat (' + formatSelectedStoresSummary(st) + ')')
+          ? ('🚀 Uložit na disk + ' + chanPrefix + summaryTxt)
           : '🚀 Uložit na disk A odeslat na GitHub (spustí vybraný režim)';
       }
     }
 
     if (typeof stagedFiles !== 'undefined' && stagedFiles && stagedFiles['.github/workflows/build.yml'] && typeof window.applyModeToWorkflowYaml === 'function') {
       stagedFiles['.github/workflows/build.yml'] = window.applyModeToWorkflowYaml(stagedFiles['.github/workflows/build.yml'], modeVal);
+    }
+  }
+
+  function activatePublishModeCard() {
+    if (typeof window.selectBuildMode === 'function') {
+      window.selectBuildMode('publish');
+    } else {
+      const sel = document.getElementById('cmPublishMode');
+      if (sel) sel.value = 'publish';
     }
   }
 
@@ -5612,10 +5670,43 @@ jobs:
     box.style.cssText = 'margin-top:10px;padding-top:9px;border-top:1px solid rgba(148,163,184,0.22);display:flex;flex-direction:column;gap:6px;width:100%;box-sizing:border-box;';
     box.addEventListener('click', function(e) { e.stopPropagation(); });
 
-    const cap = document.createElement('div');
-    cap.textContent = 'Cílové obchody (kliknutím přepneš):';
-    cap.style.cssText = 'font-size:11px;color:#cbd5e1;font-weight:600;text-align:center;';
-    box.appendChild(cap);
+    const capChan = document.createElement('div');
+    capChan.textContent = '1. Režim nahrání (Interní test nezasahuje do fotek ani produkce):';
+    capChan.style.cssText = 'font-size:11px;color:#cbd5e1;font-weight:600;text-align:center;';
+    box.appendChild(capChan);
+
+    const chanRow = document.createElement('div');
+    chanRow.id = 'selectiveChannelRow';
+
+    const btnInt = document.createElement('button');
+    btnInt.id = 'btnChannelInternal';
+    btnInt.type = 'button';
+    btnInt.addEventListener('click', function(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      setPublishChannel(true);
+      activatePublishModeCard();
+      refreshSelectiveUi();
+    });
+    chanRow.appendChild(btnInt);
+
+    const btnProd = document.createElement('button');
+    btnProd.id = 'btnChannelProd';
+    btnProd.type = 'button';
+    btnProd.addEventListener('click', function(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      setPublishChannel(false);
+      activatePublishModeCard();
+      refreshSelectiveUi();
+    });
+    chanRow.appendChild(btnProd);
+    box.appendChild(chanRow);
+
+    const capStores = document.createElement('div');
+    capStores.textContent = '2. Cílové obchody (kliknutím zapneš / vypneš):';
+    capStores.style.cssText = 'font-size:11px;color:#cbd5e1;font-weight:600;text-align:center;margin-top:2px;';
+    box.appendChild(capStores);
 
     const row = document.createElement('div');
     row.id = 'selectiveStoreTogglesRow';
@@ -5632,22 +5723,35 @@ jobs:
         ev.preventDefault();
         ev.stopPropagation();
         const cur = getStoreToggles();
-        setStoreToggle(item.key, !cur[item.key]);
-        if (typeof window.selectBuildMode === 'function') {
-          window.selectBuildMode('publish');
+        if (item.key === 'huawei' && cur.internalOnly) {
+          setPublishChannel(false);
+          setStoreToggle('huawei', true);
         } else {
-          const sel = document.getElementById('cmPublishMode');
-          if (sel) sel.value = 'publish';
+          setStoreToggle(item.key, !cur[item.key]);
         }
+        activatePublishModeCard();
         refreshSelectiveUi();
       });
       row.appendChild(b);
     });
     box.appendChild(row);
 
+    const shotsBtn = document.createElement('button');
+    shotsBtn.id = 'btnToggleForceShots';
+    shotsBtn.type = 'button';
+    shotsBtn.addEventListener('click', function(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const cur = getStoreToggles();
+      setForceShotsToggle(!cur.forceShots);
+      activatePublishModeCard();
+      refreshSelectiveUi();
+    });
+    box.appendChild(shotsBtn);
+
     const hint = document.createElement('div');
     hint.id = 'selectiveStoresActiveHint';
-    hint.style.cssText = 'font-size:11px;font-weight:600;text-align:center;margin-top:1px;';
+    hint.style.cssText = 'font-size:11px;font-weight:600;text-align:center;margin-top:1px;line-height:1.3;';
     box.appendChild(hint);
 
     pubCard.appendChild(box);
@@ -5668,22 +5772,33 @@ jobs:
     const modeVal = (document.getElementById('cmPublishMode') && document.getElementById('cmPublishMode').value) || 'build_only';
     if (modeVal !== 'publish') return true;
     const st = getStoreToggles();
-    if (!st.google && !st.ios && !st.huawei) {
-      alert('V režimu Publikovat nemáš zapnutý žádný obchod! Zapni prosím alespoň jeden přepínač (Google Play, Apple iOS nebo Huawei), nebo zvol kompilaci bez obchodů.');
+    const anyOn = st.google || st.ios || (!st.internalOnly && st.huawei);
+    if (!anyOn) {
+      alert('V režimu Publikovat nemáš zapnutý žádný cílový obchod! Zapni prosím alespoň jeden přepínač (Google Play, iOS nebo v Ostré produkci Huawei).');
       return false;
     }
     if (typeof window.log === 'function') {
-      window.log('🎯 Aktivní obchody pro tuto publikaci: ' + formatSelectedStoresSummary(st), 'info');
+      const chTxt = st.internalOnly ? '🧪 INTERNÍ TEST (bez úprav fotek a produkce)' : '🌍 OSTRÁ PRODUKCE';
+      window.log('🎯 Kanál: ' + chTxt + ' -> ' + formatSelectedStoresSummary(st), 'info');
     }
     return true;
   }
+
+  const afterPushResetForceShots = function() {
+    if (localStorage.getItem(KEY_SHOTS) === 'true') {
+      localStorage.setItem(KEY_SHOTS, 'false');
+      refreshSelectiveUi();
+    }
+  };
 
   const origPushGh = window.__preSelectivePushGh || window.pushToGitHubOnly;
   if (typeof origPushGh === 'function') {
     window.__preSelectivePushGh = origPushGh;
     window.pushToGitHubOnly = async function() {
       if (!ensureValidPublishSelection()) return;
-      return await origPushGh.apply(this, arguments);
+      const res = await origPushGh.apply(this, arguments);
+      afterPushResetForceShots();
+      return res;
     };
   }
 
@@ -5701,11 +5816,15 @@ jobs:
           window.log('📱 Mobilní režim: přeskakuji lokální disk a odesílám přímo na GitHub...', 'info');
         }
         if (typeof origPushGh === 'function') {
-          return await origPushGh.apply(this, arguments);
+          const res = await origPushGh.apply(this, arguments);
+          afterPushResetForceShots();
+          return res;
         }
       }
       if (!ensureValidPublishSelection()) return;
-      return await origRunFull.apply(this, arguments);
+      const res = await origRunFull.apply(this, arguments);
+      afterPushResetForceShots();
+      return res;
     };
   }
 
@@ -5714,16 +5833,20 @@ jobs:
     window.__preSelectiveModeOnly = origModeOnly;
     window.pushPublishModeOnly = async function() {
       if (!ensureValidPublishSelection()) return;
+      const st = getStoreToggles();
+      const descMode = (st.internalOnly ? 'Interní test (bez fotek a bez schvalování): ' : 'Ostrá produkce ke schválení: ') + formatSelectedStoresSummary(st);
       const origConfirm = window.confirm;
       window.confirm = function(msg) {
         const patchedMsg = String(msg || '').replace(
           'Publikovat Android + iOS do Google Play a App Store / TestFlightu',
-          'Publikovat výhradně do vybraných obchodů: ' + formatSelectedStoresSummary()
+          descMode
         );
         return origConfirm.call(window, patchedMsg);
       };
       try {
-        return await origModeOnly.apply(this, arguments);
+        const res = await origModeOnly.apply(this, arguments);
+        afterPushResetForceShots();
+        return res;
       } finally {
         window.confirm = origConfirm;
       }
