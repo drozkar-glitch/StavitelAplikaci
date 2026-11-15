@@ -5263,4 +5263,405 @@ jobs:
   if (typeof stagedFiles !== 'undefined' && stagedFiles && stagedFiles['.github/workflows/build.yml']) {
     stagedFiles['.github/workflows/build.yml'] = window.applyModeToWorkflowYaml ? window.applyModeToWorkflowYaml(stagedFiles['.github/workflows/build.yml']) : patchYamlWithFullStoreAutomation(stagedFiles['.github/workflows/build.yml']);
   }
-})();</script></body></html>
+})();</script>
+<script id="selectiveStorePublishScript">
+/* === STAVITEL_SELECTIVE_STORE_PUBLISH_V1 === */
+(function installSelectiveStorePublishV1() {
+  const KEY_GP = 'stavitel_pub_google';
+  const KEY_IOS = 'stavitel_pub_ios';
+  const KEY_HW = 'stavitel_pub_huawei';
+
+  function getStoreToggles() {
+    const gp = localStorage.getItem(KEY_GP);
+    const ios = localStorage.getItem(KEY_IOS);
+    const hw = localStorage.getItem(KEY_HW);
+    return {
+      google: gp === null ? true : gp === 'true',
+      ios: ios === null ? true : ios === 'true',
+      huawei: hw === null ? false : hw === 'true'
+    };
+  }
+
+  function setStoreToggle(storeKey, enabled) {
+    const map = { google: KEY_GP, ios: KEY_IOS, huawei: KEY_HW };
+    if (map[storeKey]) localStorage.setItem(map[storeKey], enabled ? 'true' : 'false');
+  }
+
+  function formatSelectedStoresSummary(stObj) {
+    const st = stObj || getStoreToggles();
+    const active = [];
+    if (st.google) active.push('Google Play');
+    if (st.ios) active.push('Apple iOS');
+    if (st.huawei) active.push('Huawei');
+    return active.length > 0 ? active.join(' + ') : 'ŽÁDNÝ OBCHOD';
+  }
+
+  window.__getSelectiveStoreToggles = getStoreToggles;
+
+  function getSelectedMobileRepo() {
+    const sel = document.getElementById('projectSelect') || document.querySelector('select');
+    if (!sel) return '';
+    const val = String(sel.value || '').trim();
+    if (!val || val.toUpperCase() === '__NEW__' || val.toLowerCase() === 'new' || val.startsWith('__') || /^(stavitelaplikaci|ios-keys)$/i.test(val)) {
+      return '';
+    }
+    return val;
+  }
+
+  function findPublishModeCard() {
+    return (
+      document.getElementById('modeCard_publish') ||
+      document.getElementById('cardPublish') ||
+      document.querySelector('[data-mode="publish"]') ||
+      document.querySelector('[onclick*="\'publish\'"]') ||
+      Array.from(document.querySelectorAll('.mode-card, [onclick*="selectBuildMode"]')).find(function(c) {
+        return /Publikovat/i.test(c.textContent || '');
+      })
+    );
+  }
+
+  function patchYamlWithSelectiveStores(yaml, isPub, st, effBuildIos) {
+    if (typeof yaml !== 'string' || !yaml) return yaml;
+    let out = yaml.replace(/^[ \t]*PUBLISH_(?:GOOGLE|IOS|HUAWEI):.*\r?\n?/gm, '');
+    const pg = (isPub && st.google) ? 'true' : 'false';
+    const pi = (isPub && st.ios) ? 'true' : 'false';
+    const ph = (isPub && st.huawei) ? 'true' : 'false';
+    const anyStr = (isPub && (st.google || st.ios || st.huawei)) ? 'true' : 'false';
+
+    out = out.replace(/^([ \t]*)PUBLISH_TO_STORES:\s*["']?(?:true|false)["']?/m, function(_, indent) {
+      return [
+        indent + 'PUBLISH_TO_STORES: "' + anyStr + '"',
+        indent + 'PUBLISH_GOOGLE: "' + pg + '"',
+        indent + 'PUBLISH_IOS: "' + pi + '"',
+        indent + 'PUBLISH_HUAWEI: "' + ph + '"'
+      ].join('\n');
+    });
+
+    out = out.replace(/^([ \t]*)BUILD_IOS:\s*["']?(?:true|false)["']?/m, '$1BUILD_IOS: "' + effBuildIos + '"');
+
+    if (!out.includes('PUBLISH_GOOGLE" != "true"')) {
+      out = out.replace(/^([ \t]*)elif \[ -s "iosApp\/signing\/store_google_huawei\.py" \]; then/m, function(_, indent) {
+        return [
+          indent + 'elif [ "$PUBLISH_GOOGLE" != "true" ] && [ "$PUBLISH_HUAWEI" != "true" ]; then',
+          indent + '  echo "⏭️ Publikace pro Google Play i Huawei je vypnuta prepinaci. Preskakuji Android obchody."',
+          indent + 'elif [ -s "iosApp/signing/store_google_huawei.py" ]; then'
+        ].join('\n');
+      });
+    }
+
+    if (!out.includes('&& [ "$PUBLISH_IOS" = "true" ]')) {
+      out = out.replace(
+        /if \[ "\$PUBLISH_TO_STORES" = "true" \]; then/g,
+        'if [ "$PUBLISH_TO_STORES" = "true" ] && [ "$PUBLISH_IOS" = "true" ]; then'
+      );
+    }
+    return out;
+  }
+
+  const baseBuildYaml = window.__preSelectiveStoreBuildYaml || window.buildCzechUnifiedWorkflowYaml;
+  if (typeof baseBuildYaml === 'function') {
+    window.__preSelectiveStoreBuildYaml = baseBuildYaml;
+    window.buildCzechUnifiedWorkflowYaml = function(appName, bundleId, appVersion, publishToStores, buildIos) {
+      const isPub = !(publishToStores === false || publishToStores === 'false');
+      const st = getStoreToggles();
+      const anyStore = isPub && (st.google || st.ios || st.huawei);
+      const effPubStores = anyStore ? 'true' : 'false';
+      const effBuildIos = isPub ? (st.ios ? 'true' : 'false') : ((buildIos === false || buildIos === 'false') ? 'false' : 'true');
+      const raw = baseBuildYaml.call(this, appName, bundleId, appVersion, effPubStores, effBuildIos);
+      return patchYamlWithSelectiveStores(raw, isPub, st, effBuildIos);
+    };
+  }
+
+  function styleStoreBtn(btn, isOn, activeBg, activeBorder, activeColor, iconOn, labelTxt) {
+    if (!btn) return;
+    btn.textContent = (isOn ? iconOn : '⚪') + ' ' + labelTxt + (isOn ? ' ✔' : ' ✕');
+    btn.style.cssText = isOn
+      ? 'flex:1 1 auto;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.15s ease;background:' + activeBg + ';border:1px solid ' + activeBorder + ';color:' + activeColor + ';box-shadow:0 1px 6px rgba(0,0,0,0.25);'
+      : 'flex:1 1 auto;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s ease;background:rgba(15,23,42,0.55);border:1px dashed rgba(148,163,184,0.4);color:#94a3b8;opacity:0.78;';
+  }
+
+  function refreshSelectiveUi() {
+    const st = getStoreToggles();
+    styleStoreBtn(document.getElementById('btnToggleStoreGoogle'), st.google, 'rgba(16,185,129,0.24)', '#10b981', '#ecfdf5', '🟢', 'Google Play');
+    styleStoreBtn(document.getElementById('btnToggleStoreIos'), st.ios, 'rgba(59,130,246,0.26)', '#60a5fa', '#eff6ff', '🍎', 'Apple iOS');
+    styleStoreBtn(document.getElementById('btnToggleStoreHuawei'), st.huawei, 'rgba(244,63,94,0.26)', '#fb7185', '#fff1f2', '🔴', 'Huawei');
+
+    const modeVal = (document.getElementById('cmPublishMode') && document.getElementById('cmPublishMode').value) || 'build_only';
+    const hint = document.getElementById('selectiveStoresActiveHint');
+    if (hint) {
+      const anyOn = st.google || st.ios || st.huawei;
+      if (modeVal === 'publish') {
+        hint.textContent = anyOn ? ('Odešle se pouze do: ' + formatSelectedStoresSummary(st)) : '⚠️ Zapni alespoň jeden cílový obchod!';
+        hint.style.color = anyOn ? '#6ee7b7' : '#fbbf24';
+      } else {
+        hint.textContent = 'Při publikaci půjde do: ' + formatSelectedStoresSummary(st);
+        hint.style.color = '#94a3b8';
+      }
+    }
+
+    const btnAll = document.getElementById('btnAll');
+    if (btnAll) {
+      btnAll.textContent = (modeVal === 'publish')
+        ? ('🚀 Uložit na disk A publikovat (' + formatSelectedStoresSummary(st) + ')')
+        : '🚀 Uložit na disk A odeslat na GitHub (spustí vybraný režim)';
+    }
+
+    if (typeof stagedFiles !== 'undefined' && stagedFiles && stagedFiles['.github/workflows/build.yml'] && typeof window.applyModeToWorkflowYaml === 'function') {
+      stagedFiles['.github/workflows/build.yml'] = window.applyModeToWorkflowYaml(stagedFiles['.github/workflows/build.yml'], modeVal);
+    }
+  }
+
+  function mountPublishCardToggles() {
+    const pubCard = findPublishModeCard();
+    if (!pubCard) return;
+    const oldBox = document.getElementById('selectiveStoreTogglesBox');
+    if (oldBox) oldBox.remove();
+
+    const box = document.createElement('div');
+    box.id = 'selectiveStoreTogglesBox';
+    box.style.cssText = 'margin-top:10px;padding-top:9px;border-top:1px solid rgba(148,163,184,0.22);display:flex;flex-direction:column;gap:6px;';
+    box.addEventListener('click', function(e) { e.stopPropagation(); });
+
+    const cap = document.createElement('div');
+    cap.textContent = 'Vyber cílové obchody (kliknutím zapneš / vypneš):';
+    cap.style.cssText = 'font-size:11px;color:#cbd5e1;font-weight:600;text-align:center;';
+    box.appendChild(cap);
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;justify-content:center;';
+
+    [
+      { id: 'btnToggleStoreGoogle', key: 'google' },
+      { id: 'btnToggleStoreIos', key: 'ios' },
+      { id: 'btnToggleStoreHuawei', key: 'huawei' }
+    ].forEach(function(item) {
+      const b = document.createElement('button');
+      b.id = item.id;
+      b.type = 'button';
+      b.addEventListener('click', function(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const cur = getStoreToggles();
+        setStoreToggle(item.key, !cur[item.key]);
+        if (typeof window.selectBuildMode === 'function') {
+          window.selectBuildMode('publish');
+        } else {
+          const sel = document.getElementById('cmPublishMode');
+          if (sel) sel.value = 'publish';
+        }
+        refreshSelectiveUi();
+      });
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+
+    const hint = document.createElement('div');
+    hint.id = 'selectiveStoresActiveHint';
+    hint.style.cssText = 'font-size:11px;font-weight:600;text-align:center;margin-top:1px;';
+    box.appendChild(hint);
+
+    pubCard.appendChild(box);
+    refreshSelectiveUi();
+  }
+
+  const origSelectMode = window.__preSelectiveSelectMode || window.selectBuildMode;
+  if (typeof origSelectMode === 'function') {
+    window.__preSelectiveSelectMode = origSelectMode;
+    window.selectBuildMode = function(mode) {
+      const r = origSelectMode.apply(this, arguments);
+      refreshSelectiveUi();
+      return r;
+    };
+  }
+
+  function ensureValidPublishSelection() {
+    const modeVal = (document.getElementById('cmPublishMode') && document.getElementById('cmPublishMode').value) || 'build_only';
+    if (modeVal !== 'publish') return true;
+    const st = getStoreToggles();
+    if (!st.google && !st.ios && !st.huawei) {
+      alert('V režimu Publikovat nemáš zapnutý žádný obchod! Zapni prosím alespoň jeden přepínač (Google Play, Apple iOS nebo Huawei), nebo zvol kompilaci bez obchodů.');
+      return false;
+    }
+    if (typeof window.log === 'function') {
+      window.log('🎯 Aktivní obchody pro tuto publikaci: ' + formatSelectedStoresSummary(st), 'info');
+    }
+    return true;
+  }
+
+  const origRunFull = window.__preSelectiveRunFull || window.runFullPipeline;
+  if (typeof origRunFull === 'function') {
+    window.__preSelectiveRunFull = origRunFull;
+    window.runFullPipeline = async function() {
+      if (!ensureValidPublishSelection()) return;
+      return await origRunFull.apply(this, arguments);
+    };
+  }
+
+  const origPushGh = window.__preSelectivePushGh || window.pushToGitHubOnly;
+  if (typeof origPushGh === 'function') {
+    window.__preSelectivePushGh = origPushGh;
+    window.pushToGitHubOnly = async function() {
+      if (!ensureValidPublishSelection()) return;
+      return await origPushGh.apply(this, arguments);
+    };
+  }
+
+  const origModeOnly = window.__preSelectiveModeOnly || window.pushPublishModeOnly;
+  if (typeof origModeOnly === 'function') {
+    window.__preSelectiveModeOnly = origModeOnly;
+    window.pushPublishModeOnly = async function() {
+      if (!ensureValidPublishSelection()) return;
+      const origConfirm = window.confirm;
+      window.confirm = function(msg) {
+        const patchedMsg = String(msg || '').replace(
+          'Publikovat Android + iOS do Google Play a App Store / TestFlightu',
+          'Publikovat výhradně do vybraných obchodů: ' + formatSelectedStoresSummary()
+        );
+        return origConfirm.call(window, patchedMsg);
+      };
+      try {
+        return await origModeOnly.apply(this, arguments);
+      } finally {
+        window.confirm = origConfirm;
+      }
+    };
+  }
+
+  function updateHuaweiPushBtnLabel() {
+    const repo = getSelectedMobileRepo();
+    const btn = document.getElementById('btnPublishLatestHuawei');
+    if (btn && !btn.disabled) {
+      btn.textContent = repo
+        ? ('📤 Odeslat aktuální build do Huawei (' + repo + ')')
+        : '📤 Odeslat aktuální build do Huawei';
+    }
+  }
+
+  window.publishLatestApkToHuawei = async function() {
+    const ghOwn = (localStorage.getItem('stavitel_gh_user') || (document.getElementById('ghUsername') && document.getElementById('ghUsername').value) || 'drozkar-glitch').trim();
+    const ghTk = (localStorage.getItem('stavitel_gh_token') || (document.getElementById('ghToken') && document.getElementById('ghToken').value) || '').trim();
+    if (!ghOwn || !ghTk) {
+      alert('Nejprve vyplň své GitHub jméno a Personal Access Token nahoře.');
+      return;
+    }
+    const repo = getSelectedMobileRepo();
+    if (!repo) {
+      alert('Nejprve v Kroku 1 vyber existující projekt z roletky.');
+      return;
+    }
+    if (!window.confirm('Odeslat poslední sestavený .APK build projektu "' + repo + '" přímo do Huawei AppGallery (bez nové kompilace a bez zásahu do Google Play / iOS)?')) {
+      return;
+    }
+
+    const btn = document.getElementById('btnPublishLatestHuawei');
+    const setBusy = function(busy) {
+      if (!btn) return;
+      btn.disabled = busy;
+      btn.style.opacity = busy ? '0.7' : '1';
+      btn.textContent = busy
+        ? ('⏳ Odesílám do Huawei (' + repo + ')...')
+        : ('📤 Odeslat aktuální build do Huawei (' + repo + ')');
+    };
+
+    setBusy(true);
+    try {
+      window.log('🚀 Spouštím přímé odeslání posledního .APK projektu "' + repo + '" do Huawei AppGallery...', 'info');
+      const vRes = await ghFetch('https://api.github.com/repos/' + ghOwn + '/ios-keys', ghTk);
+      if (!vRes.ok) throw new Error('Nelze načíst trezor ios-keys (' + vRes.status + ').');
+      const vBranch = ((await vRes.json()).default_branch) || 'main';
+
+      const preRunsRes = await ghFetch('https://api.github.com/repos/' + ghOwn + '/ios-keys/actions/workflows/huawei_push.yml/runs?per_page=5&_cb=' + Date.now(), ghTk);
+      const oldIds = new Set(preRunsRes.ok ? (((await preRunsRes.json()).workflow_runs || []).map(function(r) { return r.id; })) : []);
+
+      const reqId = 'hw_' + Date.now();
+      const dispRes = await ghFetch('https://api.github.com/repos/' + ghOwn + '/ios-keys/actions/workflows/huawei_push.yml/dispatches', ghTk, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: vBranch, inputs: { target_repo: repo, request_id: reqId } })
+      });
+      if (!dispRes.ok) {
+        throw new Error('Nelze spustit huawei_push.yml v ios-keys (' + dispRes.status + ').');
+      }
+
+      let finishedRun = null;
+      for (let i = 0; i < 60; i++) {
+        await new Promise(function(r) { setTimeout(r, 4000); });
+        const pollRes = await ghFetch('https://api.github.com/repos/' + ghOwn + '/ios-keys/actions/workflows/huawei_push.yml/runs?per_page=5&_cb=' + Date.now(), ghTk);
+        if (!pollRes.ok) continue;
+        const cand = ((await pollRes.json()).workflow_runs || []).find(function(r) { return !oldIds.has(r.id); });
+        if (cand && cand.status === 'completed') {
+          finishedRun = cand;
+          break;
+        }
+      }
+
+      if (!finishedRun) {
+        throw new Error('Vypršel časový limit při čekání na nahrání .APK do Huawei AppGallery.');
+      }
+
+      await ghFetch('https://api.github.com/repos/' + ghOwn + '/ios-keys/actions/runs/' + finishedRun.id, ghTk, { method: 'DELETE' });
+
+      const repRes = await ghFetch('https://api.github.com/repos/' + ghOwn + '/ios-keys/contents/huawei_push_report.txt?_cb=' + Date.now(), ghTk);
+      if (repRes.ok) {
+        const repJson = await repRes.json();
+        const bin = atob(String(repJson.content || '').replace(/\s+/g, ''));
+        const bytes = new Uint8Array(bin.length);
+        for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+        const repTxt = new TextDecoder('utf-8').decode(bytes);
+        const lines = repTxt.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l && !l.startsWith('REQ_ID:') && !l.startsWith('REPO:'); });
+        lines.forEach(function(ln) {
+          const lvl = ln.includes('✅') ? 'ok' : ((ln.includes('❌') || ln.includes('⚠️')) ? 'err' : 'info');
+          window.log(ln, lvl);
+        });
+      } else if (finishedRun.conclusion === 'success') {
+        window.log('✅ Huawei workflow proběhl úspěšně.', 'ok');
+      } else {
+        throw new Error('Odeslání do Huawei skončilo se stavem: ' + finishedRun.conclusion);
+      }
+    } catch (err) {
+      window.log('❌ Huawei odeslání: ' + err.message, 'err');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  function mountHuaweiBottomButton() {
+    const apkBtn = document.getElementById('btnDownloadLatestApkLeft');
+    const fallbackBtn = Array.from(document.querySelectorAll('button')).find(function(b) { return (b.textContent || '').includes('Jen na GitHub'); });
+    const container = (apkBtn && apkBtn.parentElement) || (fallbackBtn && fallbackBtn.parentElement);
+    if (!container) return;
+    container.style.flexWrap = 'wrap';
+
+    let hwBtn = document.getElementById('btnPublishLatestHuawei');
+    if (!hwBtn) {
+      hwBtn = document.createElement('button');
+      hwBtn.id = 'btnPublishLatestHuawei';
+      hwBtn.type = 'button';
+      hwBtn.className = 'btn-secondary';
+      if (apkBtn && apkBtn.nextSibling) {
+        container.insertBefore(hwBtn, apkBtn.nextSibling);
+      } else {
+        container.appendChild(hwBtn);
+      }
+    }
+    hwBtn.title = 'Vezme poslední již sestavené .APK vybraného projektu a odešle ho přímo do Huawei AppGallery bez nové kompilace';
+    hwBtn.style.cssText = 'flex:1 1 100%;grid-column:1 / -1;width:100%;margin-top:4px;background:rgba(225,29,72,0.16);border:1px solid rgba(251,113,133,0.55);color:#ffe4e6;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;';
+    hwBtn.disabled = false;
+    hwBtn.onclick = function() { window.publishLatestApkToHuawei(); };
+    updateHuaweiPushBtnLabel();
+  }
+
+  const projSel = document.getElementById('projectSelect') || document.querySelector('select');
+  if (projSel && !projSel.__selectiveHwBound) {
+    projSel.__selectiveHwBound = true;
+    projSel.addEventListener('change', updateHuaweiPushBtnLabel);
+    const obs = new MutationObserver(function() { updateHuaweiPushBtnLabel(); });
+    obs.observe(projSel, { childList: true });
+  }
+
+  mountPublishCardToggles();
+  mountHuaweiBottomButton();
+  setTimeout(function() { mountPublishCardToggles(); mountHuaweiBottomButton(); }, 500);
+})();
+</script>
+</body></html>
