@@ -5265,8 +5265,8 @@ jobs:
   }
 })();</script>
 <script id="selectiveStorePublishScript">
-/* === STAVITEL_SELECTIVE_STORE_PUBLISH_V5_GFX_PREVIEW === */
-(function installSelectiveStorePublishV5() {
+/* === STAVITEL_SELECTIVE_STORE_PUBLISH_V6_GFX_VIDEO === */
+(function installSelectiveStorePublishV6() {
   const KEY_GP = 'stavitel_pub_google';
   const KEY_IOS = 'stavitel_pub_ios';
   const KEY_HW = 'stavitel_pub_huawei';
@@ -5291,11 +5291,7 @@ jobs:
 
   function neutralizeLegacyApkCss() {
     let legacy = document.getElementById('stavitelPmMobilniCss');
-    if (!legacy) {
-      legacy = document.createElement('style');
-      legacy.id = 'stavitelPmMobilniCss';
-      document.head.appendChild(legacy);
-    }
+    if (!legacy) { legacy = document.createElement('style'); legacy.id = 'stavitelPmMobilniCss'; document.head.appendChild(legacy); }
     if (legacy.textContent && legacy.textContent.trim().length > 0) legacy.textContent = '';
   }
 
@@ -5305,11 +5301,15 @@ jobs:
     return { own: own, tk: tk };
   }
 
-  function decUtf8B64(b64) {
+  function b64ToBytes(b64) {
     const bin = atob(String(b64 || '').replace(/\s+/g, ''));
     const arr = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-    return new TextDecoder('utf-8').decode(arr);
+    return arr;
+  }
+
+  function decUtf8B64(b64) {
+    return new TextDecoder('utf-8').decode(b64ToBytes(b64));
   }
 
   function getStoreToggles() {
@@ -5370,9 +5370,7 @@ jobs:
     const topZip = document.getElementById('btnDownloadStavitelZipTop');
     if (topZip) topZip.classList.add('stavitel-hide-on-mobile');
     Array.from(document.querySelectorAll('button, span, div, a')).forEach(function(el) {
-      if (el.children.length <= 2 && !el.querySelector('input, select, button') && /^📁\s*Disk:/i.test((el.textContent || '').trim())) {
-        el.classList.add('stavitel-hide-on-mobile');
-      }
+      if (el.children.length <= 2 && !el.querySelector('input, select, button') && /^📁\s*Disk:/i.test((el.textContent || '').trim())) el.classList.add('stavitel-hide-on-mobile');
     });
     Array.from(document.querySelectorAll('h2, h3')).forEach(function(hd) {
       const row = hd.parentElement;
@@ -5389,9 +5387,7 @@ jobs:
     ['appVersion', 'commitMsg', 'repoName'].forEach(function(id) {
       const inp = document.getElementById(id);
       const rowBox = inp && inp.parentElement ? inp.parentElement.parentElement : null;
-      if (rowBox && rowBox.children.length >= 2 && !rowBox.querySelector('#projectSelect') && rowBox.querySelectorAll('input, select').length >= 2) {
-        rowBox.classList.add('stavitel-stack-mobile');
-      }
+      if (rowBox && rowBox.children.length >= 2 && !rowBox.querySelector('#projectSelect') && rowBox.querySelectorAll('input, select').length >= 2) rowBox.classList.add('stavitel-stack-mobile');
     });
     const pubCard = findPublishModeCard();
     if (pubCard && pubCard.parentElement) pubCard.parentElement.classList.add('stavitel-modes-container');
@@ -5483,15 +5479,10 @@ jobs:
     const st = getStoreToggles();
     const modeVal = (document.getElementById('cmPublishMode') && document.getElementById('cmPublishMode').value) || 'build_only';
     const box = document.getElementById('selectiveStoreTogglesBox');
-
-    // KLÍČOVÁ ZMĚNA: Pokud karta Publikovat NENÍ vybraná, jsou podtlačítka 100% schovaná!
-    if (box) {
-      box.style.display = (modeVal === 'publish') ? 'flex' : 'none';
-    }
+    if (box) box.style.display = (modeVal === 'publish') ? 'flex' : 'none';
 
     stylePillBtn(document.getElementById('btnChannelInternal'), st.internalOnly, 'rgba(245,158,11,0.24)', '#f59e0b', '#fef3c7', (st.internalOnly ? '🧪 Interní test ✓' : 'Interní test'), false);
     stylePillBtn(document.getElementById('btnChannelProd'), !st.internalOnly, 'rgba(16,185,129,0.24)', '#10b981', '#ecfdf5', (!st.internalOnly ? '🌍 Produkce ✓' : 'Produkce'), false);
-
     stylePillBtn(document.getElementById('btnToggleStoreGoogle'), st.google, 'rgba(16,185,129,0.25)', '#10b981', '#ecfdf5', (st.google ? 'GP ✓' : 'GP'), false);
     stylePillBtn(document.getElementById('btnToggleStoreIos'), st.ios, 'rgba(59,130,246,0.28)', '#60a5fa', '#eff6ff', (st.ios ? 'AC ✓' : 'AC'), false);
     stylePillBtn(document.getElementById('btnToggleStoreHuawei'), (!st.internalOnly && st.huawei), 'rgba(244,63,94,0.26)', '#fb7185', '#fff1f2', ((!st.internalOnly && st.huawei) ? 'AG ✓' : 'AG'), st.internalOnly);
@@ -5501,7 +5492,7 @@ jobs:
     if (hint) {
       hint.textContent = st.internalOnly
         ? ('Jen binárka pro testery (' + sumTxt + ') • bez zásahu do fotek')
-        : ('Veřejné vydání (' + sumTxt + ') • grafiku řeší tlačítko 🎨 Grafika');
+        : ('Veřejné vydání (' + sumTxt + ') • grafiku a video řeší 🎨 Grafika');
       hint.style.color = st.internalOnly ? '#fde68a' : '#6ee7b7';
     }
 
@@ -5536,8 +5527,7 @@ jobs:
     const chanRow = document.createElement('div');
     chanRow.id = 'selectiveChannelRow';
     [['btnChannelInternal', true], ['btnChannelProd', false]].forEach(function(pair) {
-      const b = document.createElement('button');
-      b.id = pair[0]; b.type = 'button';
+      const b = document.createElement('button'); b.id = pair[0]; b.type = 'button';
       b.onclick = function(ev) { ev.preventDefault(); ev.stopPropagation(); setPublishChannel(pair[1]); refreshSelectiveUi(); };
       chanRow.appendChild(b);
     });
@@ -5546,8 +5536,7 @@ jobs:
     const row = document.createElement('div');
     row.id = 'selectiveStoreTogglesRow';
     [{ id: 'btnToggleStoreGoogle', key: 'google' }, { id: 'btnToggleStoreIos', key: 'ios' }, { id: 'btnToggleStoreHuawei', key: 'huawei' }].forEach(function(it) {
-      const b = document.createElement('button');
-      b.id = it.id; b.type = 'button';
+      const b = document.createElement('button'); b.id = it.id; b.type = 'button';
       b.onclick = function(ev) {
         ev.preventDefault(); ev.stopPropagation();
         const cur = getStoreToggles();
@@ -5568,7 +5557,7 @@ jobs:
   }
 
   // =======================================================================
-  // SAMOSTATNÉ OKNO '🎨 GRAFIKA' (NÁHLED SADY + SCHVÁLENÍ PRO GP / AC / AG)
+  // OKNO '🎨 GRAFIKA' (4–6 SNÍMKŮ + APPLE MP4 VIDEO PŘEHRÁVAČ & SCHVÁLENÍ)
   // =======================================================================
   window.openGraphicsStudioModal = async function() {
     const auth = getAuthPair();
@@ -5580,36 +5569,50 @@ jobs:
     if (prev) prev.remove();
     let closed = false;
     let currentItems = [];
+    let hasStagedVideo = false;
     const checkedMap = {};
     const storeSel = { gp: true, ac: true, ag: false };
+    let acVidMode = localStorage.getItem('stavitel_ac_vid_mode') || 'review';
+    const blobUrls = [];
+    const revokeAllUrls = function() { while (blobUrls.length) { try { URL.revokeObjectURL(blobUrls.pop()); } catch (_) {} } };
 
     const overlay = document.createElement('div');
     overlay.id = 'stavitelGfxModal';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:999998;background:rgba(2,6,23,0.86);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;';
 
     const card = document.createElement('div');
-    card.style.cssText = 'background:#0f172a;border:1px solid #334155;border-radius:18px;max-width:780px;width:100%;max-height:92vh;overflow-y:auto;padding:18px;box-shadow:0 24px 60px rgba(0,0,0,0.7);color:#f8fafc;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;';
+    card.style.cssText = 'background:#0f172a;border:1px solid #334155;border-radius:18px;max-width:820px;width:100%;max-height:92vh;overflow-y:auto;padding:18px;box-shadow:0 24px 60px rgba(0,0,0,0.7);color:#f8fafc;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;';
 
     const hdr = document.createElement('div');
     hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;';
     const hTitle = document.createElement('div');
-    hTitle.textContent = '🎨 Grafika projektu: ' + repo;
+    hTitle.textContent = '🎨 Grafika & Apple Video: ' + repo;
     hTitle.style.cssText = 'font-size:18px;font-weight:700;color:#f8fafc;';
     const btnCloseTop = document.createElement('button');
     btnCloseTop.type = 'button'; btnCloseTop.textContent = '✖ Zavřít';
     btnCloseTop.style.cssText = 'padding:7px 12px;border-radius:10px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;font-size:12.5px;font-weight:600;cursor:pointer;';
-    btnCloseTop.onclick = function() { closed = true; overlay.remove(); };
+    btnCloseTop.onclick = function() { closed = true; revokeAllUrls(); overlay.remove(); };
     hdr.appendChild(hTitle); hdr.appendChild(btnCloseTop); card.appendChild(hdr);
 
     const genBar = document.createElement('div');
     genBar.style.cssText = 'background:#1e293b;border:1px solid #334155;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;';
+    const leftGen = document.createElement('div');
+    leftGen.style.cssText = 'display:flex;flex-direction:column;gap:6px;flex:1 1 250px;';
     const genInfo = document.createElement('div');
-    genInfo.textContent = '1. Nejprve sadu vygeneruj k náhledu (do žádného obchodu se nic neodešle, dokud ji níže neschválíš).';
-    genInfo.style.cssText = 'font-size:12.5px;color:#cbd5e1;flex:1 1 260px;line-height:1.4;';
+    genInfo.textContent = '1. Vygeneruj sadu až 6 snímků na zařízení + MP4 video (do obchodů se nic nepošle bez schválení):';
+    genInfo.style.cssText = 'font-size:12.5px;color:#cbd5e1;line-height:1.35;';
+    const recVidLbl = document.createElement('label');
+    recVidLbl.style.cssText = 'display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#c4b5fd;cursor:pointer;';
+    const chkRecVideo = document.createElement('input'); chkRecVideo.type = 'checkbox'; chkRecVideo.checked = true;
+    const recVidSpan = document.createElement('span'); recVidSpan.textContent = '🎬 Natočit i ukázkové MP4 video pro Apple (cca +20 s)';
+    recVidLbl.appendChild(chkRecVideo); recVidLbl.appendChild(recVidSpan);
+    leftGen.appendChild(genInfo); leftGen.appendChild(recVidLbl);
+
     const btnGen = document.createElement('button');
-    btnGen.type = 'button'; btnGen.textContent = '📸 Nafotit a vygenerovat sadu k náhledu';
+    btnGen.type = 'button'; btnGen.textContent = '📸 Nafotit sadu (+ video) k náhledu';
     btnGen.style.cssText = 'padding:10px 14px;border-radius:10px;border:1px solid #8b5cf6;background:rgba(139,92,246,0.25);color:#f5f3ff;font-size:13px;font-weight:700;cursor:pointer;flex:0 0 auto;';
-    genBar.appendChild(genInfo); genBar.appendChild(btnGen); card.appendChild(genBar);
+    chkRecVideo.onchange = function() { btnGen.textContent = chkRecVideo.checked ? '📸 Nafotit sadu (+ video) k náhledu' : '📸 Nafotit sadu snímků k náhledu'; };
+    genBar.appendChild(leftGen); genBar.appendChild(btnGen); card.appendChild(genBar);
 
     const statusBox = document.createElement('div');
     statusBox.textContent = '⏳ Kontroluji uloženou sadu náhledů v trezoru ios-keys...';
@@ -5617,32 +5620,61 @@ jobs:
     card.appendChild(statusBox);
 
     const galleryGrid = document.createElement('div');
-    galleryGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px;margin-bottom:14px;';
+    galleryGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(152px,1fr));gap:10px;margin-bottom:14px;';
     card.appendChild(galleryGrid);
 
     const approveBox = document.createElement('div');
     approveBox.style.cssText = 'display:none;border-top:1px solid #334155;padding-top:14px;flex-direction:column;gap:10px;';
     const appCap = document.createElement('div');
-    appCap.textContent = '2. Vyber cílové obchody pro zaškrtnuté obrázky a schval odeslání:';
+    appCap.textContent = '2. Vyber cílové obchody pro zaškrtnuté položky a schval odeslání:';
     appCap.style.cssText = 'font-size:13px;font-weight:600;color:#e2e8f0;';
     approveBox.appendChild(appCap);
 
     const stRow = document.createElement('div');
     stRow.style.cssText = 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;';
     const stBtns = {};
+
+    const acVideoBox = document.createElement('div');
+    acVideoBox.style.cssText = 'display:none;background:#1e293b;border:1px solid #334155;border-radius:10px;padding:10px;flex-direction:column;gap:7px;';
+    const acVidCap = document.createElement('div');
+    acVidCap.textContent = '🎬 Kam v Apple App Store Connect (AC) nahrát zaškrtnuté MP4 video:';
+    acVidCap.style.cssText = 'font-size:12px;font-weight:600;color:#bfdbfe;';
+    acVideoBox.appendChild(acVidCap);
+    const acVidRow = document.createElement('div');
+    acVidRow.style.cssText = 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;';
+    const acVidBtns = {};
+
+    const syncAcVideoVisibility = function() {
+      const vidChecked = Boolean(hasStagedVideo && checkedMap['apple_video.mp4'] && storeSel.ac);
+      acVideoBox.style.display = vidChecked ? 'flex' : 'none';
+      stylePillBtn(acVidBtns.review, acVidMode === 'review', 'rgba(59,130,246,0.28)', '#60a5fa', '#eff6ff', (acVidMode === 'review' ? '🕵️ Pro kontrolora ✓' : '🕵️ Pro kontrolora'), false);
+      stylePillBtn(acVidBtns.preview, acVidMode === 'preview', 'rgba(139,92,246,0.28)', '#a78bfa', '#f5f3ff', (acVidMode === 'preview' ? '🎬 App Preview ✓' : '🎬 App Preview'), false);
+      stylePillBtn(acVidBtns.both, acVidMode === 'both', 'rgba(16,185,129,0.26)', '#10b981', '#ecfdf5', (acVidMode === 'both' ? '🕵️+🎬 Obojí ✓' : '🕵️+🎬 Obojí'), false);
+      ['review', 'preview', 'both'].forEach(function(m) { acVidBtns[m].style.minHeight = '36px'; acVidBtns[m].style.fontSize = '12px'; });
+    };
+
+    ['review', 'preview', 'both'].forEach(function(m) {
+      const b = document.createElement('button'); b.type = 'button';
+      b.onclick = function() { acVidMode = m; localStorage.setItem('stavitel_ac_vid_mode', m); syncAcVideoVisibility(); };
+      acVidBtns[m] = b; acVidRow.appendChild(b);
+    });
+    acVideoBox.appendChild(acVidRow);
+
     const renderModalStoreBtns = function() {
       stylePillBtn(stBtns.gp, storeSel.gp, 'rgba(16,185,129,0.26)', '#10b981', '#ecfdf5', (storeSel.gp ? '🟢 GP (Google Play) ✓' : 'GP (Google Play)'), false);
       stylePillBtn(stBtns.ac, storeSel.ac, 'rgba(59,130,246,0.28)', '#60a5fa', '#eff6ff', (storeSel.ac ? '🍎 AC (App Store) ✓' : 'AC (App Store)'), false);
       stylePillBtn(stBtns.ag, storeSel.ag, 'rgba(244,63,94,0.26)', '#fb7185', '#fff1f2', (storeSel.ag ? '🔴 AG (Huawei) ✓' : 'AG (Huawei)'), false);
       ['gp', 'ac', 'ag'].forEach(function(k) { stBtns[k].style.minHeight = '42px'; stBtns[k].style.fontSize = '13px'; });
+      syncAcVideoVisibility();
     };
     ['gp', 'ac', 'ag'].forEach(function(k) {
       const b = document.createElement('button'); b.type = 'button';
       b.onclick = function() { storeSel[k] = !storeSel[k]; renderModalStoreBtns(); };
       stBtns[k] = b; stRow.appendChild(b);
     });
-    renderModalStoreBtns();
     approveBox.appendChild(stRow);
+    approveBox.appendChild(acVideoBox);
+    renderModalStoreBtns();
 
     const btnApprove = document.createElement('button');
     btnApprove.type = 'button'; btnApprove.textContent = '✅ Schválit zaškrtnutou sadu a odeslat do vybraných obchodů';
@@ -5664,8 +5696,10 @@ jobs:
     };
 
     const loadStagedPreview = async function() {
+      revokeAllUrls();
       galleryGrid.innerHTML = '';
       approveBox.style.display = 'none';
+      hasStagedVideo = false;
       try {
         const vRes = await ghFetch('https://api.github.com/repos/' + auth.own + '/ios-keys?_cb=' + Date.now(), auth.tk);
         if (!vRes.ok) throw new Error('Nelze načíst ios-keys (' + vRes.status + ')');
@@ -5680,7 +5714,7 @@ jobs:
         const shaByFile = {};
         allTree.forEach(function(n) { if (n.path && n.path.indexOf(pref) === 0 && n.type === 'blob') shaByFile[n.path.slice(pref.length)] = n.sha; });
         if (!shaByFile['manifest.json']) {
-          statusBox.textContent = 'ℹ️ Pro projekt "' + repo + '" zatím není uložená žádná sada náhledů. Klikni výše na 📸 Nafotit a vygenerovat sadu.';
+          statusBox.textContent = 'ℹ️ Pro projekt "' + repo + '" zatím není uložená žádná sada náhledů. Klikni výše na 📸 Nafotit sadu.';
           statusBox.style.color = '#cbd5e1';
           return;
         }
@@ -5688,32 +5722,55 @@ jobs:
         const mf = JSON.parse(decUtf8B64(mfBlob.content));
         currentItems = (mf.items || []).filter(function(it) { return Boolean(shaByFile[it.file]); });
         const dtStr = mf.generated_at ? new Date(mf.generated_at * 1000).toLocaleString('cs-CZ') : '';
-        statusBox.textContent = '🖼️ Sada připravena k kontrole (' + currentItems.length + ' souborů, ' + dtStr + ') • Klepni na obrázek pro zvětšení:';
-        statusBox.style.color = '#6ee7b7';
+        statusBox.textContent = '⏳ Stahuji soubory náhledu (' + currentItems.length + ' položek)...';
 
         await Promise.all(currentItems.map(async function(it) {
           checkedMap[it.file] = true;
+          const isVid = (it.kind === 'ac_video' || String(it.file).toLowerCase().endsWith('.mp4'));
+          if (isVid) hasStagedVideo = true;
           const bJson = await (await ghFetch('https://api.github.com/repos/' + auth.own + '/ios-keys/git/blobs/' + shaByFile[it.file], auth.tk)).json();
-          it._dataUrl = 'data:image/png;base64,' + String(bJson.content || '').replace(/\s+/g, '');
+          const bytes = b64ToBytes(bJson.content);
+          const blob = new Blob([bytes], { type: isVid ? 'video/mp4' : 'image/png' });
+          const bUrl = URL.createObjectURL(blob);
+          blobUrls.push(bUrl);
+          it._blobUrl = bUrl;
+          it._isVid = isVid;
         }));
-        if (closed) return;
+        if (closed) { revokeAllUrls(); return; }
+
+        statusBox.textContent = '🖼️ Sada připravena ke kontrole (' + currentItems.length + ' souborů, ' + dtStr + ') • Klepni na obrázek pro zvětšení:';
+        statusBox.style.color = '#6ee7b7';
 
         currentItems.forEach(function(it) {
           const itemCard = document.createElement('div');
           itemCard.style.cssText = 'background:#1e293b;border:1px solid #334155;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px;';
+          if (it._isVid) itemCard.style.gridColumn = 'span 2';
           const topLbl = document.createElement('label');
           topLbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#e2e8f0;cursor:pointer;';
           const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true;
-          cb.onchange = function() { checkedMap[it.file] = cb.checked; itemCard.style.opacity = cb.checked ? '1' : '0.45'; };
+          cb.onchange = function() { checkedMap[it.file] = cb.checked; itemCard.style.opacity = cb.checked ? '1' : '0.45'; syncAcVideoVisibility(); };
           const sp = document.createElement('span'); sp.textContent = it.label || it.file;
           topLbl.appendChild(cb); topLbl.appendChild(sp);
-          const im = document.createElement('img'); im.src = it._dataUrl;
-          im.style.cssText = 'width:100%;height:165px;object-fit:contain;background:#020617;border-radius:8px;cursor:zoom-in;';
-          im.onclick = function() { openZoomPreview(it._dataUrl, it.label || it.file); };
-          itemCard.appendChild(topLbl); itemCard.appendChild(im);
+          itemCard.appendChild(topLbl);
+
+          if (it._isVid) {
+            const vid = document.createElement('video');
+            vid.src = it._blobUrl; vid.controls = true; vid.playsInline = true; vid.muted = true; vid.preload = 'metadata';
+            vid.style.cssText = 'width:100%;max-height:240px;background:#020617;border-radius:8px;';
+            const dlBtn = document.createElement('a');
+            dlBtn.href = it._blobUrl; dlBtn.download = repo + '_apple_video.mp4';
+            dlBtn.textContent = '💾 Stáhnout MP4';
+            dlBtn.style.cssText = 'text-align:center;padding:6px 10px;border-radius:8px;background:rgba(59,130,246,0.22);border:1px solid #60a5fa;color:#eff6ff;font-size:12px;font-weight:600;text-decoration:none;';
+            itemCard.appendChild(vid); itemCard.appendChild(dlBtn);
+          } else {
+            const im = document.createElement('img'); im.src = it._blobUrl;
+            im.style.cssText = 'width:100%;height:165px;object-fit:contain;background:#020617;border-radius:8px;cursor:zoom-in;';
+            im.onclick = function() { openZoomPreview(it._blobUrl, it.label || it.file); };
+            itemCard.appendChild(im);
+          }
           galleryGrid.appendChild(itemCard);
         });
-        if (currentItems.length > 0) approveBox.style.display = 'flex';
+        if (currentItems.length > 0) { approveBox.style.display = 'flex'; syncAcVideoVisibility(); }
       } catch (e) {
         statusBox.textContent = '❌ Chyba načtení náhledu: ' + e.message;
         statusBox.style.color = '#fca5a5';
@@ -5759,8 +5816,13 @@ jobs:
       btnGen.disabled = true; btnApprove.disabled = true; btnGen.style.opacity = '0.6';
       try {
         const reqId = 'gfx_prev_' + Date.now();
-        if (typeof window.log === 'function') window.log('📸 Spouštím generování sady grafiky k náhledu pro "' + repo + '"...', 'info');
-        await runVaultWorkflowAndWait('gfx_preview.yml', { target_repo: repo, request_id: reqId }, 220, 5000, '⏳ Generuji 3D ikonu, banner a fotím aplikaci v simulátoru');
+        const wantVid = chkRecVideo.checked;
+        if (typeof window.log === 'function') window.log('📸 Spouštím generování sady grafiky' + (wantVid ? ' + Apple MP4 videa' : '') + ' pro "' + repo + '"...', 'info');
+        await runVaultWorkflowAndWait('gfx_preview.yml', {
+          target_repo: repo,
+          record_video: String(wantVid),
+          request_id: reqId
+        }, 260, 5000, '⏳ Procházím obrazovky v simulátoru' + (wantVid ? ' a natáčím MP4 video' : ''));
         if (!closed) await loadStagedPreview();
       } catch (e) {
         statusBox.textContent = '❌ ' + e.message; statusBox.style.color = '#fca5a5';
@@ -5772,9 +5834,9 @@ jobs:
     btnApprove.onclick = async function() {
       if (!storeSel.gp && !storeSel.ac && !storeSel.ag) { alert('Vyber alespoň jeden obchod (GP, AC nebo AG).'); return; }
       const chosen = currentItems.map(function(i) { return i.file; }).filter(function(f) { return checkedMap[f]; });
-      if (chosen.length === 0) { alert('Nemáš zaškrtnutý žádný obrázek k odeslání.'); return; }
+      if (chosen.length === 0) { alert('Nemáš zaškrtnutou žádnou položku k odeslání.'); return; }
       const targets = [storeSel.gp ? 'GP' : '', storeSel.ac ? 'AC' : '', storeSel.ag ? 'AG' : ''].filter(Boolean).join(' + ');
-      if (!window.confirm('Odeslat schválenou sadu (' + chosen.length + ' souborů) projektu "' + repo + '" do obchodů: ' + targets + '?')) return;
+      if (!window.confirm('Odeslat schválenou sadu (' + chosen.length + ' položek) projektu "' + repo + '" do obchodů: ' + targets + '?')) return;
       btnApprove.disabled = true; btnGen.disabled = true; btnApprove.style.opacity = '0.6';
       try {
         const reqId = 'gfx_app_' + Date.now();
@@ -5784,8 +5846,9 @@ jobs:
           push_ac: String(storeSel.ac),
           push_ag: String(storeSel.ag),
           approved_files: (chosen.length === currentItems.length) ? 'ALL' : chosen.join(','),
+          ac_video_mode: acVidMode,
           request_id: reqId
-        }, 80, 3500, '🚀 Nahrávám schválenou grafiku do ' + targets);
+        }, 120, 3500, '🚀 Nahrávám schválenou grafiku a video do ' + targets);
         statusBox.textContent = repTxt || ('✅ Grafika úspěšně odeslána do ' + targets + '!');
         statusBox.style.color = '#6ee7b7';
       } catch (e) {
@@ -5805,10 +5868,7 @@ jobs:
     row.id = 'step2ActionRow';
     let gBtn = document.getElementById('btnOpenGraphicsModal');
     if (!gBtn) {
-      gBtn = document.createElement('button');
-      gBtn.id = 'btnOpenGraphicsModal';
-      gBtn.type = 'button';
-      gBtn.className = 'btn-secondary';
+      gBtn = document.createElement('button'); gBtn.id = 'btnOpenGraphicsModal'; gBtn.type = 'button'; gBtn.className = 'btn-secondary';
       row.insertBefore(gBtn, modeBtn);
     }
     gBtn.style.cssText = 'background:rgba(139,92,246,0.2);border:1px solid #8b5cf6;color:#f5f3ff;font-weight:700;cursor:pointer;padding:9px 14px;border-radius:10px;';
@@ -5820,7 +5880,7 @@ jobs:
     const hwBtn = document.getElementById('btnPublishLatestHuawei');
     if (hwBtn && !hwBtn.disabled) hwBtn.textContent = repo ? ('📤 Odeslat build do Huawei (' + repo + ')') : '📤 Odeslat aktuální build do Huawei';
     const gBtn = document.getElementById('btnOpenGraphicsModal');
-    if (gBtn) gBtn.textContent = repo ? ('🎨 Grafika (' + repo + ') — náhled & GP / AC / AG') : '🎨 Grafika (náhled & GP / AC / AG)';
+    if (gBtn) gBtn.textContent = repo ? ('🎨 Grafika & Video (' + repo + ') — GP / AC / AG') : '🎨 Grafika & Video (GP / AC / AG)';
   }
 
   const origSelectMode = window.__preSelectiveSelectMode || window.selectBuildMode;
@@ -5882,8 +5942,8 @@ jobs:
   }
 
   const projSel = document.getElementById('projectSelect') || document.querySelector('select');
-  if (projSel && !projSel.__v5GfxBound) {
-    projSel.__v5GfxBound = true;
+  if (projSel && !projSel.__v6GfxBound) {
+    projSel.__v6GfxBound = true;
     projSel.addEventListener('change', updateDynamicRepoButtons);
     new MutationObserver(updateDynamicRepoButtons).observe(projSel, { childList: true });
   }
