@@ -5957,13 +5957,14 @@ jobs:
 })();
 </script>
 <script id="windowsExePluginScript">
-/* === STAVITEL_WINDOWS_EXE_PLUGIN_V1 === */
-(function installWindowsExePluginV1() {
+/* === STAVITEL_WINDOWS_EXE_PLUGIN_V2 === */
+(function installWindowsExePluginV2() {
     const LT = String.fromCharCode(60);
     const GT = String.fromCharCode(62);
     const GHA_O = "$" + "{{";
     const GHA_C = "}}";
     const WIN_PROJ_KEY = "stavitel_win_projects";
+    const WIN_PKG_KEY = "stavitel_win_pkg_type";
     const LAST_MOB_MODE_KEY = "stavitel_last_mobile_mode";
 
     function getWinProjectsSet() {
@@ -5982,6 +5983,15 @@ jobs:
       localStorage.setItem(WIN_PROJ_KEY, JSON.stringify(Array.from(set)));
     }
 
+    function getWinPkgType() {
+      const v = localStorage.getItem(WIN_PKG_KEY);
+      return v === "portable" ? "portable" : "installer";
+    }
+
+    function setWinPkgType(pkgType) {
+      localStorage.setItem(WIN_PKG_KEY, pkgType === "portable" ? "portable" : "installer");
+    }
+
     function getSelectedRepoClean() {
       const sel = document.getElementById("projectSelect");
       if (!sel) return "";
@@ -5990,7 +6000,7 @@ jobs:
       return val;
     }
 
-    // 1. CSS pro 2x2 mřížku režimů na PC a vzhled Windows karty + tlačítka
+    // 1. CSS pro mřížku režimů 2x2 a přepínač Instalátor vs. Přenosné .EXE
     let st = document.getElementById("stavitelWinPluginCss");
     if (!st) {
       st = document.createElement("style");
@@ -6003,10 +6013,65 @@ jobs:
       "}",
       "#modeCard_windows_exe.active-win { border-color: #38bdf8 !important; background: rgba(14, 165, 233, 0.14) !important; box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35) !important; }",
       "#modeCard_windows_exe.active-win .mode-check { background: #0284c7 !important; color: #f0f9ff !important; }",
+      "#winPkgRow { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important; width: 100% !important; box-sizing: border-box !important; }",
+      "#winPkgRow > button { width: 100% !important; min-width: 0 !important; min-height: 36px !important; padding: 6px 8px !important; font-size: 12px !important; line-height: 1.2 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; display: flex !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; margin: 0 !important; }",
       "html body div.tools-buttons > #btnDownloadLatestExeLeft { flex: 1 1 100% !important; grid-column: 1 / -1 !important; width: 100% !important; min-height: 44px !important; box-sizing: border-box !important; }"
     ].join("\n");
 
-    // 2. Přidání volby windows_exe do select#cmPublishMode a karty do Kroku 2
+    function updateExeBtnLabel() {
+      const repo = getSelectedRepoClean();
+      const btn = document.getElementById("btnDownloadLatestExeLeft");
+      if (!btn || btn.disabled) return;
+      const isInst = (getWinPkgType() === "installer");
+      const baseTxt = isInst ? "💿 Stáhnout instalátor Setup.exe" : "💻 Stáhnout přenosné .EXE";
+      btn.textContent = repo ? (baseTxt + " (" + repo + ")") : baseTxt;
+    }
+
+    function refreshWinPkgUi() {
+      const mode = document.getElementById("cmPublishMode")?.value || "";
+      const pkg = getWinPkgType();
+      const isInst = (pkg === "installer");
+      const box = document.getElementById("winPackageTogglesBox");
+      if (box) box.style.display = (mode === "windows_exe") ? "flex" : "none";
+
+      const bInst = document.getElementById("btnWinPkgInstaller");
+      const bPort = document.getElementById("btnWinPkgPortable");
+      if (bInst) {
+        bInst.textContent = isInst ? "📦 Instalátor (Setup.exe) ✓" : "📦 Instalátor (Setup.exe)";
+        bInst.style.cssText = isInst
+          ? "border-radius:8px;font-weight:700;cursor:pointer;background:rgba(14,165,233,0.28);border:1.5px solid #38bdf8;color:#f0f9ff;"
+          : "border-radius:8px;font-weight:500;cursor:pointer;background:rgba(15,23,42,0.6);border:1px solid rgba(148,163,184,0.3);color:#94a3b8;";
+      }
+      if (bPort) {
+        bPort.textContent = !isInst ? "🧳 Přenosné (.exe) ✓" : "🧳 Přenosné (.exe)";
+        bPort.style.cssText = !isInst
+          ? "border-radius:8px;font-weight:700;cursor:pointer;background:rgba(245,158,11,0.24);border:1.5px solid #f59e0b;color:#fef3c7;"
+          : "border-radius:8px;font-weight:500;cursor:pointer;background:rgba(15,23,42,0.6);border:1px solid rgba(148,163,184,0.3);color:#94a3b8;";
+      }
+
+      const hint = document.getElementById("winPkgHint");
+      if (hint) {
+        hint.textContent = isInst
+          ? "Český průvodce instalací • Start + Plocha + Odinstalace + registrace přípon"
+          : "Jeden přenosný soubor .exe bez instalace (pomalejší start do Temp)";
+        hint.style.color = isInst ? "#7dd3fc" : "#fde68a";
+      }
+
+      if (mode === "windows_exe") {
+        const btnAll = document.getElementById("btnAll");
+        if (btnAll) {
+          const noFs = (typeof window.showDirectoryPicker !== "function") || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || "");
+          const actLabel = isInst ? "Sestavit instalátor Windows 11 (Setup.exe)" : "Sestavit přenosné Windows 11 (.EXE)";
+          btnAll.textContent = noFs ? ("🪟 Odeslat na GitHub + " + actLabel) : ("🪟 Uložit na disk + " + actLabel);
+        }
+        if (typeof stagedFiles !== "undefined" && stagedFiles && stagedFiles[".github/workflows/build.yml"] && typeof window.applyModeToWorkflowYaml === "function") {
+          stagedFiles[".github/workflows/build.yml"] = window.applyModeToWorkflowYaml(stagedFiles[".github/workflows/build.yml"], "windows_exe");
+        }
+      }
+      updateExeBtnLabel();
+    }
+
+    // 2. Karta Windows 11 v Kroku 2 + přepínač Instalátor vs. Přenosné .EXE
     function mountWindowsModeCard() {
       const cmSel = document.getElementById("cmPublishMode");
       if (cmSel && !Array.from(cmSel.options).some(o => o.value === "windows_exe")) {
@@ -6017,33 +6082,69 @@ jobs:
       }
 
       const grid = document.querySelector(".mode-grid") || document.getElementById("modeCard_publish")?.parentElement;
-      if (grid && !document.getElementById("modeCard_windows_exe")) {
-        const card = document.createElement("div");
+      if (!grid) return;
+
+      let card = document.getElementById("modeCard_windows_exe");
+      if (!card) {
+        card = document.createElement("div");
         card.id = "modeCard_windows_exe";
         card.className = "mode-card";
         card.setAttribute("onclick", "selectBuildMode('windows_exe')");
+        grid.appendChild(card);
+      }
+
+      if (!document.getElementById("winPackageTogglesBox")) {
         card.innerHTML = [
           LT + 'div class="mode-card-title"' + GT,
-          '  ' + LT + 'span' + GT + '🪟 Windows 11 (.EXE)' + LT + '/span' + GT,
+          '  ' + LT + 'span' + GT + '🪟 Windows 11 (Setup.exe / .EXE)' + LT + '/span' + GT,
           '  ' + LT + 'span class="mode-check" id="modeCheck_windows_exe"' + GT + 'Vybrat' + LT + '/span' + GT,
           LT + '/div' + GT,
           LT + 'div class="mode-card-desc"' + GT,
-          '  Sestaví v cloudu samostatný program ' + LT + 'code' + GT + '.exe' + LT + '/code' + GT + ' pro Windows 11 (Python + PyQt6 + 3D ikona) bez instalace čehokoliv v PC.',
+          '  Sestaví v cloudu nativní český instalátor ' + LT + 'strong' + GT + 'Setup.exe' + LT + '/strong' + GT + ' (nebo přenosné .exe) s 3D ikonou bez instalace čehokoliv v PC.',
           LT + '/div' + GT
         ].join("\n");
-        grid.appendChild(card);
+
+        const box = document.createElement("div");
+        box.id = "winPackageTogglesBox";
+        box.style.cssText = "margin-top:10px;padding-top:9px;border-top:1px solid rgba(148,163,184,0.22);display:none;flex-direction:column;gap:6px;width:100%;box-sizing:border-box;";
+        box.addEventListener("click", (e) => e.stopPropagation());
+
+        const row = document.createElement("div");
+        row.id = "winPkgRow";
+
+        const bInst = document.createElement("button");
+        bInst.id = "btnWinPkgInstaller";
+        bInst.type = "button";
+        bInst.onclick = (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          setWinPkgType("installer");
+          window.selectBuildMode("windows_exe");
+        };
+
+        const bPort = document.createElement("button");
+        bPort.id = "btnWinPkgPortable";
+        bPort.type = "button";
+        bPort.onclick = (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          setWinPkgType("portable");
+          window.selectBuildMode("windows_exe");
+        };
+
+        row.appendChild(bInst);
+        row.appendChild(bPort);
+        box.appendChild(row);
+
+        const hint = document.createElement("div");
+        hint.id = "winPkgHint";
+        hint.style.cssText = "font-size:11px;font-weight:600;text-align:center;line-height:1.3;";
+        box.appendChild(hint);
+        card.appendChild(box);
       }
     }
 
-    // 3. Přidání tlačítka 💻 Stáhnout poslední .EXE do levého spodního panelu
-    function updateExeBtnLabel() {
-      const repo = getSelectedRepoClean();
-      const btn = document.getElementById("btnDownloadLatestExeLeft");
-      if (btn && !btn.disabled) {
-        btn.textContent = repo ? ("💻 Stáhnout poslední .EXE (" + repo + ")") : "💻 Stáhnout poslední .EXE";
-      }
-    }
-
+    // 3. Tlačítko pro stažení Setup.exe / .EXE
     function mountExeDownloadButton() {
       const apkBtn = document.getElementById("btnDownloadLatestApkLeft");
       const container = apkBtn ? apkBtn.parentElement : document.querySelector(".tools-buttons");
@@ -6062,13 +6163,14 @@ jobs:
       updateExeBtnLabel();
     }
 
-    // 4. Šablona GitHub Actions pro Windows 11 (.EXE přes PyInstaller)
-    window.buildWindowsExeWorkflowYaml = function(appName, appVersion) {
+    // 4. Šablona GitHub Actions (PyInstaller --onedir + Inno Setup 6 český Setup.exe / --onefile Portable)
+    window.buildWindowsExeWorkflowYaml = function(appName, appVersion, pkgTypeOverride) {
       const aName = String(appName || "WinApp").trim().replace(/[^a-zA-Z0-9_-]/g, "") || "WinApp";
       const aVer = String(appVersion || "1.0").trim() || "1.0";
+      const pkgType = (pkgTypeOverride || getWinPkgType()) === "portable" ? "portable" : "installer";
 
       return [
-        "name: Build Windows 11 (.EXE)",
+        "name: Build Windows 11 (" + (pkgType === "installer" ? "Setup.exe Installer" : "Portable .EXE") + ")",
         "on:",
         "  push:",
         '    branches: [ "main", "master" ]',
@@ -6081,11 +6183,12 @@ jobs:
         '  APP_NAME: "' + aName + '"',
         '  APP_VERSION: "' + aVer + '"',
         '  PLATFORM_TARGET: "windows_exe"',
+        '  WIN_PACKAGE_TYPE: "' + pkgType + '"',
         '  PYTHONIOENCODING: "utf-8"',
         '  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"',
         "jobs:",
         "  build-windows:",
-        "    name: Windows 11 Standalone (.exe)",
+        "    name: Windows 11 (" + (pkgType === "installer" ? "Inno Setup Installer" : "Portable EXE") + ")",
         "    runs-on: windows-latest",
         "    steps:",
         "      - name: Checkout repository",
@@ -6101,7 +6204,7 @@ jobs:
         "          key: win-pip-" + GHA_O + " hashFiles('requirements.txt') " + GHA_C,
         "          restore-keys: |",
         "            win-pip-",
-        "      - name: Install Dependencies & Compile Standalone .EXE",
+        "      - name: Build Application & Package Windows 11 Setup.exe",
         "        env:",
         "          GH_TOKEN: " + GHA_O + " secrets.GITHUB_TOKEN " + GHA_C,
         "          REPO_FULL: " + GHA_O + " github.repository " + GHA_C,
@@ -6111,15 +6214,28 @@ jobs:
         "          python -m pip install --upgrade pip",
         "          pip install pyinstaller pillow",
         "          if (Test-Path 'requirements.txt') { pip install -r requirements.txt }",
+        "          if ($env:WIN_PACKAGE_TYPE -ne 'portable') {",
+        "            $iscc = @('C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe', 'C:\\Program Files\\Inno Setup 6\\ISCC.exe') | Where-Object { Test-Path $_ } | Select-Object -First 1",
+        "            if (-not $iscc) {",
+        "              Write-Host 'Instaluji Inno Setup 6 pres Chocolatey...'",
+        "              choco install innosetup -y --no-progress",
+        "            }",
+        "          }",
         "          New-Item -ItemType Directory -Force -Path 'build_win' | Out-Null",
+        "          New-Item -ItemType Directory -Force -Path 'out_exe' | Out-Null",
         "          @'",
-        "          import os, sys, re, glob, json, shutil, subprocess, urllib.request, urllib.parse",
+        "          import os, sys, re, glob, json, uuid, shutil, subprocess, urllib.request, urllib.parse",
         "          from PIL import Image, ImageDraw",
         "",
+        "          BS = chr(92)",
+        "          DQ = chr(34)",
         "          app_name = os.environ.get('APP_NAME', 'WinApp').strip()",
         "          app_ver = os.environ.get('APP_VERSION', '1.0').strip()",
+        "          pkg_type = os.environ.get('WIN_PACKAGE_TYPE', 'installer').strip().lower()",
+        "          is_installer = (pkg_type != 'portable')",
         "          build_num = int(os.environ.get('RUN_NUM', '1') or '1') + 100",
         "          os.makedirs('build_win', exist_ok=True)",
+        "          os.makedirs('out_exe', exist_ok=True)",
         "",
         "          if os.path.isfile('icon_gen.py'):",
         "              subprocess.run([sys.executable, 'icon_gen.py'], check=False)",
@@ -6137,26 +6253,29 @@ jobs:
         "              dr.rounded_rectangle([72, 118, 184, 136], radius=8, fill=(255, 255, 255, 220))",
         "              dr.rounded_rectangle([72, 152, 148, 170], radius=8, fill=(255, 255, 255, 195))",
         "              im.save(ico_path, format='ICO', sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])",
+        "          abs_ico = os.path.abspath(ico_path)",
         "",
         "          nums = [int(x) for x in re.findall(r'\\d+', app_ver)][:3]",
         "          while len(nums) != 3: nums.append(0)",
         "          vt = f'({nums[0]}, {nums[1]}, {nums[2]}, {build_num})'",
-        "          ver_txt = f'''VSVersionInfo(",
-        "            ffi=FixedFileInfo(filevers={vt}, prodvers={vt}, mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),",
-        "            kids=[",
-        "              StringFileInfo([StringTable('040504B0', [",
-        "                StringStruct('CompanyName', 'Pavel Mareš'),",
-        "                StringStruct('FileDescription', '{app_name} pro Windows 11'),",
-        "                StringStruct('FileVersion', '{app_ver}.{build_num}'),",
-        "                StringStruct('InternalName', '{app_name}'),",
-        "                StringStruct('LegalCopyright', '© 2026 Created by Pavel Mareš'),",
-        "                StringStruct('OriginalFilename', '{app_name}.exe'),",
-        "                StringStruct('ProductName', '{app_name}'),",
-        "                StringStruct('ProductVersion', '{app_ver}')",
-        "              ])]),",
-        "              VarFileInfo([VarStruct('Translation', [1029, 1200])])",
-        "            ]",
-        "          )'''",
+        "          ver_txt = (",
+        "              'VSVersionInfo(\\n'",
+        "              f'  ffi=FixedFileInfo(filevers={vt}, prodvers={vt}, mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),\\n'",
+        "              '  kids=[\\n'",
+        "              '    StringFileInfo([StringTable(\"040504B0\", [\\n'",
+        "              '      StringStruct(\"CompanyName\", \"Pavel Mareš\"),\\n'",
+        "              f'      StringStruct(\"FileDescription\", \"{app_name} pro Windows 11\"),\\n'",
+        "              f'      StringStruct(\"FileVersion\", \"{app_ver}.{build_num}\"),\\n'",
+        "              f'      StringStruct(\"InternalName\", \"{app_name}\"),\\n'",
+        "              '      StringStruct(\"LegalCopyright\", \"© 2026 Created by Pavel Mareš\"),\\n'",
+        "              f'      StringStruct(\"OriginalFilename\", \"{app_name}.exe\"),\\n'",
+        "              f'      StringStruct(\"ProductName\", \"{app_name}\"),\\n'",
+        "              f'      StringStruct(\"ProductVersion\", \"{app_ver}\")\\n'",
+        "              '    ])]),\\n'",
+        "              '    VarFileInfo([VarStruct(\"Translation\", [1029, 1200])])\\n'",
+        "              '  ]\\n'",
+        "              ')\\n'",
+        "          )",
         "          open('build_win/version_info.txt', 'w', encoding='utf-8').write(ver_txt)",
         "",
         "          entry = next((p for p in ['main.py', 'src/main.py', 'app.py'] if os.path.isfile(p)), None)",
@@ -6166,58 +6285,163 @@ jobs:
         "          if not entry:",
         "              print('CHYBA: Nebyl nalezen vstupni soubor main.py!'); sys.exit(1)",
         "",
-        "          cmd = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean', '--onefile', '--windowed',",
-        "                 '--name', app_name, '--icon', ico_path, '--version-file', 'build_win/version_info.txt']",
+        "          req_txt = open('requirements.txt', 'r', encoding='utf-8', errors='ignore').read() if os.path.isfile('requirements.txt') else ''",
+        "          main_txt = open(entry, 'r', encoding='utf-8', errors='ignore').read()",
+        "          req_low = req_txt.lower()",
+        "",
+        "          cmd = [sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean',",
+        "                 ('--onedir' if is_installer else '--onefile'), '--windowed',",
+        "                 '--name', app_name, '--icon', abs_ico, '--version-file', os.path.abspath('build_win/version_info.txt')]",
         "          if os.path.isdir('assets'): cmd.extend(['--add-data', 'assets;assets'])",
         "          if os.path.isdir('src'): cmd.extend(['--paths', 'src'])",
-        "          req_low = open('requirements.txt', 'r', encoding='utf-8', errors='ignore').read().lower() if os.path.isfile('requirements.txt') else ''",
         "          for pkg_mod in [('pymupdf', 'pymupdf'), ('pymupdf', 'fitz'), ('pypdfium2', 'pypdfium2'), ('pytesseract', 'pytesseract')]:",
         "              if pkg_mod[0] in req_low: cmd.extend(['--collect-all', pkg_mod[1]])",
         "          cmd.append(entry)",
         "          print('Spoustim PyInstaller:', ' '.join(cmd))",
         "          subprocess.run(cmd, check=True)",
         "",
-        "          built_exe = os.path.join('dist', f'{app_name}.exe')",
-        "          final_name = f'{app_name}-{app_ver}.{build_num}.exe'",
-        "          final_exe = os.path.join('dist', final_name)",
-        "          shutil.move(built_exe, final_exe)",
+        "          if is_installer:",
+        "              cands = [",
+        "                  r'C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe',",
+        "                  r'C:\\Program Files\\Inno Setup 6\\ISCC.exe',",
+        "                  shutil.which('ISCC'),",
+        "                  shutil.which('iscc')",
+        "              ]",
+        "              iscc_bin = next((c for c in cands if c and os.path.isfile(c)), None)",
+        "              if not iscc_bin:",
+        "                  subprocess.run(['winget', 'install', '--id', 'JRSoftware.InnoSetup', '-e', '--silent', '--accept-package-agreements', '--accept-source-agreements'], check=False)",
+        "                  iscc_bin = next((c for c in cands[:2] if os.path.isfile(c)), None)",
+        "              if not iscc_bin:",
+        "                  print('CHYBA: Kompilator Inno Setup (ISCC.exe) nebyl nalezen!'); sys.exit(1)",
+        "",
+        "              help_res = subprocess.run([iscc_bin, '/?'], capture_output=True, text=True)",
+        "              arch_id = 'x64compatible' if 'x64compatible' in (help_res.stdout + help_res.stderr) else 'x64'",
+        "              cz_isl = os.path.join(os.path.dirname(iscc_bin), 'Languages', 'Czech.isl')",
+        "              lang_line = ('Name: ' + DQ + 'czech' + DQ + '; MessagesFile: ' + DQ + 'compiler:Languages' + BS + 'Czech.isl' + DQ) if os.path.isfile(cz_isl) else ('Name: ' + DQ + 'default' + DQ + '; MessagesFile: ' + DQ + 'compiler:Default.isl' + DQ)",
+        "",
+        "              ext_match = re.search(r'STAVITEL_WIN_EXT:\\s*(\\.[A-Za-z0-9]+)', req_txt + '\\n' + main_txt)",
+        "              assoc_ext = ext_match.group(1).lower() if ext_match else ('.pdf' if ('pymupdf' in req_low or 'pdf' in app_name.lower() or 'acrobat' in app_name.lower()) else '')",
+        "              app_guid = str(uuid.uuid5(uuid.NAMESPACE_DNS, 'cz.mares.win.' + app_name.lower())).upper()",
+        "              setup_base = f'{app_name}-Setup-{app_ver}.{build_num}'",
+        "              abs_onedir = os.path.abspath(os.path.join('dist', app_name))",
+        "              abs_out_dir = os.path.abspath('out_exe')",
+        "",
+        "              iss = [",
+        "                  '[Setup]',",
+        "                  'AppId={{' + app_guid + '}',",
+        "                  'AppName=' + app_name,",
+        "                  f'AppVersion={app_ver}.{build_num}',",
+        "                  f'AppVerName={app_name} {app_ver}',",
+        "                  'AppPublisher=Pavel Mareš',",
+        "                  'AppCopyright=© 2026 Created by Pavel Mareš',",
+        "                  'DefaultDirName={autopf}' + BS + app_name,",
+        "                  'DisableProgramGroupPage=yes',",
+        "                  'PrivilegesRequired=lowest',",
+        "                  'PrivilegesRequiredOverridesAllowed=dialog',",
+        "                  'ArchitecturesAllowed=' + arch_id,",
+        "                  'ArchitecturesInstallIn64BitMode=' + arch_id,",
+        "                  'SetupIconFile=' + abs_ico,",
+        "                  'UninstallDisplayIcon={app}' + BS + app_name + '.exe',",
+        "                  'UninstallDisplayName=' + app_name,",
+        "                  'Compression=lzma2/fast',",
+        "                  'SolidCompression=yes',",
+        "                  'WizardStyle=modern',",
+        "                  'CloseApplications=yes',",
+        "                  'ChangesAssociations=' + ('yes' if assoc_ext else 'no'),",
+        "                  'OutputDir=' + abs_out_dir,",
+        "                  'OutputBaseFilename=' + setup_base,",
+        "                  '',",
+        "                  '[Languages]',",
+        "                  lang_line,",
+        "                  '',",
+        "                  '[Tasks]',",
+        "                  'Name: ' + DQ + 'desktopicon' + DQ + '; Description: ' + DQ + 'Vytvořit zástupce na &Ploše' + DQ + '; GroupDescription: ' + DQ + 'Zástupci aplikace:' + DQ",
+        "              ]",
+        "              if assoc_ext:",
+        "                  ext_up = assoc_ext.upper()",
+        "                  iss.append('Name: ' + DQ + 'fileassoc' + DQ + '; Description: ' + DQ + f'Zaregistrovat {app_name} pro otevírání souborů {ext_up} ve Windows 11' + DQ + '; GroupDescription: ' + DQ + 'Asociace souborů:' + DQ)",
+        "",
+        "              iss.extend([",
+        "                  '',",
+        "                  '[Files]',",
+        "                  'Source: ' + DQ + abs_onedir + BS + '*' + DQ + '; DestDir: ' + DQ + '{app}' + DQ + '; Flags: ignoreversion recursesubdirs createallsubdirs',",
+        "                  '',",
+        "                  '[Icons]',",
+        "                  'Name: ' + DQ + '{autoprograms}' + BS + app_name + DQ + '; Filename: ' + DQ + '{app}' + BS + app_name + '.exe' + DQ + '; WorkingDir: ' + DQ + '{app}' + DQ,",
+        "                  'Name: ' + DQ + '{autodesktop}' + BS + app_name + DQ + '; Filename: ' + DQ + '{app}' + BS + app_name + '.exe' + DQ + '; WorkingDir: ' + DQ + '{app}' + DQ + '; Tasks: desktopicon'",
+        "              ])",
+        "",
+        "              if assoc_ext:",
+        "                  prog_id = app_name + assoc_ext",
+        "                  cmd_val = DQ * 3 + '{app}' + BS + app_name + '.exe' + DQ * 2 + ' ' + DQ * 2 + '%1' + DQ * 3",
+        "                  iss.extend([",
+        "                      '',",
+        "                      '[Registry]',",
+        "                      'Root: HKA; Subkey: ' + DQ + 'Software' + BS + 'Classes' + BS + assoc_ext + BS + 'OpenWithProgids' + DQ + '; ValueType: string; ValueName: ' + DQ + prog_id + DQ + '; ValueData: ' + DQ + DQ + '; Flags: uninsdeletevalue; Tasks: fileassoc',",
+        "                      'Root: HKA; Subkey: ' + DQ + 'Software' + BS + 'Classes' + BS + prog_id + DQ + '; ValueType: string; ValueName: ' + DQ + DQ + '; ValueData: ' + DQ + f'Soubor {assoc_ext.upper()} ({app_name})' + DQ + '; Flags: uninsdeletekey; Tasks: fileassoc',",
+        "                      'Root: HKA; Subkey: ' + DQ + 'Software' + BS + 'Classes' + BS + prog_id + BS + 'DefaultIcon' + DQ + '; ValueType: string; ValueName: ' + DQ + DQ + '; ValueData: ' + DQ + '{app}' + BS + app_name + '.exe,0' + DQ + '; Tasks: fileassoc',",
+        "                      'Root: HKA; Subkey: ' + DQ + 'Software' + BS + 'Classes' + BS + prog_id + BS + 'shell' + BS + 'open' + BS + 'command' + DQ + '; ValueType: string; ValueName: ' + DQ + DQ + '; ValueData: ' + cmd_val + '; Tasks: fileassoc',",
+        "                      'Root: HKA; Subkey: ' + DQ + 'Software' + BS + 'Classes' + BS + 'Applications' + BS + app_name + '.exe' + BS + 'SupportedTypes' + DQ + '; ValueType: string; ValueName: ' + DQ + assoc_ext + DQ + '; ValueData: ' + DQ + DQ + '; Flags: uninsdeletekey; Tasks: fileassoc'",
+        "                  ])",
+        "",
+        "              iss.extend([",
+        "                  '',",
+        "                  '[Run]',",
+        "                  'Filename: ' + DQ + '{app}' + BS + app_name + '.exe' + DQ + '; Description: ' + DQ + f'Spustit {app_name}' + DQ + '; Flags: nowait postinstall skipifsilent',",
+        "                  ''",
+        "              ])",
+        "",
+        "              iss_path = os.path.abspath('build_win/setup.iss')",
+        "              with open(iss_path, 'w', encoding='utf-8-sig') as f:",
+        "                  f.write('\\r\\n'.join(iss))",
+        "              print('Kompiluji nativni Windows 11 instalator pres Inno Setup...')",
+        "              subprocess.run([iscc_bin, iss_path], check=True)",
+        "              final_name = f'{setup_base}.exe'",
+        "              final_exe = os.path.join(abs_out_dir, final_name)",
+        "          else:",
+        "              built_exe = os.path.join('dist', f'{app_name}.exe')",
+        "              final_name = f'{app_name}-Portable-{app_ver}.{build_num}.exe'",
+        "              final_exe = os.path.join('out_exe', final_name)",
+        "              shutil.move(built_exe, final_exe)",
+        "",
         "          print('Hotovo EXE:', final_exe, os.path.getsize(final_exe), 'B')",
         "",
         "          gh_tok = os.environ.get('GH_TOKEN', '').strip()",
         "          repo_full = os.environ.get('REPO_FULL', '').strip()",
         "          if gh_tok and repo_full:",
         "              def gh_api(url, method='GET', data=None, ctype='application/json'):",
-        "                  h = {'Authorization': f'Bearer {gh_tok}', 'Accept': 'application/vnd.github+json', 'User-Agent': 'Stavitel-Win-Builder'}",
+        "                  h = {'Authorization': f'Bearer {gh_tok}', 'Accept': 'application/vnd.github+json', 'User-Agent': 'Stavitel-Win-Builder-V2'}",
         "                  if data is not None: h['Content-Type'] = ctype",
         "                  req = urllib.request.Request(url, data=data, headers=h, method=method)",
         "                  with urllib.request.urlopen(req, timeout=300) as r:",
         "                      raw = r.read()",
         "                      return json.loads(raw.decode('utf-8')) if raw else {}",
         "              tag = 'exe-latest'",
-        "              meta = json.dumps({'exe_name': final_name, 'version': f'{app_ver}.{build_num}'})",
+        "              meta = json.dumps({'exe_name': final_name, 'pkg_type': pkg_type, 'version': f'{app_ver}.{build_num}'})",
         "              rel = None",
         "              try: rel = gh_api(f'https://api.github.com/repos/{repo_full}/releases/tags/{tag}')",
         "              except Exception: rel = None",
+        "              rel_title = f'Poslední Windows Setup ({final_name})' if is_installer else f'Poslední přenosné EXE ({final_name})'",
         "              if rel and rel.get('id'):",
         "                  rid = rel['id']",
         "                  for a in rel.get('assets', []):",
         "                      gh_api(f'https://api.github.com/repos/{repo_full}/releases/assets/{a[\"id\"]}', method='DELETE')",
         "                  rel = gh_api(f'https://api.github.com/repos/{repo_full}/releases/{rid}', method='PATCH',",
-        "                               data=json.dumps({'name': f'Poslední Windows .EXE ({final_name})', 'body': meta, 'prerelease': True}).encode('utf-8'))",
+        "                               data=json.dumps({'name': rel_title, 'body': meta, 'prerelease': True}).encode('utf-8'))",
         "              else:",
         "                  rel = gh_api(f'https://api.github.com/repos/{repo_full}/releases', method='POST',",
-        "                               data=json.dumps({'tag_name': tag, 'name': f'Poslední Windows .EXE ({final_name})', 'body': meta, 'prerelease': True}).encode('utf-8'))",
+        "                               data=json.dumps({'tag_name': tag, 'name': rel_title, 'body': meta, 'prerelease': True}).encode('utf-8'))",
         "              up_url = f'https://uploads.github.com/repos/{repo_full}/releases/{rel[\"id\"]}/assets?name={urllib.parse.quote(final_name)}'",
         "              with open(final_exe, 'rb') as ef:",
         "                  up = gh_api(up_url, method='POST', data=ef.read(), ctype='application/vnd.microsoft.portable-executable')",
-        "              print('EXE publikovano v Release exe-latest:', up.get('browser_download_url', ''))",
+        "              print('Publikovano v Release exe-latest:', up.get('browser_download_url', ''))",
         "          '@ | Set-Content -Path 'build_win/_run_win_build.py' -Encoding UTF8",
         "          python build_win/_run_win_build.py",
         "      - name: Upload Windows .EXE Artifact",
         "        uses: actions/upload-artifact@v4",
         "        with:",
         "          name: " + GHA_O + " env.APP_NAME " + GHA_C + "-Windows-EXE",
-        "          path: dist/*.exe"
+        "          path: out_exe/*.exe"
       ].join("\n") + "\n";
     };
 
@@ -6233,33 +6457,24 @@ jobs:
         const res = prevSelectMode.apply(this, arguments);
         const wCard = document.getElementById("modeCard_windows_exe");
         const wCheck = document.getElementById("modeCheck_windows_exe");
+        const isWin = (mode === "windows_exe");
         if (wCard && wCheck) {
-          const isWin = (mode === "windows_exe");
           wCard.classList.toggle("active-win", isWin);
           wCheck.textContent = isWin ? "✔ Aktivní" : "Vybrat";
         }
-        if (mode === "windows_exe") {
+        if (isWin) {
           const cmSel = document.getElementById("cmPublishMode");
           if (cmSel) cmSel.value = "windows_exe";
           localStorage.setItem("stavitel_cm_publish_mode", "windows_exe");
           const sBox = document.getElementById("selectiveStoreTogglesBox");
           if (sBox) sBox.style.display = "none";
-          const btnAll = document.getElementById("btnAll");
-          if (btnAll) {
-            const noFs = (typeof window.showDirectoryPicker !== "function") || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || "");
-            btnAll.textContent = noFs
-              ? "🪟 Odeslat na GitHub a sestavit Windows 11 (.EXE)"
-              : "🪟 Uložit na disk + Sestavit Windows 11 (.EXE)";
-          }
-          if (typeof stagedFiles !== "undefined" && stagedFiles && stagedFiles[".github/workflows/build.yml"] && typeof window.applyModeToWorkflowYaml === "function") {
-            stagedFiles[".github/workflows/build.yml"] = window.applyModeToWorkflowYaml(stagedFiles[".github/workflows/build.yml"], "windows_exe");
-          }
         }
+        refreshWinPkgUi();
         return res;
       };
     }
 
-    // 6. Napojení detekce Python / Windows projektů (detectProjectFromFiles)
+    // 6. Detekce Python / Windows projektů
     const prevDetect = window.__preWinExeDetectProj || window.detectProjectFromFiles;
     if (typeof prevDetect === "function") {
       window.__preWinExeDetectProj = prevDetect;
@@ -6309,7 +6524,7 @@ jobs:
       };
     }
 
-    // 7. Napojení generátoru workflow (applyModeToWorkflowYaml + getDefaultGitHubWorkflowYaml)
+    // 7. Generování workflow YAML
     const prevApplyYaml = window.__preWinExeApplyYaml || window.applyModeToWorkflowYaml;
     if (typeof prevApplyYaml === "function") {
       window.__preWinExeApplyYaml = prevApplyYaml;
@@ -6328,7 +6543,7 @@ jobs:
           const aName = activeProj || (det && det.display) || (mApp && mApp[1] ? mApp[1].trim() : "WinApp");
           const aVer = (document.getElementById("appVersion")?.value || arg3 || "1.0").trim();
           markProjectAsWindows(aName, true);
-          return window.buildWindowsExeWorkflowYaml(aName, aVer);
+          return window.buildWindowsExeWorkflowYaml(aName, aVer, getWinPkgType());
         }
         return prevApplyYaml.apply(this, arguments);
       };
@@ -6343,13 +6558,13 @@ jobs:
           const aName = appName || (typeof getActiveProjectName === "function" ? getActiveProjectName() : "WinApp");
           const aVer = (appVersion || document.getElementById("appVersion")?.value || "1.0").trim();
           markProjectAsWindows(aName, true);
-          return window.buildWindowsExeWorkflowYaml(aName, aVer);
+          return window.buildWindowsExeWorkflowYaml(aName, aVer, getWinPkgType());
         }
         return prevDefYaml.apply(this, arguments);
       };
     }
 
-    // 8. Ošetření tlačítka pushPublishModeOnly v Kroku 2 pro režim windows_exe
+    // 8. Ošetření rychlého překompilování pushPublishModeOnly v Kroku 2
     const prevPushModeOnly = window.__preWinExePushModeOnly || window.pushPublishModeOnly;
     if (typeof prevPushModeOnly === "function") {
       window.__preWinExePushModeOnly = prevPushModeOnly;
@@ -6361,17 +6576,20 @@ jobs:
         const tk = (localStorage.getItem("stavitel_gh_token") || document.getElementById("ghToken")?.value || "").trim();
         const repoName = typeof getActiveProjectName === "function" ? getActiveProjectName() : "";
         const appVer = (document.getElementById("appVersion")?.value || "1.0").trim();
+        const isInst = (getWinPkgType() === "installer");
+        const pkgDesc = isInst ? "Nativní český instalátor (Setup.exe)" : "Přenosná aplikace (.EXE)";
+
         if (!own || !tk) {
           document.getElementById("ghSettingsSection")?.classList.remove("hidden");
           alert("Nejprve vyplň své GitHub jméno a Personal Access Token.");
           return;
         }
-        if (!confirm('Chceš v projektu "' + repoName + '" (verze ' + appVer + ') nastavit režim:\n\n👉 "🪟 Windows 11 (.EXE – kompilace v cloudu)"\n\na rovnou tím spustit nový build na GitHubu?')) return;
+        if (!confirm('Chceš v projektu "' + repoName + '" (verze ' + appVer + ') nastavit režim:\n\n👉 "🪟 Windows 11 – ' + pkgDesc + '"\n\na rovnou tím spustit nový build na GitHubu?')) return;
         const prevStaged = Object.assign({}, stagedFiles);
         try {
           stagedFiles = {};
           markProjectAsWindows(repoName, true);
-          await uploadToGitHub(repoName, "Režim: Windows 11 (.EXE)", true);
+          await uploadToGitHub(repoName, "Režim: Windows 11 – " + pkgDesc, true);
         } catch (e) {
           log("❌ Chyba při spouštění Windows buildu: " + e.message, "err");
         } finally {
@@ -6381,7 +6599,7 @@ jobs:
       };
     }
 
-    // 9. Stahování posledního .EXE (včetně automatického čekání na běžící build)
+    // 9. Stahování sestaveného Setup.exe / .EXE
     async function extractExeFromZipBuffer(arrayBuffer) {
       const view = new DataView(arrayBuffer);
       let eocdPos = -1;
@@ -6430,7 +6648,7 @@ jobs:
         lb.style.display = "block";
         const row = document.createElement("div");
         row.style.marginTop = "4px";
-        row.innerHTML = '👉 Přímý odkaz ke stažení .EXE: ' + LT + 'a href="' + url + '" target="_blank" rel="noopener" style="color:#38bdf8;font-weight:700;text-decoration:underline;"' + GT + fileName + LT + '/a' + GT;
+        row.innerHTML = '👉 Přímý odkaz ke stažení: ' + LT + 'a href="' + url + '" target="_blank" rel="noopener" style="color:#38bdf8;font-weight:700;text-decoration:underline;"' + GT + fileName + LT + '/a' + GT;
         lb.appendChild(row);
         lb.scrollTop = lb.scrollHeight;
       }
@@ -6448,32 +6666,32 @@ jobs:
         if (!btn) return;
         btn.disabled = busy;
         btn.style.opacity = busy ? "0.75" : "1";
-        btn.textContent = label || ("💻 Stáhnout poslední .EXE (" + repo + ")");
+        if (label) btn.textContent = label;
+        else updateExeBtnLabel();
       };
 
-      setBtn(true, "⏳ Kontroluji build .EXE (" + repo + ")...");
+      setBtn(true, "⏳ Kontroluji build (" + repo + ")...");
       try {
         const repoRes = await ghFetch("https://api.github.com/repos/" + own + "/" + repo + "?_cb=" + Date.now(), tk);
         if (!repoRes.ok) throw new Error('Repozitář "' + repo + '" nebyl na GitHubu nalezen.');
         const isPrivate = !!(await repoRes.json()).private;
 
-        // Pokud právě běží kompilace v GitHub Actions, počkáme na její dokončení
         const runsRes = await ghFetch("https://api.github.com/repos/" + own + "/" + repo + "/actions/runs?per_page=3&_cb=" + Date.now(), tk);
         if (runsRes.ok) {
           let activeRun = ((await runsRes.json()).workflow_runs || []).find(r => r.status === "in_progress" || r.status === "queued");
           if (activeRun) {
-            log('⏳ Kompilace Windows .EXE v projektu "' + repo + '" právě běží na GitHubu — čekám na dokončení...', "warn");
+            log('⏳ Sestavování Windows instalátoru v projektu "' + repo + '" právě běží na GitHubu — čekám na dokončení...', "warn");
             const t0 = Date.now();
             while (activeRun && (activeRun.status === "in_progress" || activeRun.status === "queued")) {
               await new Promise(r => setTimeout(r, 5000));
               const sec = Math.round((Date.now() - t0) / 1000);
-              setBtn(true, "⏳ Kompiluji .EXE na GitHubu (" + sec + " s)...");
+              setBtn(true, "⏳ Sestavuji na GitHubu (" + sec + " s)...");
               const pr = await ghFetch("https://api.github.com/repos/" + own + "/" + repo + "/actions/runs/" + activeRun.id + "?_cb=" + Date.now(), tk);
               if (!pr.ok) break;
               activeRun = await pr.json();
             }
             if (activeRun && activeRun.conclusion && activeRun.conclusion !== "success") {
-              throw new Error("Poslední kompilace .EXE skončila chybou (" + activeRun.conclusion + "). Podrobnosti: " + activeRun.html_url);
+              throw new Error("Poslední kompilace skončila chybou (" + activeRun.conclusion + "). Podrobnosti: " + activeRun.html_url);
             }
           }
         }
@@ -6485,7 +6703,7 @@ jobs:
           if (exeAsset) {
             if (!isPrivate && exeAsset.browser_download_url) {
               triggerExeUrlDownload(exeAsset.browser_download_url, exeAsset.name);
-              log('🎉 Stahuji poslední Windows .EXE projektu "' + repo + '": ' + exeAsset.name, "ok");
+              log('🎉 Stahuji balíček projektu "' + repo + '": ' + exeAsset.name, "ok");
               return;
             }
             try {
@@ -6497,13 +6715,13 @@ jobs:
                 const bUrl = URL.createObjectURL(blob);
                 triggerExeUrlDownload(bUrl, exeAsset.name);
                 setTimeout(() => URL.revokeObjectURL(bUrl), 30000);
-                log('🎉 Staženo poslední Windows .EXE projektu "' + repo + '": ' + exeAsset.name, "ok");
+                log('🎉 Staženo "' + repo + '": ' + exeAsset.name, "ok");
                 return;
               }
             } catch (_) {}
             if (exeAsset.browser_download_url) {
               triggerExeUrlDownload(exeAsset.browser_download_url, exeAsset.name);
-              log('🎉 Otevírám stažení .EXE pro soukromý repozitář "' + repo + '": ' + exeAsset.name, "ok");
+              log('🎉 Otevírám stažení pro "' + repo + '": ' + exeAsset.name, "ok");
               return;
             }
           }
@@ -6513,7 +6731,7 @@ jobs:
         const validArts = artRes.ok ? (((await artRes.json()).artifacts || []).filter(a => !a.expired)) : [];
         const winArt = validArts.find(a => /windows|exe/i.test(a.name));
         if (!winArt) {
-          throw new Error('V projektu "' + repo + '" zatím není sestavený žádný soubor .EXE. Vyber režim 🪟 Windows 11 (.EXE) a spusť build.');
+          throw new Error('V projektu "' + repo + '" zatím není sestavený žádný Windows balíček.');
         }
 
         const zipRes = await fetch(winArt.archive_download_url, {
@@ -6524,7 +6742,7 @@ jobs:
         const bUrl = URL.createObjectURL(new Blob([extracted.bytes], { type: "application/vnd.microsoft.portable-executable" }));
         triggerExeUrlDownload(bUrl, extracted.name);
         setTimeout(() => URL.revokeObjectURL(bUrl), 30000);
-        log('🎉 Staženo poslední Windows .EXE projektu "' + repo + '": ' + extracted.name, "ok");
+        log('🎉 Staženo "' + repo + '": ' + extracted.name, "ok");
       } catch (err) {
         log("❌ Chyba při stahování .EXE: " + err.message, "err");
       } finally {
@@ -6532,10 +6750,10 @@ jobs:
       }
     };
 
-    // 10. Automatické přepínání režimu při výběru Windows vs. mobilního projektu v roletce
+    // 10. Automatické přepínání při výběru projektu v roletce
     const projSel = document.getElementById("projectSelect");
-    if (projSel && !projSel.__winExeBound) {
-      projSel.__winExeBound = true;
+    if (projSel && !projSel.__winExeV2Bound) {
+      projSel.__winExeV2Bound = true;
       projSel.addEventListener("change", () => {
         updateExeBtnLabel();
         const repo = getSelectedRepoClean();
@@ -6551,10 +6769,13 @@ jobs:
       new MutationObserver(updateExeBtnLabel).observe(projSel, { childList: true });
     }
 
+    // Odstranění starého přepínače z V1 (pokud byl v DOMu) a montáž V2
+    document.getElementById("winPackageTogglesBox")?.remove();
     mountWindowsModeCard();
     mountExeDownloadButton();
     const savedMode = localStorage.getItem("stavitel_cm_publish_mode");
     if (savedMode === "windows_exe") window.selectBuildMode("windows_exe");
+    else refreshWinPkgUi();
   })();
 </script>
 </body></html>
