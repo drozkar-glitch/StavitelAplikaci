@@ -5957,8 +5957,8 @@ jobs:
 })();
 </script>
 <script id="windowsExePluginScript">
-/* === STAVITEL_WINDOWS_EXE_PLUGIN_V2 === */
-(function installWindowsExePluginV2() {
+/* === STAVITEL_WINDOWS_EXE_PLUGIN_V3_FLUENT === */
+(function installWindowsExePluginV3() {
     const LT = String.fromCharCode(60);
     const GT = String.fromCharCode(62);
     const GHA_O = "$" + "{{";
@@ -5968,24 +5968,19 @@ jobs:
     const LAST_MOB_MODE_KEY = "stavitel_last_mobile_mode";
 
     function getWinProjectsSet() {
-      try {
-        return new Set(JSON.parse(localStorage.getItem(WIN_PROJ_KEY) || "[]"));
-      } catch (_) {
-        return new Set();
-      }
+      try { return new Set(JSON.parse(localStorage.getItem(WIN_PROJ_KEY) || "[]")); }
+      catch (_) { return new Set(); }
     }
 
     function markProjectAsWindows(repoName, isWin) {
       if (!repoName || /^(stavitelaplikaci|ios-keys|__new__)$/i.test(repoName)) return;
       const set = getWinProjectsSet();
-      if (isWin) set.add(repoName);
-      else set.delete(repoName);
+      if (isWin) set.add(repoName); else set.delete(repoName);
       localStorage.setItem(WIN_PROJ_KEY, JSON.stringify(Array.from(set)));
     }
 
     function getWinPkgType() {
-      const v = localStorage.getItem(WIN_PKG_KEY);
-      return v === "portable" ? "portable" : "installer";
+      return localStorage.getItem(WIN_PKG_KEY) === "portable" ? "portable" : "installer";
     }
 
     function setWinPkgType(pkgType) {
@@ -6000,7 +5995,6 @@ jobs:
       return val;
     }
 
-    // 1. CSS pro mřížku režimů 2x2 a přepínač Instalátor vs. Přenosné .EXE
     let st = document.getElementById("stavitelWinPluginCss");
     if (!st) {
       st = document.createElement("style");
@@ -6014,30 +6008,28 @@ jobs:
       "#modeCard_windows_exe.active-win { border-color: #38bdf8 !important; background: rgba(14, 165, 233, 0.14) !important; box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35) !important; }",
       "#modeCard_windows_exe.active-win .mode-check { background: #0284c7 !important; color: #f0f9ff !important; }",
       "#winPkgRow { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 6px !important; width: 100% !important; box-sizing: border-box !important; }",
-      "#winPkgRow > button { width: 100% !important; min-width: 0 !important; min-height: 36px !important; padding: 6px 8px !important; font-size: 12px !important; line-height: 1.2 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; display: flex !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; margin: 0 !important; }",
-      "html body div.tools-buttons > #btnDownloadLatestExeLeft { flex: 1 1 100% !important; grid-column: 1 / -1 !important; width: 100% !important; min-height: 44px !important; box-sizing: border-box !important; }"
+      "#winPkgRow " + GT + " button { width: 100% !important; min-width: 0 !important; min-height: 36px !important; padding: 6px 8px !important; font-size: 12px !important; line-height: 1.2 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; display: flex !important; align-items: center !important; justify-content: center !important; box-sizing: border-box !important; margin: 0 !important; }",
+      "html body div.tools-buttons " + GT + " #btnDownloadLatestExeLeft { flex: 1 1 100% !important; grid-column: 1 / -1 !important; width: 100% !important; min-height: 44px !important; box-sizing: border-box !important; }"
     ].join("\n");
 
     function updateExeBtnLabel() {
       const repo = getSelectedRepoClean();
       const btn = document.getElementById("btnDownloadLatestExeLeft");
       if (!btn || btn.disabled) return;
-      const isInst = (getWinPkgType() === "installer");
-      const baseTxt = isInst ? "💿 Stáhnout instalátor Setup.exe" : "💻 Stáhnout přenosné .EXE";
+      const baseTxt = getWinPkgType() === "installer" ? "💿 Stáhnout Fluent Setup.exe" : "💻 Stáhnout přenosné .EXE";
       btn.textContent = repo ? (baseTxt + " (" + repo + ")") : baseTxt;
     }
 
     function refreshWinPkgUi() {
       const mode = document.getElementById("cmPublishMode")?.value || "";
-      const pkg = getWinPkgType();
-      const isInst = (pkg === "installer");
+      const isInst = (getWinPkgType() === "installer");
       const box = document.getElementById("winPackageTogglesBox");
       if (box) box.style.display = (mode === "windows_exe") ? "flex" : "none";
 
       const bInst = document.getElementById("btnWinPkgInstaller");
       const bPort = document.getElementById("btnWinPkgPortable");
       if (bInst) {
-        bInst.textContent = isInst ? "📦 Instalátor (Setup.exe) ✓" : "📦 Instalátor (Setup.exe)";
+        bInst.textContent = isInst ? "✨ Fluent Setup.exe ✓" : "✨ Fluent Setup.exe";
         bInst.style.cssText = isInst
           ? "border-radius:8px;font-weight:700;cursor:pointer;background:rgba(14,165,233,0.28);border:1.5px solid #38bdf8;color:#f0f9ff;"
           : "border-radius:8px;font-weight:500;cursor:pointer;background:rgba(15,23,42,0.6);border:1px solid rgba(148,163,184,0.3);color:#94a3b8;";
@@ -6052,8 +6044,8 @@ jobs:
       const hint = document.getElementById("winPkgHint");
       if (hint) {
         hint.textContent = isInst
-          ? "Český průvodce instalací • Start + Plocha + Odinstalace + registrace přípon"
-          : "Jeden přenosný soubor .exe bez instalace (pomalejší start do Temp)";
+          ? "Moderní Windows 11 Fluent karta (Dark/Light) • 1 klik bez průvodce"
+          : "Jeden přenosný soubor .exe bez instalace (rozbaluje se do Temp)";
         hint.style.color = isInst ? "#7dd3fc" : "#fde68a";
       }
 
@@ -6061,7 +6053,7 @@ jobs:
         const btnAll = document.getElementById("btnAll");
         if (btnAll) {
           const noFs = (typeof window.showDirectoryPicker !== "function") || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent || "");
-          const actLabel = isInst ? "Sestavit instalátor Windows 11 (Setup.exe)" : "Sestavit přenosné Windows 11 (.EXE)";
+          const actLabel = isInst ? "Sestavit Windows 11 Fluent Setup.exe" : "Sestavit přenosné Windows 11 (.EXE)";
           btnAll.textContent = noFs ? ("🪟 Odeslat na GitHub + " + actLabel) : ("🪟 Uložit na disk + " + actLabel);
         }
         if (typeof stagedFiles !== "undefined" && stagedFiles && stagedFiles[".github/workflows/build.yml"] && typeof window.applyModeToWorkflowYaml === "function") {
@@ -6071,13 +6063,12 @@ jobs:
       updateExeBtnLabel();
     }
 
-    // 2. Karta Windows 11 v Kroku 2 + přepínač Instalátor vs. Přenosné .EXE
     function mountWindowsModeCard() {
       const cmSel = document.getElementById("cmPublishMode");
       if (cmSel && !Array.from(cmSel.options).some(o => o.value === "windows_exe")) {
         const opt = document.createElement("option");
         opt.value = "windows_exe";
-        opt.textContent = "Windows 11 (.EXE)";
+        opt.textContent = "Windows 11 (Fluent Setup.exe)";
         cmSel.appendChild(opt);
       }
 
@@ -6096,11 +6087,11 @@ jobs:
       if (!document.getElementById("winPackageTogglesBox")) {
         card.innerHTML = [
           LT + 'div class="mode-card-title"' + GT,
-          '  ' + LT + 'span' + GT + '🪟 Windows 11 (Setup.exe / .EXE)' + LT + '/span' + GT,
+          '  ' + LT + 'span' + GT + '🪟 Windows 11 (Fluent Setup.exe)' + LT + '/span' + GT,
           '  ' + LT + 'span class="mode-check" id="modeCheck_windows_exe"' + GT + 'Vybrat' + LT + '/span' + GT,
           LT + '/div' + GT,
           LT + 'div class="mode-card-desc"' + GT,
-          '  Sestaví v cloudu nativní český instalátor ' + LT + 'strong' + GT + 'Setup.exe' + LT + '/strong' + GT + ' (nebo přenosné .exe) s 3D ikonou bez instalace čehokoliv v PC.',
+          '  Sestaví v cloudu moderní jednokartový ' + LT + 'strong' + GT + 'Windows 11 Fluent Setup.exe' + LT + '/strong' + GT + ' (Dark/Light motiv + 3D ikona + moderní odinstalace).',
           LT + '/div' + GT
         ].join("\n");
 
@@ -6111,29 +6102,13 @@ jobs:
 
         const row = document.createElement("div");
         row.id = "winPkgRow";
-
-        const bInst = document.createElement("button");
-        bInst.id = "btnWinPkgInstaller";
-        bInst.type = "button";
-        bInst.onclick = (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          setWinPkgType("installer");
-          window.selectBuildMode("windows_exe");
-        };
-
-        const bPort = document.createElement("button");
-        bPort.id = "btnWinPkgPortable";
-        bPort.type = "button";
-        bPort.onclick = (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          setWinPkgType("portable");
-          window.selectBuildMode("windows_exe");
-        };
-
-        row.appendChild(bInst);
-        row.appendChild(bPort);
+        [["btnWinPkgInstaller", "installer"], ["btnWinPkgPortable", "portable"]].forEach((pair) => {
+          const b = document.createElement("button");
+          b.id = pair[0];
+          b.type = "button";
+          b.onclick = (ev) => { ev.preventDefault(); ev.stopPropagation(); setWinPkgType(pair[1]); window.selectBuildMode("windows_exe"); };
+          row.appendChild(b);
+        });
         box.appendChild(row);
 
         const hint = document.createElement("div");
@@ -6144,7 +6119,6 @@ jobs:
       }
     }
 
-    // 3. Tlačítko pro stažení Setup.exe / .EXE
     function mountExeDownloadButton() {
       const apkBtn = document.getElementById("btnDownloadLatestApkLeft");
       const container = apkBtn ? apkBtn.parentElement : document.querySelector(".tools-buttons");
@@ -6163,14 +6137,13 @@ jobs:
       updateExeBtnLabel();
     }
 
-    // 4. Šablona GitHub Actions (PyInstaller --onedir + Inno Setup 6 český Setup.exe / --onefile Portable)
     window.buildWindowsExeWorkflowYaml = function(appName, appVersion, pkgTypeOverride) {
       const aName = String(appName || "WinApp").trim().replace(/[^a-zA-Z0-9_-]/g, "") || "WinApp";
       const aVer = String(appVersion || "1.0").trim() || "1.0";
       const pkgType = (pkgTypeOverride || getWinPkgType()) === "portable" ? "portable" : "installer";
 
-      return [
-        "name: Build Windows 11 (" + (pkgType === "installer" ? "Setup.exe Installer" : "Portable .EXE") + ")",
+      const yamlLines = [
+        "name: Build Windows 11 (" + (pkgType === "installer" ? "Fluent Setup.exe" : "Portable .EXE") + ")",
         "on:",
         "  push:",
         '    branches: [ "main", "master" ]',
@@ -6188,7 +6161,7 @@ jobs:
         '  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"',
         "jobs:",
         "  build-windows:",
-        "    name: Windows 11 (" + (pkgType === "installer" ? "Inno Setup Installer" : "Portable EXE") + ")",
+        "    name: Windows 11 (" + (pkgType === "installer" ? "Fluent WPF Setup.exe" : "Portable EXE") + ")",
         "    runs-on: windows-latest",
         "    steps:",
         "      - name: Checkout repository",
@@ -6204,7 +6177,7 @@ jobs:
         "          key: win-pip-" + GHA_O + " hashFiles('requirements.txt') " + GHA_C,
         "          restore-keys: |",
         "            win-pip-",
-        "      - name: Build Application & Package Windows 11 Setup.exe",
+        "      - name: Build Application & Native Windows 11 Fluent Setup.exe",
         "        env:",
         "          GH_TOKEN: " + GHA_O + " secrets.GITHUB_TOKEN " + GHA_C,
         "          REPO_FULL: " + GHA_O + " github.repository " + GHA_C,
@@ -6214,21 +6187,536 @@ jobs:
         "          python -m pip install --upgrade pip",
         "          pip install pyinstaller pillow",
         "          if (Test-Path 'requirements.txt') { pip install -r requirements.txt }",
-        "          if ($env:WIN_PACKAGE_TYPE -ne 'portable') {",
-        "            $iscc = @('C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe', 'C:\\Program Files\\Inno Setup 6\\ISCC.exe') | Where-Object { Test-Path $_ } | Select-Object -First 1",
-        "            if (-not $iscc) {",
-        "              Write-Host 'Instaluji Inno Setup 6 pres Chocolatey...'",
-        "              choco install innosetup -y --no-progress",
-        "            }",
-        "          }",
         "          New-Item -ItemType Directory -Force -Path 'build_win' | Out-Null",
         "          New-Item -ItemType Directory -Force -Path 'out_exe' | Out-Null",
         "          @'",
-        "          import os, sys, re, glob, json, uuid, shutil, subprocess, urllib.request, urllib.parse",
+        "          using System;",
+        "          using System.Diagnostics;",
+        "          using System.IO;",
+        "          using System.IO.Compression;",
+        "          using System.Reflection;",
+        "          using System.Runtime.InteropServices;",
+        "          using System.Threading;",
+        "          using System.Windows;",
+        "          using System.Windows.Controls;",
+        "          using System.Windows.Input;",
+        "          using System.Windows.Media;",
+        "          using System.Windows.Media.Animation;",
+        "          using System.Windows.Media.Effects;",
+        "          using System.Windows.Media.Imaging;",
+        "          using Microsoft.Win32;",
+        "",
+        "          internal static class FluentBootstrap {",
+        "              [DllImport(\"shell32.dll\")]",
+        "              private static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);",
+        "",
+        "              private static bool IsDarkTheme() {",
+        "                  try {",
+        "                      using (RegistryKey k = Registry.CurrentUser.OpenSubKey(@\"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\")) {",
+        "                          if (k != null) {",
+        "                              object v = k.GetValue(\"AppsUseLightTheme\");",
+        "                              if (v != null) return Convert.ToInt32(v) == 0;",
+        "                          }",
+        "                      }",
+        "                  } catch { }",
+        "                  return true;",
+        "              }",
+        "",
+        "              private static SolidColorBrush BrushOf(string hex) {",
+        "                  SolidColorBrush b = (SolidColorBrush)(new BrushConverter().ConvertFromString(hex));",
+        "                  b.Freeze();",
+        "                  return b;",
+        "              }",
+        "",
+        "              private static ImageSource LoadIconPng() {",
+        "                  try {",
+        "                      Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream(\"icon.png\");",
+        "                      if (s == null) return null;",
+        "                      BitmapImage bmp = new BitmapImage();",
+        "                      bmp.BeginInit();",
+        "                      bmp.CacheOption = BitmapCacheOption.OnLoad;",
+        "                      bmp.StreamSource = s;",
+        "                      bmp.EndInit();",
+        "                      bmp.Freeze();",
+        "                      s.Close();",
+        "                      return bmp;",
+        "                  } catch { return null; }",
+        "              }",
+        "",
+        "              private static Button MakeButton(string text, string bg, string hover, string fg, string border, double radius, double h, double minW, bool bold) {",
+        "                  Button btn = new Button();",
+        "                  btn.Content = text;",
+        "                  btn.Height = h;",
+        "                  if (minW __GT__ 0) btn.MinWidth = minW;",
+        "                  btn.Padding = new Thickness(16, 0, 16, 0);",
+        "                  btn.Foreground = BrushOf(fg);",
+        "                  btn.FontSize = 13.0;",
+        "                  btn.FontWeight = bold ? FontWeights.SemiBold : FontWeights.Normal;",
+        "                  btn.Cursor = Cursors.Hand;",
+        "                  SolidColorBrush nb = BrushOf(bg);",
+        "                  SolidColorBrush hb = BrushOf(hover);",
+        "                  btn.Background = nb;",
+        "                  btn.BorderBrush = BrushOf(border);",
+        "                  btn.BorderThickness = new Thickness(1);",
+        "                  btn.Tag = new SolidColorBrush[] { nb, hb };",
+        "                  ControlTemplate tpl = new ControlTemplate(typeof(Button));",
+        "                  FrameworkElementFactory bd = new FrameworkElementFactory(typeof(Border));",
+        "                  bd.SetValue(Border.CornerRadiusProperty, new CornerRadius(radius));",
+        "                  bd.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Control.BackgroundProperty));",
+        "                  bd.SetValue(Border.BorderBrushProperty, new TemplateBindingExtension(Control.BorderBrushProperty));",
+        "                  bd.SetValue(Border.BorderThicknessProperty, new TemplateBindingExtension(Control.BorderThicknessProperty));",
+        "                  bd.SetValue(Border.PaddingProperty, new TemplateBindingExtension(Control.PaddingProperty));",
+        "                  FrameworkElementFactory cp = new FrameworkElementFactory(typeof(ContentPresenter));",
+        "                  cp.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);",
+        "                  cp.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);",
+        "                  bd.AppendChild(cp);",
+        "                  tpl.VisualTree = bd;",
+        "                  btn.Template = tpl;",
+        "                  btn.MouseEnter += delegate { SolidColorBrush[] p = btn.Tag as SolidColorBrush[]; if (btn.IsEnabled && p != null) btn.Background = p[1]; };",
+        "                  btn.MouseLeave += delegate { SolidColorBrush[] p = btn.Tag as SolidColorBrush[]; if (btn.IsEnabled && p != null) btn.Background = p[0]; };",
+        "                  return btn;",
+        "              }",
+        "",
+        "              private static Border MakeToggleRow(string title, string sub, bool initVal, bool dark, Action__LT__bool__GT__ onFlip) {",
+        "                  bool state = initVal;",
+        "                  Border row = new Border();",
+        "                  row.Background = Brushes.Transparent;",
+        "                  row.Cursor = Cursors.Hand;",
+        "                  row.Padding = new Thickness(2, 8, 2, 8);",
+        "                  Grid g = new Grid();",
+        "                  g.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });",
+        "                  g.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });",
+        "                  StackPanel sp = new StackPanel { VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };",
+        "                  sp.Children.Add(new TextBlock { Text = title, FontSize = 13.0, FontWeight = FontWeights.SemiBold, Foreground = BrushOf(dark ? \"#F8FAFC\" : \"#0F172A\") });",
+        "                  sp.Children.Add(new TextBlock { Text = sub, FontSize = 11.5, Foreground = BrushOf(dark ? \"#94A3B8\" : \"#64748B\"), Margin = new Thickness(0, 2, 0, 0) });",
+        "                  Grid.SetColumn(sp, 0);",
+        "                  g.Children.Add(sp);",
+        "                  Border pill = new Border { Width = 44, Height = 22, CornerRadius = new CornerRadius(11), BorderThickness = new Thickness(1.2), VerticalAlignment = VerticalAlignment.Center };",
+        "                  Border thumb = new Border { Width = 14, Height = 14, CornerRadius = new CornerRadius(7), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };",
+        "                  TranslateTransform tt = new TranslateTransform(state ? 23.5 : 4.0, 0);",
+        "                  thumb.RenderTransform = tt;",
+        "                  pill.Child = thumb;",
+        "                  Action syncVisual = delegate {",
+        "                      pill.Background = BrushOf(state ? \"#0284C7\" : (dark ? \"#181E29\" : \"#E2E8F0\"));",
+        "                      pill.BorderBrush = BrushOf(state ? \"#38BDF8\" : (dark ? \"#475569\" : \"#94A3B8\"));",
+        "                      thumb.Background = BrushOf(state ? \"#FFFFFF\" : (dark ? \"#CBD5E1\" : \"#475569\"));",
+        "                  };",
+        "                  syncVisual();",
+        "                  Grid.SetColumn(pill, 1);",
+        "                  g.Children.Add(pill);",
+        "                  row.Child = g;",
+        "                  row.MouseLeftButtonUp += delegate {",
+        "                      state = !state;",
+        "                      syncVisual();",
+        "                      tt.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(state ? 23.5 : 4.0, TimeSpan.FromMilliseconds(140)));",
+        "                      if (onFlip != null) onFlip(state);",
+        "                  };",
+        "                  return row;",
+        "              }",
+        "",
+        "              private static void StopRunningApp() {",
+        "                  try {",
+        "                      Process[] ps = Process.GetProcessesByName(AppMeta.AppName);",
+        "                      int myId = Process.GetCurrentProcess().Id;",
+        "                      for (int i = 0; i __LT__ ps.Length; i++) {",
+        "                          try { if (ps[i].Id != myId) { ps[i].Kill(); ps[i].WaitForExit(3000); } } catch { }",
+        "                      }",
+        "                  } catch { }",
+        "              }",
+        "",
+        "              private static void MakeLnk(string lnkPath, string targetExe, string workDir) {",
+        "                  try {",
+        "                      string d = Path.GetDirectoryName(lnkPath);",
+        "                      if (!string.IsNullOrEmpty(d) && !Directory.Exists(d)) Directory.CreateDirectory(d);",
+        "                      Type t = Type.GetTypeFromProgID(\"WScript.Shell\");",
+        "                      if (t == null) return;",
+        "                      object sh = Activator.CreateInstance(t);",
+        "                      object sc = t.InvokeMember(\"CreateShortcut\", BindingFlags.InvokeMethod, null, sh, new object[] { lnkPath });",
+        "                      Type st = sc.GetType();",
+        "                      st.InvokeMember(\"TargetPath\", BindingFlags.SetProperty, null, sc, new object[] { targetExe });",
+        "                      st.InvokeMember(\"WorkingDirectory\", BindingFlags.SetProperty, null, sc, new object[] { workDir });",
+        "                      st.InvokeMember(\"Description\", BindingFlags.SetProperty, null, sc, new object[] { AppMeta.AppName });",
+        "                      st.InvokeMember(\"IconLocation\", BindingFlags.SetProperty, null, sc, new object[] { targetExe + \",0\" });",
+        "                      st.InvokeMember(\"Save\", BindingFlags.InvokeMethod, null, sc, null);",
+        "                  } catch { }",
+        "              }",
+        "",
+        "#if INSTALLER",
+        "              private static void PerformInstall(string installDir, bool makeDesktop, bool makeAssoc, Action__LT__int, string, string__GT__ onProg) {",
+        "                  onProg(5, \"Připravuji instalaci…\", \"Kontrola běžících procesů\");",
+        "                  StopRunningApp();",
+        "                  string fullRoot = Path.GetFullPath(installDir);",
+        "                  if (!Directory.Exists(fullRoot)) Directory.CreateDirectory(fullRoot);",
+        "                  long totalBytes = 0;",
+        "                  Stream zs = Assembly.GetExecutingAssembly().GetManifestResourceStream(\"payload.zip\");",
+        "                  if (zs == null) throw new InvalidOperationException(\"Chybí instalační balíček payload.zip.\");",
+        "                  using (ZipArchive arc = new ZipArchive(zs, ZipArchiveMode.Read)) {",
+        "                      int count = arc.Entries.Count;",
+        "                      int idx = 0;",
+        "                      foreach (ZipArchiveEntry e in arc.Entries) {",
+        "                          idx++;",
+        "                          string rel = e.FullName.Replace('/', Path.DirectorySeparatorChar);",
+        "                          string dst = Path.GetFullPath(Path.Combine(fullRoot, rel));",
+        "                          if (!dst.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase)) continue;",
+        "                          if (string.IsNullOrEmpty(e.Name)) { Directory.CreateDirectory(dst); continue; }",
+        "                          string pd = Path.GetDirectoryName(dst);",
+        "                          if (!string.IsNullOrEmpty(pd) && !Directory.Exists(pd)) Directory.CreateDirectory(pd);",
+        "                          using (Stream es = e.Open())",
+        "                          using (FileStream fs = new FileStream(dst, FileMode.Create, FileAccess.Write, FileShare.None)) {",
+        "                              es.CopyTo(fs);",
+        "                          }",
+        "                          totalBytes += e.Length;",
+        "                          if (idx % 6 == 0 || idx == count) {",
+        "                              int pct = 8 + (int)((idx * 80.0) / Math.Max(1, count));",
+        "                              onProg(pct, \"Instalují se soubory aplikace…\", e.Name);",
+        "                          }",
+        "                      }",
+        "                  }",
+        "                  onProg(92, \"Dokončuji integraci do Windows 11…\", \"Zástupci a registrace aplikace\");",
+        "                  string exePath = Path.Combine(fullRoot, AppMeta.AppName + \".exe\");",
+        "                  string uninstPath = Path.Combine(fullRoot, \"Uninstall.exe\");",
+        "                  string startLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), AppMeta.AppName + \".lnk\");",
+        "                  MakeLnk(startLnk, exePath, fullRoot);",
+        "                  if (makeDesktop) {",
+        "                      string deskLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), AppMeta.AppName + \".lnk\");",
+        "                      MakeLnk(deskLnk, exePath, fullRoot);",
+        "                  }",
+        "                  using (RegistryKey uk = Registry.CurrentUser.CreateSubKey(@\"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\\" + AppMeta.AppGuid)) {",
+        "                      if (uk != null) {",
+        "                          uk.SetValue(\"DisplayName\", AppMeta.AppName);",
+        "                          uk.SetValue(\"DisplayVersion\", AppMeta.FullVersion);",
+        "                          uk.SetValue(\"Publisher\", AppMeta.Publisher);",
+        "                          uk.SetValue(\"DisplayIcon\", exePath + \",0\");",
+        "                          uk.SetValue(\"InstallLocation\", fullRoot);",
+        "                          uk.SetValue(\"InstallDate\", DateTime.Now.ToString(\"yyyyMMdd\"));",
+        "                          uk.SetValue(\"UninstallString\", \"\\\"\" + uninstPath + \"\\\"\");",
+        "                          uk.SetValue(\"QuietUninstallString\", \"\\\"\" + uninstPath + \"\\\" --silent\");",
+        "                          uk.SetValue(\"EstimatedSize\", (int)Math.Max(1024L, totalBytes / 1024L), RegistryValueKind.DWord);",
+        "                          uk.SetValue(\"NoModify\", 1, RegistryValueKind.DWord);",
+        "                          uk.SetValue(\"NoRepair\", 1, RegistryValueKind.DWord);",
+        "                      }",
+        "                  }",
+        "                  if (makeAssoc && !string.IsNullOrEmpty(AppMeta.AssocExt)) {",
+        "                      string ext = AppMeta.AssocExt;",
+        "                      string progId = AppMeta.AppName + ext;",
+        "                      string cmdStr = \"\\\"\" + exePath + \"\\\" \\\"%1\\\"\";",
+        "                      using (RegistryKey k = Registry.CurrentUser.CreateSubKey(@\"Software\\Classes\\\" + ext + @\"\\OpenWithProgids\")) { if (k != null) k.SetValue(progId, \"\"); }",
+        "                      using (RegistryKey k = Registry.CurrentUser.CreateSubKey(@\"Software\\Classes\\\" + progId)) { if (k != null) k.SetValue(\"\", \"Soubor \" + ext.ToUpperInvariant() + \" (\" + AppMeta.AppName + \")\"); }",
+        "                      using (RegistryKey k = Registry.CurrentUser.CreateSubKey(@\"Software\\Classes\\\" + progId + @\"\\DefaultIcon\")) { if (k != null) k.SetValue(\"\", \"\\\"\" + exePath + \"\\\",0\"); }",
+        "                      using (RegistryKey k = Registry.CurrentUser.CreateSubKey(@\"Software\\Classes\\\" + progId + @\"\\shell\\open\\command\")) { if (k != null) k.SetValue(\"\", cmdStr); }",
+        "                      using (RegistryKey k = Registry.CurrentUser.CreateSubKey(@\"Software\\Classes\\Applications\\\" + AppMeta.AppName + \".exe\")) {",
+        "                          if (k != null) k.SetValue(\"FriendlyAppName\", AppMeta.AppName);",
+        "                      }",
+        "                      using (RegistryKey k = Registry.CurrentUser.CreateSubKey(@\"Software\\Classes\\Applications\\\" + AppMeta.AppName + @\".exe\\SupportedTypes\")) { if (k != null) k.SetValue(ext, \"\"); }",
+        "                      using (RegistryKey k = Registry.CurrentUser.CreateSubKey(@\"Software\\Classes\\Applications\\\" + AppMeta.AppName + @\".exe\\shell\\open\\command\")) { if (k != null) k.SetValue(\"\", cmdStr); }",
+        "                      SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero);",
+        "                  }",
+        "                  onProg(100, \"Instalace byla úspěšně dokončena!\", AppMeta.AppName + \" je připraven ke spuštění.\");",
+        "              }",
+        "#else",
+        "              private static void PerformUninstall(string appDir, Action__LT__int, string__GT__ onProg) {",
+        "                  onProg(20, \"Ukončuji běžící aplikaci…\");",
+        "                  StopRunningApp();",
+        "                  onProg(50, \"Odebírám zástupce a registraci z Windows 11…\");",
+        "                  string startLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), AppMeta.AppName + \".lnk\");",
+        "                  string deskLnk = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), AppMeta.AppName + \".lnk\");",
+        "                  try { if (File.Exists(startLnk)) File.Delete(startLnk); } catch { }",
+        "                  try { if (File.Exists(deskLnk)) File.Delete(deskLnk); } catch { }",
+        "                  try { Registry.CurrentUser.DeleteSubKeyTree(@\"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\\" + AppMeta.AppGuid, false); } catch { }",
+        "                  if (!string.IsNullOrEmpty(AppMeta.AssocExt)) {",
+        "                      string ext = AppMeta.AssocExt;",
+        "                      string progId = AppMeta.AppName + ext;",
+        "                      try { using (RegistryKey k = Registry.CurrentUser.OpenSubKey(@\"Software\\Classes\\\" + ext + @\"\\OpenWithProgids\", true)) { if (k != null) k.DeleteValue(progId, false); } } catch { }",
+        "                      try { Registry.CurrentUser.DeleteSubKeyTree(@\"Software\\Classes\\\" + progId, false); } catch { }",
+        "                      try { Registry.CurrentUser.DeleteSubKeyTree(@\"Software\\Classes\\Applications\\\" + AppMeta.AppName + \".exe\", false); } catch { }",
+        "                      SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero);",
+        "                  }",
+        "                  onProg(80, \"Mažu soubory aplikace…\");",
+        "                  string selfExe = Process.GetCurrentProcess().MainModule.FileName;",
+        "                  if (Directory.Exists(appDir)) {",
+        "                      foreach (string f in Directory.GetFiles(appDir, \"*\", SearchOption.AllDirectories)) {",
+        "                          if (string.Equals(Path.GetFullPath(f), Path.GetFullPath(selfExe), StringComparison.OrdinalIgnoreCase)) continue;",
+        "                          try { File.SetAttributes(f, FileAttributes.Normal); File.Delete(f); } catch { }",
+        "                      }",
+        "                      string[] dirs = Directory.GetDirectories(appDir, \"*\", SearchOption.AllDirectories);",
+        "                      Array.Sort(dirs, delegate(string a, string b) { return b.Length.CompareTo(a.Length); });",
+        "                      for (int i = 0; i __LT__ dirs.Length; i++) { try { Directory.Delete(dirs[i], true); } catch { } }",
+        "                  }",
+        "                  onProg(100, \"Aplikace \" + AppMeta.AppName + \" byla čistě odinstalována.\");",
+        "              }",
+        "#endif",
+        "",
+        "              [STAThread]",
+        "              public static void Main(string[] args) {",
+        "                  bool silent = false;",
+        "                  for (int i = 0; i __LT__ args.Length; i++) { if (args[i] == \"--silent\" || args[i] == \"/S\") silent = true; }",
+        "                  string defaultDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), \"Programs\", AppMeta.AppName);",
+        "#if INSTALLER",
+        "                  if (silent) { PerformInstall(defaultDir, true, true, delegate(int p, string t, string s) { }); return; }",
+        "#else",
+        "                  string uninstDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);",
+        "                  if (silent) {",
+        "                      PerformUninstall(uninstDir, delegate(int p, string t) { });",
+        "                      ScheduleSelfDelete(uninstDir);",
+        "                      return;",
+        "                  }",
+        "#endif",
+        "                  bool dark = IsDarkTheme();",
+        "                  string fgHex = dark ? \"#F8FAFC\" : \"#0F172A\";",
+        "                  string mutedHex = dark ? \"#94A3B8\" : \"#64748B\";",
+        "                  string cardBgHex = dark ? \"#222938\" : \"#FFFFFF\";",
+        "                  string cardBdHex = dark ? \"#313B4F\" : \"#E2E8F0\";",
+        "",
+        "                  Application app = new Application();",
+        "                  Window win = new Window();",
+        "                  win.Title = AppMeta.AppName;",
+        "                  win.Width = 560;",
+        "                  win.SizeToContent = SizeToContent.Height;",
+        "                  win.WindowStartupLocation = WindowStartupLocation.CenterScreen;",
+        "                  win.WindowStyle = WindowStyle.None;",
+        "                  win.AllowsTransparency = true;",
+        "                  win.Background = Brushes.Transparent;",
+        "                  win.ResizeMode = ResizeMode.NoResize;",
+        "                  win.FontFamily = new FontFamily(\"Segoe UI Variable Display, Segoe UI\");",
+        "                  win.UseLayoutRounding = true;",
+        "                  win.SnapsToDevicePixels = true;",
+        "                  ImageSource iconSrc = LoadIconPng();",
+        "                  if (iconSrc != null) win.Icon = iconSrc;",
+        "",
+        "                  Grid outer = new Grid { Margin = new Thickness(20) };",
+        "                  LinearGradientBrush mainBg = new LinearGradientBrush(",
+        "                      (Color)ColorConverter.ConvertFromString(dark ? \"#1D2330\" : \"#F9FBFF\"),",
+        "                      (Color)ColorConverter.ConvertFromString(dark ? \"#141821\" : \"#EFF4FA\"), 90.0);",
+        "                  Border card = new Border {",
+        "                      CornerRadius = new CornerRadius(14),",
+        "                      Background = mainBg,",
+        "                      BorderBrush = BrushOf(dark ? \"#30FFFFFF\" : \"#22000000\"),",
+        "                      BorderThickness = new Thickness(1),",
+        "                      Effect = new DropShadowEffect { Color = Colors.Black, BlurRadius = 26, ShadowDepth = 7, Direction = 270, Opacity = dark ? 0.58 : 0.20 }",
+        "                  };",
+        "",
+        "                  StackPanel root = new StackPanel();",
+        "                  Grid topBar = new Grid { Margin = new Thickness(20, 12, 12, 0), Background = Brushes.Transparent };",
+        "                  topBar.MouseLeftButtonDown += delegate(object s, MouseButtonEventArgs e) { if (e.ButtonState == MouseButtonState.Pressed) win.DragMove(); };",
+        "#if INSTALLER",
+        "                  string topCaption = \"Instalátor aplikace  •  Windows 11\";",
+        "#else",
+        "                  string topCaption = \"Správa aplikací  •  Windows 11\";",
+        "#endif",
+        "                  topBar.Children.Add(new TextBlock { Text = topCaption, FontSize = 11.5, Foreground = BrushOf(mutedHex), VerticalAlignment = VerticalAlignment.Center });",
+        "                  Button closeX = MakeButton(\"✕\", \"#00000000\", \"#E11D48\", dark ? \"#CBD5E1\" : \"#475569\", \"#00000000\", 7, 28, 34, false);",
+        "                  closeX.HorizontalAlignment = HorizontalAlignment.Right;",
+        "                  closeX.MouseEnter += delegate { closeX.Foreground = Brushes.White; };",
+        "                  closeX.MouseLeave += delegate { closeX.Foreground = BrushOf(dark ? \"#CBD5E1\" : \"#475569\"); };",
+        "                  closeX.Click += delegate { win.Close(); };",
+        "                  topBar.Children.Add(closeX);",
+        "                  root.Children.Add(topBar);",
+        "",
+        "                  Grid hero = new Grid { Margin = new Thickness(24, 14, 24, 16) };",
+        "                  hero.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });",
+        "                  hero.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });",
+        "                  Border icoBox = new Border {",
+        "                      Width = 68, Height = 68, CornerRadius = new CornerRadius(16),",
+        "                      Background = BrushOf(dark ? \"#252E40\" : \"#FFFFFF\"),",
+        "                      BorderBrush = BrushOf(cardBdHex), BorderThickness = new Thickness(1)",
+        "                  };",
+        "                  if (iconSrc != null) {",
+        "                      Image im = new Image { Source = iconSrc, Width = 56, Height = 56, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };",
+        "                      RenderOptions.SetBitmapScalingMode(im, BitmapScalingMode.HighQuality);",
+        "                      icoBox.Child = im;",
+        "                  }",
+        "                  hero.Children.Add(icoBox);",
+        "                  StackPanel hText = new StackPanel { Margin = new Thickness(16, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };",
+        "                  hText.Children.Add(new TextBlock { Text = AppMeta.AppName, FontSize = 22, FontWeight = FontWeights.Bold, Foreground = BrushOf(fgHex) });",
+        "                  hText.Children.Add(new TextBlock { Text = \"Verze \" + AppMeta.FullVersion + \"  •  \" + AppMeta.Publisher, FontSize = 12.5, Foreground = BrushOf(mutedHex), Margin = new Thickness(0, 2, 0, 6) });",
+        "                  Border badge = new Border { HorizontalAlignment = HorizontalAlignment.Left, CornerRadius = new CornerRadius(6), Padding = new Thickness(8, 2, 8, 3), Background = BrushOf(dark ? \"#17324D\" : \"#E0F2FE\") };",
+        "#if INSTALLER",
+        "                  badge.Child = new TextBlock { Text = \"✨ Nativní instalace pro Windows 11\", FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = BrushOf(dark ? \"#7DD3FC\" : \"#0369A1\") };",
+        "#else",
+        "                  badge.Child = new TextBlock { Text = \"🗑️ Čisté odebrání ze systému\", FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = BrushOf(dark ? \"#FCA5A5\" : \"#B91C1C\") };",
+        "#endif",
+        "                  hText.Children.Add(badge);",
+        "                  Grid.SetColumn(hText, 1);",
+        "                  hero.Children.Add(hText);",
+        "                  root.Children.Add(hero);",
+        "",
+        "                  Grid body = new Grid { Margin = new Thickness(24, 0, 24, 18) };",
+        "#if INSTALLER",
+        "                  string chosenDir = defaultDir;",
+        "                  bool optDesktop = true;",
+        "                  bool optAssoc = true;",
+        "                  bool isDone = false;",
+        "",
+        "                  StackPanel cfgStack = new StackPanel();",
+        "                  Border dirCard = new Border { CornerRadius = new CornerRadius(10), Background = BrushOf(cardBgHex), BorderBrush = BrushOf(cardBdHex), BorderThickness = new Thickness(1), Padding = new Thickness(14, 10, 14, 10), Margin = new Thickness(0, 0, 0, 10) };",
+        "                  StackPanel dirInner = new StackPanel();",
+        "                  dirInner.Children.Add(new TextBlock { Text = \"CÍLOVÁ SLOŽKA\", FontSize = 10.5, FontWeight = FontWeights.Bold, Foreground = BrushOf(mutedHex), Margin = new Thickness(0, 0, 0, 4) });",
+        "                  Grid dirRow = new Grid();",
+        "                  dirRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });",
+        "                  dirRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });",
+        "                  TextBlock dirLbl = new TextBlock { Text = chosenDir, ToolTip = chosenDir, FontSize = 12.5, Foreground = BrushOf(fgHex), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis, Margin = new Thickness(0, 0, 10, 0) };",
+        "                  Button chgBtn = MakeButton(\"Změnit…\", dark ? \"#2D3748\" : \"#F1F5F9\", dark ? \"#3B475E\" : \"#E2E8F0\", fgHex, cardBdHex, 7, 30, 84, false);",
+        "                  chgBtn.Click += delegate {",
+        "                      using (System.Windows.Forms.FolderBrowserDialog fbd = new System.Windows.Forms.FolderBrowserDialog()) {",
+        "                          fbd.Description = \"Vyber cílovou složku pro instalaci \" + AppMeta.AppName;",
+        "                          fbd.SelectedPath = chosenDir;",
+        "                          if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK && !string.IsNullOrEmpty(fbd.SelectedPath)) {",
+        "                              string p = fbd.SelectedPath;",
+        "                              if (!p.EndsWith(AppMeta.AppName, StringComparison.OrdinalIgnoreCase)) p = Path.Combine(p, AppMeta.AppName);",
+        "                              chosenDir = p; dirLbl.Text = p; dirLbl.ToolTip = p;",
+        "                          }",
+        "                      }",
+        "                  };",
+        "                  dirRow.Children.Add(dirLbl);",
+        "                  Grid.SetColumn(chgBtn, 1);",
+        "                  dirRow.Children.Add(chgBtn);",
+        "                  dirInner.Children.Add(dirRow);",
+        "                  dirCard.Child = dirInner;",
+        "                  cfgStack.Children.Add(dirCard);",
+        "",
+        "                  Border optCard = new Border { CornerRadius = new CornerRadius(10), Background = BrushOf(cardBgHex), BorderBrush = BrushOf(cardBdHex), BorderThickness = new Thickness(1), Padding = new Thickness(14, 4, 14, 4) };",
+        "                  StackPanel optInner = new StackPanel();",
+        "                  optInner.Children.Add(MakeToggleRow(\"Zástupce na Ploše\", \"Vytvoří ikonu na ploše (v nabídce Start se vytvoří vždy)\", true, dark, delegate(bool v) { optDesktop = v; }));",
+        "                  if (!string.IsNullOrEmpty(AppMeta.AssocExt)) {",
+        "                      optInner.Children.Add(new Border { Height = 1, Background = BrushOf(cardBdHex), Margin = new Thickness(0, 2, 0, 2) });",
+        "                      optInner.Children.Add(MakeToggleRow(\"Otevírat soubory \" + AppMeta.AssocExt.ToUpperInvariant(), \"Zaregistruje program do nabídky Otevřít v programu ve Windows 11\", true, dark, delegate(bool v) { optAssoc = v; }));",
+        "                  }",
+        "                  optCard.Child = optInner;",
+        "                  cfgStack.Children.Add(optCard);",
+        "                  body.Children.Add(cfgStack);",
+        "",
+        "                  Border progCard = new Border { Visibility = Visibility.Collapsed, CornerRadius = new CornerRadius(10), Background = BrushOf(cardBgHex), BorderBrush = BrushOf(cardBdHex), BorderThickness = new Thickness(1), Padding = new Thickness(16, 16, 16, 16) };",
+        "                  StackPanel progInner = new StackPanel();",
+        "                  Grid progHdr = new Grid();",
+        "                  TextBlock pTitle = new TextBlock { Text = \"Instalace probíhá…\", FontSize = 13.5, FontWeight = FontWeights.SemiBold, Foreground = BrushOf(fgHex) };",
+        "                  TextBlock pPct = new TextBlock { Text = \"0 %\", FontSize = 13, FontWeight = FontWeights.Bold, Foreground = BrushOf(\"#38BDF8\"), HorizontalAlignment = HorizontalAlignment.Right };",
+        "                  progHdr.Children.Add(pTitle); progHdr.Children.Add(pPct);",
+        "                  progInner.Children.Add(progHdr);",
+        "                  Border track = new Border { Height = 8, CornerRadius = new CornerRadius(4), Background = BrushOf(dark ? \"#11151E\" : \"#E2E8F0\"), Margin = new Thickness(0, 12, 0, 10), ClipToBounds = true };",
+        "                  Border fill = new Border { Height = 8, CornerRadius = new CornerRadius(4), HorizontalAlignment = HorizontalAlignment.Left, Width = 0, Background = BrushOf(\"#0EA5E9\") };",
+        "                  track.Child = fill;",
+        "                  progInner.Children.Add(track);",
+        "                  TextBlock pSub = new TextBlock { Text = \"Příprava souborů…\", FontSize = 12, Foreground = BrushOf(mutedHex), TextTrimming = TextTrimming.CharacterEllipsis };",
+        "                  progInner.Children.Add(pSub);",
+        "                  progCard.Child = progInner;",
+        "                  body.Children.Add(progCard);",
+        "#else",
+        "                  bool uninstDone = false;",
+        "                  Border uCard = new Border { CornerRadius = new CornerRadius(10), Background = BrushOf(cardBgHex), BorderBrush = BrushOf(cardBdHex), BorderThickness = new Thickness(1), Padding = new Thickness(16, 16, 16, 16) };",
+        "                  StackPanel uInner = new StackPanel();",
+        "                  TextBlock uTitle = new TextBlock { Text = \"Chceš odinstalovat \" + AppMeta.AppName + \" z tohoto počítače?\", FontSize = 13.5, FontWeight = FontWeights.SemiBold, Foreground = BrushOf(fgHex) };",
+        "                  TextBlock uSub = new TextBlock { Text = \"Všechny soubory aplikace, zástupci na Ploše a v nabídce Start i asociace přípon budou čistě odstraněny.\", FontSize = 12, Foreground = BrushOf(mutedHex), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) };",
+        "                  Border uTrack = new Border { Visibility = Visibility.Collapsed, Height = 8, CornerRadius = new CornerRadius(4), Background = BrushOf(dark ? \"#11151E\" : \"#E2E8F0\"), Margin = new Thickness(0, 12, 0, 4), ClipToBounds = true };",
+        "                  Border uFill = new Border { Height = 8, CornerRadius = new CornerRadius(4), HorizontalAlignment = HorizontalAlignment.Left, Width = 0, Background = BrushOf(\"#EF4444\") };",
+        "                  uTrack.Child = uFill;",
+        "                  uInner.Children.Add(uTitle); uInner.Children.Add(uSub); uInner.Children.Add(uTrack);",
+        "                  uCard.Child = uInner;",
+        "                  body.Children.Add(uCard);",
+        "#endif",
+        "                  root.Children.Add(body);",
+        "",
+        "                  Border footer = new Border {",
+        "                      Background = BrushOf(dark ? \"#11151E\" : \"#E8EEF6\"),",
+        "                      BorderBrush = BrushOf(cardBdHex), BorderThickness = new Thickness(0, 1, 0, 0),",
+        "                      CornerRadius = new CornerRadius(0, 0, 13, 13), Padding = new Thickness(24, 13, 24, 13)",
+        "                  };",
+        "                  Grid fGrid = new Grid();",
+        "                  fGrid.Children.Add(new TextBlock { Text = AppMeta.Copyright, FontSize = 11.5, Foreground = BrushOf(mutedHex), VerticalAlignment = VerticalAlignment.Center });",
+        "                  StackPanel fBtns = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };",
+        "#if INSTALLER",
+        "                  Button secBtn = MakeButton(\"Zavřít\", dark ? \"#252E40\" : \"#FFFFFF\", dark ? \"#323E54\" : \"#F1F5F9\", fgHex, cardBdHex, 8, 38, 92, false);",
+        "                  secBtn.Visibility = Visibility.Collapsed;",
+        "                  secBtn.Margin = new Thickness(0, 0, 8, 0);",
+        "                  secBtn.Click += delegate { win.Close(); };",
+        "                  Button priBtn = MakeButton(\"Nainstalovat aplikaci\", \"#0284C7\", \"#0369A1\", \"#FFFFFF\", \"#38BDF8\", 8, 38, 186, true);",
+        "                  priBtn.Click += delegate {",
+        "                      if (isDone) {",
+        "                          string exeToRun = Path.Combine(chosenDir, AppMeta.AppName + \".exe\");",
+        "                          if (File.Exists(exeToRun)) Process.Start(new ProcessStartInfo { FileName = exeToRun, WorkingDirectory = chosenDir, UseShellExecute = true });",
+        "                          win.Close();",
+        "                          return;",
+        "                      }",
+        "                      priBtn.IsEnabled = false; closeX.IsEnabled = false; priBtn.Content = \"Instalace probíhá…\";",
+        "                      cfgStack.Visibility = Visibility.Collapsed; progCard.Visibility = Visibility.Visible;",
+        "                      string targetDir = chosenDir; bool dOpt = optDesktop; bool aOpt = optAssoc;",
+        "                      ThreadPool.QueueUserWorkItem(delegate {",
+        "                          try {",
+        "                              PerformInstall(targetDir, dOpt, aOpt, delegate(int pct, string t, string s) {",
+        "                                  win.Dispatcher.BeginInvoke(new Action(delegate {",
+        "                                      pTitle.Text = t; pSub.Text = s; pPct.Text = pct.ToString() + \" %\";",
+        "                                      double mw = track.ActualWidth __GT__ 20 ? track.ActualWidth : 440;",
+        "                                      fill.BeginAnimation(FrameworkElement.WidthProperty, new DoubleAnimation(mw * (pct / 100.0), TimeSpan.FromMilliseconds(140)));",
+        "                                  }));",
+        "                              });",
+        "                              win.Dispatcher.BeginInvoke(new Action(delegate {",
+        "                                  isDone = true; closeX.IsEnabled = true; priBtn.IsEnabled = true;",
+        "                                  fill.Background = BrushOf(\"#10B981\"); pPct.Foreground = BrushOf(\"#10B981\");",
+        "                                  SolidColorBrush okN = BrushOf(\"#059669\"); SolidColorBrush okH = BrushOf(\"#047857\");",
+        "                                  priBtn.Tag = new SolidColorBrush[] { okN, okH }; priBtn.Background = okN; priBtn.BorderBrush = BrushOf(\"#34D399\");",
+        "                                  priBtn.Content = \"🚀 Spustit \" + AppMeta.AppName;",
+        "                                  secBtn.Visibility = Visibility.Visible;",
+        "                              }));",
+        "                          } catch (Exception ex) {",
+        "                              win.Dispatcher.BeginInvoke(new Action(delegate {",
+        "                                  closeX.IsEnabled = true; pTitle.Text = \"Chyba při instalaci\"; pSub.Text = ex.Message;",
+        "                                  secBtn.Visibility = Visibility.Visible;",
+        "                              }));",
+        "                          }",
+        "                      });",
+        "                  };",
+        "                  fBtns.Children.Add(secBtn); fBtns.Children.Add(priBtn);",
+        "#else",
+        "                  Button cancelBtn = MakeButton(\"Zrušit\", dark ? \"#252E40\" : \"#FFFFFF\", dark ? \"#323E54\" : \"#F1F5F9\", fgHex, cardBdHex, 8, 38, 96, false);",
+        "                  cancelBtn.Margin = new Thickness(0, 0, 8, 0);",
+        "                  cancelBtn.Click += delegate { win.Close(); };",
+        "                  Button unBtn = MakeButton(\"Odinstalovat\", \"#DC2626\", \"#B91C1C\", \"#FFFFFF\", \"#F87171\", 8, 38, 152, true);",
+        "                  unBtn.Click += delegate {",
+        "                      if (uninstDone) { win.Close(); return; }",
+        "                      unBtn.IsEnabled = false; cancelBtn.Visibility = Visibility.Collapsed; uTrack.Visibility = Visibility.Visible;",
+        "                      ThreadPool.QueueUserWorkItem(delegate {",
+        "                          PerformUninstall(uninstDir, delegate(int pct, string msg) {",
+        "                              win.Dispatcher.BeginInvoke(new Action(delegate {",
+        "                                  uTitle.Text = msg; double mw = uTrack.ActualWidth __GT__ 20 ? uTrack.ActualWidth : 440;",
+        "                                  uFill.BeginAnimation(FrameworkElement.WidthProperty, new DoubleAnimation(mw * (pct / 100.0), TimeSpan.FromMilliseconds(140)));",
+        "                              }));",
+        "                          });",
+        "                          win.Dispatcher.BeginInvoke(new Action(delegate {",
+        "                              uninstDone = true; uFill.Background = BrushOf(\"#10B981\");",
+        "                              uSub.Text = \"Všechny součásti programu byly odebrány.\";",
+        "                              SolidColorBrush dN = BrushOf(\"#0284C7\"); SolidColorBrush dH = BrushOf(\"#0369A1\");",
+        "                              unBtn.Tag = new SolidColorBrush[] { dN, dH }; unBtn.Background = dN; unBtn.BorderBrush = BrushOf(\"#38BDF8\");",
+        "                              unBtn.Content = \"Hotovo\"; unBtn.IsEnabled = true;",
+        "                          }));",
+        "                      });",
+        "                  };",
+        "                  win.Closed += delegate { if (uninstDone) ScheduleSelfDelete(uninstDir); };",
+        "                  fBtns.Children.Add(cancelBtn); fBtns.Children.Add(unBtn);",
+        "#endif",
+        "                  fGrid.Children.Add(fBtns);",
+        "                  footer.Child = fGrid;",
+        "                  root.Children.Add(footer);",
+        "                  card.Child = root;",
+        "                  outer.Children.Add(card);",
+        "                  win.Content = outer;",
+        "                  app.Run(win);",
+        "              }",
+        "",
+        "#if !INSTALLER",
+        "              private static void ScheduleSelfDelete(string dir) {",
+        "                  try {",
+        "                      string selfExe = Process.GetCurrentProcess().MainModule.FileName;",
+        "                      ProcessStartInfo psi = new ProcessStartInfo(\"cmd.exe\", \"/c ping 127.0.0.1 -n 2 __GT__ nul & del /f /q \\\"\" + selfExe + \"\\\" & rmdir /s /q \\\"\" + dir + \"\\\"\");",
+        "                      psi.CreateNoWindow = true; psi.UseShellExecute = false; psi.WindowStyle = ProcessWindowStyle.Hidden;",
+        "                      Process.Start(psi);",
+        "                  } catch { }",
+        "              }",
+        "#endif",
+        "          }",
+        "          '@ | Set-Content -Path 'build_win/FluentSetup.cs' -Encoding UTF8",
+        "          @'",
+        "          import os, sys, re, glob, json, uuid, shutil, zipfile, subprocess, urllib.request, urllib.parse",
         "          from PIL import Image, ImageDraw",
         "",
-        "          BS = chr(92)",
-        "          DQ = chr(34)",
         "          app_name = os.environ.get('APP_NAME', 'WinApp').strip()",
         "          app_ver = os.environ.get('APP_VERSION', '1.0').strip()",
         "          pkg_type = os.environ.get('WIN_PACKAGE_TYPE', 'installer').strip().lower()",
@@ -6241,6 +6729,7 @@ jobs:
         "              subprocess.run([sys.executable, 'icon_gen.py'], check=False)",
         "",
         "          ico_path = 'assets/app.ico' if os.path.isfile('assets/app.ico') else 'build_win/app.ico'",
+        "          png_path = 'assets/icon.png' if os.path.isfile('assets/icon.png') else 'build_win/icon.png'",
         "          if not os.path.isfile(ico_path):",
         "              sz = 256",
         "              im = Image.new('RGBA', (sz, sz), (0, 0, 0, 0))",
@@ -6252,12 +6741,18 @@ jobs:
         "              dr.rounded_rectangle([72, 84, 184, 102], radius=8, fill=(255, 255, 255, 245))",
         "              dr.rounded_rectangle([72, 118, 184, 136], radius=8, fill=(255, 255, 255, 220))",
         "              dr.rounded_rectangle([72, 152, 148, 170], radius=8, fill=(255, 255, 255, 195))",
+        "              im.save(png_path, format='PNG')",
         "              im.save(ico_path, format='ICO', sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])",
+        "          elif not os.path.isfile(png_path):",
+        "              Image.open(ico_path).convert('RGBA').resize((256, 256), Image.Resampling.LANCZOS).save(png_path, format='PNG')",
+        "",
         "          abs_ico = os.path.abspath(ico_path)",
+        "          abs_png = os.path.abspath(png_path)",
         "",
         "          nums = [int(x) for x in re.findall(r'\\d+', app_ver)][:3]",
         "          while len(nums) != 3: nums.append(0)",
         "          vt = f'({nums[0]}, {nums[1]}, {nums[2]}, {build_num})'",
+        "          asm_ver = f'{nums[0]}.{nums[1]}.{nums[2]}.{build_num}'",
         "          ver_txt = (",
         "              'VSVersionInfo(\\n'",
         "              f'  ffi=FixedFileInfo(filevers={vt}, prodvers={vt}, mask=0x3f, flags=0x0, OS=0x40004, fileType=0x1, subtype=0x0, date=(0, 0)),\\n'",
@@ -6297,107 +6792,96 @@ jobs:
         "          for pkg_mod in [('pymupdf', 'pymupdf'), ('pymupdf', 'fitz'), ('pypdfium2', 'pypdfium2'), ('pytesseract', 'pytesseract')]:",
         "              if pkg_mod[0] in req_low: cmd.extend(['--collect-all', pkg_mod[1]])",
         "          cmd.append(entry)",
-        "          print('Spoustim PyInstaller:', ' '.join(cmd))",
         "          subprocess.run(cmd, check=True)",
         "",
         "          if is_installer:",
-        "              cands = [",
-        "                  r'C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe',",
-        "                  r'C:\\Program Files\\Inno Setup 6\\ISCC.exe',",
-        "                  shutil.which('ISCC'),",
-        "                  shutil.which('iscc')",
+        "              csc_cands = [",
+        "                  r'C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe',",
+        "                  r'C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\csc.exe'",
         "              ]",
-        "              iscc_bin = next((c for c in cands if c and os.path.isfile(c)), None)",
-        "              if not iscc_bin:",
-        "                  subprocess.run(['winget', 'install', '--id', 'JRSoftware.InnoSetup', '-e', '--silent', '--accept-package-agreements', '--accept-source-agreements'], check=False)",
-        "                  iscc_bin = next((c for c in cands[:2] if os.path.isfile(c)), None)",
-        "              if not iscc_bin:",
-        "                  print('CHYBA: Kompilator Inno Setup (ISCC.exe) nebyl nalezen!'); sys.exit(1)",
-        "",
-        "              help_res = subprocess.run([iscc_bin, '/?'], capture_output=True, text=True)",
-        "              arch_id = 'x64compatible' if 'x64compatible' in (help_res.stdout + help_res.stderr) else 'x64'",
-        "              cz_isl = os.path.join(os.path.dirname(iscc_bin), 'Languages', 'Czech.isl')",
-        "              lang_line = ('Name: ' + DQ + 'czech' + DQ + '; MessagesFile: ' + DQ + 'compiler:Languages' + BS + 'Czech.isl' + DQ) if os.path.isfile(cz_isl) else ('Name: ' + DQ + 'default' + DQ + '; MessagesFile: ' + DQ + 'compiler:Default.isl' + DQ)",
+        "              csc_bin = next((c for c in csc_cands if os.path.isfile(c)), None)",
+        "              if not csc_bin:",
+        "                  print('CHYBA: Systemovy kompilator .NET csc.exe nebyl nalezen!'); sys.exit(1)",
+        "              wpf_dir = os.path.join(os.path.dirname(csc_bin), 'WPF')",
         "",
         "              ext_match = re.search(r'STAVITEL_WIN_EXT:\\s*(\\.[A-Za-z0-9]+)', req_txt + '\\n' + main_txt)",
         "              assoc_ext = ext_match.group(1).lower() if ext_match else ('.pdf' if ('pymupdf' in req_low or 'pdf' in app_name.lower() or 'acrobat' in app_name.lower()) else '')",
-        "              app_guid = str(uuid.uuid5(uuid.NAMESPACE_DNS, 'cz.mares.win.' + app_name.lower())).upper()",
-        "              setup_base = f'{app_name}-Setup-{app_ver}.{build_num}'",
+        "              app_guid = '{' + str(uuid.uuid5(uuid.NAMESPACE_DNS, 'cz.mares.win.' + app_name.lower())).upper() + '}'",
+        "",
+        "              cs_src = open('build_win/FluentSetup.cs', 'r', encoding='utf-8').read()",
+        "              open('build_win/FluentSetup.cs', 'w', encoding='utf-8-sig').write(cs_src)",
+        "",
+        "              meta_cs = (",
+        "                  'using System.Reflection;\\n'",
+        "                  f'[assembly: AssemblyTitle(\"{app_name} Setup\")]\\n'",
+        "                  f'[assembly: AssemblyDescription(\"Windows 11 Fluent Instalátor pro {app_name}\")]\\n'",
+        "                  '[assembly: AssemblyCompany(\"Pavel Mareš\")]\\n'",
+        "                  f'[assembly: AssemblyProduct(\"{app_name}\")]\\n'",
+        "                  '[assembly: AssemblyCopyright(\"© 2026 Created by Pavel Mareš\")]\\n'",
+        "                  f'[assembly: AssemblyVersion(\"{asm_ver}\")]\\n'",
+        "                  f'[assembly: AssemblyFileVersion(\"{asm_ver}\")]\\n'",
+        "                  'internal static class AppMeta {\\n'",
+        "                  f'    public const string AppName = \"{app_name}\";\\n'",
+        "                  f'    public const string AppVersion = \"{app_ver}\";\\n'",
+        "                  f'    public const string FullVersion = \"{app_ver}.{build_num}\";\\n'",
+        "                  f'    public const string AppGuid = \"{app_guid}\";\\n'",
+        "                  f'    public const string AssocExt = \"{assoc_ext}\";\\n'",
+        "                  '    public const string Publisher = \"Pavel Mareš\";\\n'",
+        "                  '    public const string Copyright = \"© 2026 Created by Pavel Mareš\";\\n'",
+        "                  '}\\n'",
+        "              )",
+        "              open('build_win/AppMeta.cs', 'w', encoding='utf-8-sig').write(meta_cs)",
+        "",
+        "              manifest_xml = (",
+        "                  '__LT__?xml version=\"1.0\" encoding=\"utf-8\"?__GT__\\n'",
+        "                  '__LT__assembly manifestVersion=\"1.0\" xmlns=\"urn:schemas-microsoft-com:asm.v1\"__GT__\\n'",
+        "                  '  __LT__assemblyIdentity version=\"1.0.0.0\" name=\"Stavitel.FluentSetup\"/__GT__\\n'",
+        "                  '  __LT__trustInfo xmlns=\"urn:schemas-microsoft-com:asm.v2\"__GT__\\n'",
+        "                  '    __LT__security__GT____LT__requestedPrivileges xmlns=\"urn:schemas-microsoft-com:asm.v3\"__GT__' +",
+        "                  '__LT__requestedExecutionLevel level=\"asInvoker\" uiAccess=\"false\"/__GT____LT__/requestedPrivileges__GT____LT__/security__GT__\\n'",
+        "                  '  __LT__/trustInfo__GT__\\n'",
+        "                  '  __LT__compatibility xmlns=\"urn:schemas-microsoft-com:compatibility.v1\"__GT____LT__application__GT__' +",
+        "                  '__LT__supportedOS Id=\"{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}\"/__GT____LT__/application__GT____LT__/compatibility__GT__\\n'",
+        "                  '  __LT__application xmlns=\"urn:schemas-microsoft-com:asm.v3\"__GT____LT__windowsSettings__GT__' +",
+        "                  '__LT__dpiAware xmlns=\"http://schemas.microsoft.com/SMI/2005/WindowsSettings\"__GT__true/pm__LT__/dpiAware__GT__' +",
+        "                  '__LT__dpiAwareness xmlns=\"http://schemas.microsoft.com/SMI/2016/WindowsSettings\"__GT__PerMonitorV2, PerMonitor__LT__/dpiAwareness__GT__' +",
+        "                  '__LT__/windowsSettings__GT____LT__/application__GT__\\n'",
+        "                  '__LT__/assembly__GT__\\n'",
+        "              )",
+        "              abs_manifest = os.path.abspath('build_win/app.manifest')",
+        "              open(abs_manifest, 'w', encoding='utf-8').write(manifest_xml)",
+        "",
         "              abs_onedir = os.path.abspath(os.path.join('dist', app_name))",
-        "              abs_out_dir = os.path.abspath('out_exe')",
-        "",
-        "              iss = [",
-        "                  '[Setup]',",
-        "                  'AppId={{' + app_guid + '}',",
-        "                  'AppName=' + app_name,",
-        "                  f'AppVersion={app_ver}.{build_num}',",
-        "                  f'AppVerName={app_name} {app_ver}',",
-        "                  'AppPublisher=Pavel Mareš',",
-        "                  'AppCopyright=© 2026 Created by Pavel Mareš',",
-        "                  'DefaultDirName={autopf}' + BS + app_name,",
-        "                  'DisableProgramGroupPage=yes',",
-        "                  'PrivilegesRequired=lowest',",
-        "                  'PrivilegesRequiredOverridesAllowed=dialog',",
-        "                  'ArchitecturesAllowed=' + arch_id,",
-        "                  'ArchitecturesInstallIn64BitMode=' + arch_id,",
-        "                  'SetupIconFile=' + abs_ico,",
-        "                  'UninstallDisplayIcon={app}' + BS + app_name + '.exe',",
-        "                  'UninstallDisplayName=' + app_name,",
-        "                  'Compression=lzma2/fast',",
-        "                  'SolidCompression=yes',",
-        "                  'WizardStyle=modern',",
-        "                  'CloseApplications=yes',",
-        "                  'ChangesAssociations=' + ('yes' if assoc_ext else 'no'),",
-        "                  'OutputDir=' + abs_out_dir,",
-        "                  'OutputBaseFilename=' + setup_base,",
-        "                  '',",
-        "                  '[Languages]',",
-        "                  lang_line,",
-        "                  '',",
-        "                  '[Tasks]',",
-        "                  'Name: ' + DQ + 'desktopicon' + DQ + '; Description: ' + DQ + 'Vytvořit zástupce na &Ploše' + DQ + '; GroupDescription: ' + DQ + 'Zástupci aplikace:' + DQ",
+        "              uninst_out = os.path.join(abs_onedir, 'Uninstall.exe')",
+        "              common_csc = [",
+        "                  csc_bin, '/nologo', '/codepage:65001', '/target:winexe', '/platform:x64', '/optimize+',",
+        "                  f'/lib:{wpf_dir}', f'/win32icon:{abs_ico}', f'/win32manifest:{abs_manifest}',",
+        "                  '/r:System.dll', '/r:System.Core.dll', '/r:System.Xaml.dll', '/r:WindowsBase.dll',",
+        "                  '/r:PresentationCore.dll', '/r:PresentationFramework.dll',",
+        "                  '/r:System.IO.Compression.dll', '/r:System.IO.Compression.FileSystem.dll', '/r:System.Windows.Forms.dll'",
         "              ]",
-        "              if assoc_ext:",
-        "                  ext_up = assoc_ext.upper()",
-        "                  iss.append('Name: ' + DQ + 'fileassoc' + DQ + '; Description: ' + DQ + f'Zaregistrovat {app_name} pro otevírání souborů {ext_up} ve Windows 11' + DQ + '; GroupDescription: ' + DQ + 'Asociace souborů:' + DQ)",
+        "              print('Kompiluji moderni Fluent Uninstall.exe...')",
+        "              subprocess.run(common_csc + [",
+        "                  '/d:UNINSTALLER', f'/out:{uninst_out}', f'/resource:{abs_png},icon.png',",
+        "                  os.path.abspath('build_win/AppMeta.cs'), os.path.abspath('build_win/FluentSetup.cs')",
+        "              ], check=True)",
         "",
-        "              iss.extend([",
-        "                  '',",
-        "                  '[Files]',",
-        "                  'Source: ' + DQ + abs_onedir + BS + '*' + DQ + '; DestDir: ' + DQ + '{app}' + DQ + '; Flags: ignoreversion recursesubdirs createallsubdirs',",
-        "                  '',",
-        "                  '[Icons]',",
-        "                  'Name: ' + DQ + '{autoprograms}' + BS + app_name + DQ + '; Filename: ' + DQ + '{app}' + BS + app_name + '.exe' + DQ + '; WorkingDir: ' + DQ + '{app}' + DQ,",
-        "                  'Name: ' + DQ + '{autodesktop}' + BS + app_name + DQ + '; Filename: ' + DQ + '{app}' + BS + app_name + '.exe' + DQ + '; WorkingDir: ' + DQ + '{app}' + DQ + '; Tasks: desktopicon'",
-        "              ])",
+        "              payload_zip = os.path.abspath('build_win/payload.zip')",
+        "              print('Balim soubory aplikace do payload.zip...')",
+        "              with zipfile.ZipFile(payload_zip, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:",
+        "                  for root_d, _, files in os.walk(abs_onedir):",
+        "                      for fn in files:",
+        "                          full_p = os.path.join(root_d, fn)",
+        "                          rel_p = os.path.relpath(full_p, abs_onedir).replace(chr(92), '/')",
+        "                          zf.write(full_p, rel_p)",
         "",
-        "              if assoc_ext:",
-        "                  prog_id = app_name + assoc_ext",
-        "                  cmd_val = DQ * 3 + '{app}' + BS + app_name + '.exe' + DQ * 2 + ' ' + DQ * 2 + '%1' + DQ * 3",
-        "                  iss.extend([",
-        "                      '',",
-        "                      '[Registry]',",
-        "                      'Root: HKA; Subkey: ' + DQ + 'Software' + BS + 'Classes' + BS + assoc_ext + BS + 'OpenWithProgids' + DQ + '; ValueType: string; ValueName: ' + DQ + prog_id + DQ + '; ValueData: ' + DQ + DQ + '; Flags: uninsdeletevalue; Tasks: fileassoc',",
-        "                      'Root: HKA; Subkey: ' + DQ + 'Software' + BS + 'Classes' + BS + prog_id + DQ + '; ValueType: string; ValueName: ' + DQ + DQ + '; ValueData: ' + DQ + f'Soubor {assoc_ext.upper()} ({app_name})' + DQ + '; Flags: uninsdeletekey; Tasks: fileassoc',",
-        "                      'Root: HKA; Subkey: ' + DQ + 'Software' + BS + 'Classes' + BS + prog_id + BS + 'DefaultIcon' + DQ + '; ValueType: string; ValueName: ' + DQ + DQ + '; ValueData: ' + DQ + '{app}' + BS + app_name + '.exe,0' + DQ + '; Tasks: fileassoc',",
-        "                      'Root: HKA; Subkey: ' + DQ + 'Software' + BS + 'Classes' + BS + prog_id + BS + 'shell' + BS + 'open' + BS + 'command' + DQ + '; ValueType: string; ValueName: ' + DQ + DQ + '; ValueData: ' + cmd_val + '; Tasks: fileassoc',",
-        "                      'Root: HKA; Subkey: ' + DQ + 'Software' + BS + 'Classes' + BS + 'Applications' + BS + app_name + '.exe' + BS + 'SupportedTypes' + DQ + '; ValueType: string; ValueName: ' + DQ + assoc_ext + DQ + '; ValueData: ' + DQ + DQ + '; Flags: uninsdeletekey; Tasks: fileassoc'",
-        "                  ])",
-        "",
-        "              iss.extend([",
-        "                  '',",
-        "                  '[Run]',",
-        "                  'Filename: ' + DQ + '{app}' + BS + app_name + '.exe' + DQ + '; Description: ' + DQ + f'Spustit {app_name}' + DQ + '; Flags: nowait postinstall skipifsilent',",
-        "                  ''",
-        "              ])",
-        "",
-        "              iss_path = os.path.abspath('build_win/setup.iss')",
-        "              with open(iss_path, 'w', encoding='utf-8-sig') as f:",
-        "                  f.write('\\r\\n'.join(iss))",
-        "              print('Kompiluji nativni Windows 11 instalator pres Inno Setup...')",
-        "              subprocess.run([iscc_bin, iss_path], check=True)",
-        "              final_name = f'{setup_base}.exe'",
-        "              final_exe = os.path.join(abs_out_dir, final_name)",
+        "              final_name = f'{app_name}-Setup-{app_ver}.{build_num}.exe'",
+        "              final_exe = os.path.abspath(os.path.join('out_exe', final_name))",
+        "              print('Kompiluji nativni Windows 11 Fluent Setup.exe...')",
+        "              subprocess.run(common_csc + [",
+        "                  '/d:INSTALLER', f'/out:{final_exe}', f'/resource:{abs_png},icon.png', f'/resource:{payload_zip},payload.zip',",
+        "                  os.path.abspath('build_win/AppMeta.cs'), os.path.abspath('build_win/FluentSetup.cs')",
+        "              ], check=True)",
         "          else:",
         "              built_exe = os.path.join('dist', f'{app_name}.exe')",
         "              final_name = f'{app_name}-Portable-{app_ver}.{build_num}.exe'",
@@ -6405,12 +6889,11 @@ jobs:
         "              shutil.move(built_exe, final_exe)",
         "",
         "          print('Hotovo EXE:', final_exe, os.path.getsize(final_exe), 'B')",
-        "",
         "          gh_tok = os.environ.get('GH_TOKEN', '').strip()",
         "          repo_full = os.environ.get('REPO_FULL', '').strip()",
         "          if gh_tok and repo_full:",
         "              def gh_api(url, method='GET', data=None, ctype='application/json'):",
-        "                  h = {'Authorization': f'Bearer {gh_tok}', 'Accept': 'application/vnd.github+json', 'User-Agent': 'Stavitel-Win-Builder-V2'}",
+        "                  h = {'Authorization': f'Bearer {gh_tok}', 'Accept': 'application/vnd.github+json', 'User-Agent': 'Stavitel-Win-Builder-V3'}",
         "                  if data is not None: h['Content-Type'] = ctype",
         "                  req = urllib.request.Request(url, data=data, headers=h, method=method)",
         "                  with urllib.request.urlopen(req, timeout=300) as r:",
@@ -6421,7 +6904,7 @@ jobs:
         "              rel = None",
         "              try: rel = gh_api(f'https://api.github.com/repos/{repo_full}/releases/tags/{tag}')",
         "              except Exception: rel = None",
-        "              rel_title = f'Poslední Windows Setup ({final_name})' if is_installer else f'Poslední přenosné EXE ({final_name})'",
+        "              rel_title = f'Poslední Windows 11 Fluent Setup ({final_name})' if is_installer else f'Poslední přenosné EXE ({final_name})'",
         "              if rel and rel.get('id'):",
         "                  rid = rel['id']",
         "                  for a in rel.get('assets', []):",
@@ -6442,18 +6925,17 @@ jobs:
         "        with:",
         "          name: " + GHA_O + " env.APP_NAME " + GHA_C + "-Windows-EXE",
         "          path: out_exe/*.exe"
-      ].join("\n") + "\n";
+      ];
+
+      return yamlLines.join("\n").replace(/__LT__/g, LT).replace(/__GT__/g, GT) + "\n";
     };
 
-    // 5. Napojení přepínače režimů selectBuildMode
     const prevSelectMode = window.__preWinExeSelectMode || window.selectBuildMode;
     if (typeof prevSelectMode === "function") {
       window.__preWinExeSelectMode = prevSelectMode;
       window.selectBuildMode = function(mode) {
         mountWindowsModeCard();
-        if (mode && mode !== "windows_exe") {
-          localStorage.setItem(LAST_MOB_MODE_KEY, mode);
-        }
+        if (mode && mode !== "windows_exe") localStorage.setItem(LAST_MOB_MODE_KEY, mode);
         const res = prevSelectMode.apply(this, arguments);
         const wCard = document.getElementById("modeCard_windows_exe");
         const wCheck = document.getElementById("modeCheck_windows_exe");
@@ -6474,16 +6956,12 @@ jobs:
       };
     }
 
-    // 6. Detekce Python / Windows projektů
     const prevDetect = window.__preWinExeDetectProj || window.detectProjectFromFiles;
     if (typeof prevDetect === "function") {
       window.__preWinExeDetectProj = prevDetect;
       window.detectProjectFromFiles = function(filesMap) {
         const mapToScan = filesMap || (typeof stagedFiles !== "undefined" ? stagedFiles : {});
-        let winApp = null;
-        let hasPyFiles = false;
-        let hasGradle = false;
-
+        let winApp = null, hasPyFiles = false, hasGradle = false;
         if (mapToScan && typeof mapToScan === "object") {
           for (const [p, raw] of Object.entries(mapToScan)) {
             const c = String(raw || "");
@@ -6498,7 +6976,6 @@ jobs:
             }
           }
         }
-
         if ((winApp || (hasPyFiles && !hasGradle)) && !hasGradle) {
           const fallbackName = winApp || (typeof getActiveProjectName === "function" ? getActiveProjectName() : "WinApp");
           const normName = typeof normalizeProjId === "function" ? normalizeProjId(fallbackName) : fallbackName.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -6506,35 +6983,22 @@ jobs:
           const matched = kp.find(x => (typeof normalizeProjId === "function" ? normalizeProjId(x) : x.toLowerCase()) === normName) || null;
           if (!filesMap || filesMap === stagedFiles) {
             const curMode = document.getElementById("cmPublishMode")?.value || "";
-            if (curMode !== "windows_exe" && Object.keys(mapToScan).length > 0) {
+            if (curMode !== "windows_exe" && Object.keys(mapToScan).length !== 0) {
               setTimeout(() => window.selectBuildMode("windows_exe"), 0);
             }
           }
-          return {
-            display: matched || fallbackName,
-            matchedKnown: matched,
-            norm: normName,
-            normApp: normName,
-            normPkg: normName,
-            pkg: "cz.mares." + normName,
-            isWindowsApp: true
-          };
+          return { display: matched || fallbackName, matchedKnown: matched, norm: normName, normApp: normName, normPkg: normName, pkg: "cz.mares." + normName, isWindowsApp: true };
         }
         return prevDetect.apply(this, arguments);
       };
     }
 
-    // 7. Generování workflow YAML
     const prevApplyYaml = window.__preWinExeApplyYaml || window.applyModeToWorkflowYaml;
     if (typeof prevApplyYaml === "function") {
       window.__preWinExeApplyYaml = prevApplyYaml;
       window.applyModeToWorkflowYaml = function(arg1, arg2, arg3) {
         const knownModes = ["android_only", "build_only", "publish", "windows_exe"];
-        let effMode = "";
-        if (typeof arg2 === "string" && knownModes.includes(arg2)) effMode = arg2;
-        else if (typeof arg1 === "string" && knownModes.includes(arg1)) effMode = arg1;
-        else effMode = document.getElementById("cmPublishMode")?.value || "";
-
+        const effMode = (typeof arg2 === "string" && knownModes.includes(arg2)) ? arg2 : ((typeof arg1 === "string" && knownModes.includes(arg1)) ? arg1 : (document.getElementById("cmPublishMode")?.value || ""));
         if (effMode === "windows_exe") {
           const rawYaml = (typeof arg1 === "string" && arg1.includes("APP_NAME:")) ? arg1 : "";
           const mApp = rawYaml.match(/APP_NAME:\s*["']?([^"'\r\n]+)["']?/);
@@ -6564,32 +7028,24 @@ jobs:
       };
     }
 
-    // 8. Ošetření rychlého překompilování pushPublishModeOnly v Kroku 2
     const prevPushModeOnly = window.__preWinExePushModeOnly || window.pushPublishModeOnly;
     if (typeof prevPushModeOnly === "function") {
       window.__preWinExePushModeOnly = prevPushModeOnly;
       window.pushPublishModeOnly = async function() {
         const mode = document.getElementById("cmPublishMode")?.value || "";
         if (mode !== "windows_exe") return await prevPushModeOnly.apply(this, arguments);
-
         const own = (localStorage.getItem("stavitel_gh_user") || document.getElementById("ghUsername")?.value || "").trim();
         const tk = (localStorage.getItem("stavitel_gh_token") || document.getElementById("ghToken")?.value || "").trim();
         const repoName = typeof getActiveProjectName === "function" ? getActiveProjectName() : "";
         const appVer = (document.getElementById("appVersion")?.value || "1.0").trim();
-        const isInst = (getWinPkgType() === "installer");
-        const pkgDesc = isInst ? "Nativní český instalátor (Setup.exe)" : "Přenosná aplikace (.EXE)";
-
-        if (!own || !tk) {
-          document.getElementById("ghSettingsSection")?.classList.remove("hidden");
-          alert("Nejprve vyplň své GitHub jméno a Personal Access Token.");
-          return;
-        }
-        if (!confirm('Chceš v projektu "' + repoName + '" (verze ' + appVer + ') nastavit režim:\n\n👉 "🪟 Windows 11 – ' + pkgDesc + '"\n\na rovnou tím spustit nový build na GitHubu?')) return;
+        const pkgDesc = getWinPkgType() === "installer" ? "Windows 11 Fluent Instalátor (Setup.exe)" : "Přenosná aplikace (.EXE)";
+        if (!own || !tk) { document.getElementById("ghSettingsSection")?.classList.remove("hidden"); alert("Nejprve vyplň GitHub jméno a token."); return; }
+        if (!confirm('Chceš v projektu "' + repoName + '" (verze ' + appVer + ') nastavit režim:\n\n👉 "🪟 ' + pkgDesc + '"\n\na rovnou tím spustit nový build na GitHubu?')) return;
         const prevStaged = Object.assign({}, stagedFiles);
         try {
           stagedFiles = {};
           markProjectAsWindows(repoName, true);
-          await uploadToGitHub(repoName, "Režim: Windows 11 – " + pkgDesc, true);
+          await uploadToGitHub(repoName, "Režim: " + pkgDesc, true);
         } catch (e) {
           log("❌ Chyba při spouštění Windows buildu: " + e.message, "err");
         } finally {
@@ -6599,58 +7055,17 @@ jobs:
       };
     }
 
-    // 9. Stahování sestaveného Setup.exe / .EXE
-    async function extractExeFromZipBuffer(arrayBuffer) {
-      const view = new DataView(arrayBuffer);
-      let eocdPos = -1;
-      for (let p = view.byteLength - 22; p >= Math.max(0, view.byteLength - 65557); p--) {
-        if (view.getUint32(p, true) === 0x06054b50) { eocdPos = p; break; }
-      }
-      if (eocdPos === -1) throw new Error("Neplatný ZIP artefakt.");
-      const cdCount = view.getUint16(eocdPos + 10, true);
-      let ptr = view.getUint32(eocdPos + 16, true);
-      const dec = new TextDecoder("utf-8");
-      for (let i = 0; i !== cdCount; i++) {
-        if (view.getUint32(ptr, true) !== 0x02014b50) break;
-        const compMethod = view.getUint16(ptr + 10, true);
-        const compSize = view.getUint32(ptr + 20, true);
-        const nameLen = view.getUint16(ptr + 28, true);
-        const extraLen = view.getUint16(ptr + 30, true);
-        const commentLen = view.getUint16(ptr + 32, true);
-        const localOffset = view.getUint32(ptr + 42, true);
-        const fileName = dec.decode(new Uint8Array(arrayBuffer, ptr + 46, nameLen));
-        if (fileName.toLowerCase().endsWith(".exe")) {
-          const lfNameLen = view.getUint16(localOffset + 26, true);
-          const lfExtraLen = view.getUint16(localOffset + 28, true);
-          const compBytes = new Uint8Array(arrayBuffer, localOffset + 30 + lfNameLen + lfExtraLen, compSize);
-          const cleanName = fileName.split("/").pop();
-          if (compMethod === 0) return { name: cleanName, bytes: compBytes };
-          if (compMethod === 8 && typeof DecompressionStream !== "undefined") {
-            const stream = new Blob([compBytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-            return { name: cleanName, bytes: new Uint8Array(await new Response(stream).arrayBuffer()) };
-          }
-        }
-        ptr += 46 + nameLen + extraLen + commentLen;
-      }
-      throw new Error("V artefaktu nebyl nalezen žádný soubor .exe.");
-    }
-
     function triggerExeUrlDownload(url, fileName) {
       const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName || "";
-      a.rel = "noopener";
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => a.remove(), 5000);
+      a.href = url; a.download = fileName || ""; a.rel = "noopener";
+      document.body.appendChild(a); a.click(); setTimeout(() => a.remove(), 5000);
       const lb = document.getElementById("logBox");
       if (lb) {
         lb.style.display = "block";
         const row = document.createElement("div");
         row.style.marginTop = "4px";
         row.innerHTML = '👉 Přímý odkaz ke stažení: ' + LT + 'a href="' + url + '" target="_blank" rel="noopener" style="color:#38bdf8;font-weight:700;text-decoration:underline;"' + GT + fileName + LT + '/a' + GT;
-        lb.appendChild(row);
-        lb.scrollTop = lb.scrollHeight;
+        lb.appendChild(row); lb.scrollTop = lb.scrollHeight;
       }
     }
 
@@ -6664,10 +7079,8 @@ jobs:
       const btn = document.getElementById("btnDownloadLatestExeLeft");
       const setBtn = (busy, label) => {
         if (!btn) return;
-        btn.disabled = busy;
-        btn.style.opacity = busy ? "0.75" : "1";
-        if (label) btn.textContent = label;
-        else updateExeBtnLabel();
+        btn.disabled = busy; btn.style.opacity = busy ? "0.75" : "1";
+        if (label) btn.textContent = label; else updateExeBtnLabel();
       };
 
       setBtn(true, "⏳ Kontroluji build (" + repo + ")...");
@@ -6680,101 +7093,67 @@ jobs:
         if (runsRes.ok) {
           let activeRun = ((await runsRes.json()).workflow_runs || []).find(r => r.status === "in_progress" || r.status === "queued");
           if (activeRun) {
-            log('⏳ Sestavování Windows instalátoru v projektu "' + repo + '" právě běží na GitHubu — čekám na dokončení...', "warn");
+            log('⏳ Sestavování Windows 11 Fluent instalátoru pro "' + repo + '" právě běží — čekám na dokončení...', "warn");
             const t0 = Date.now();
             while (activeRun && (activeRun.status === "in_progress" || activeRun.status === "queued")) {
               await new Promise(r => setTimeout(r, 5000));
-              const sec = Math.round((Date.now() - t0) / 1000);
-              setBtn(true, "⏳ Sestavuji na GitHubu (" + sec + " s)...");
+              setBtn(true, "⏳ Sestavuji na GitHubu (" + Math.round((Date.now() - t0) / 1000) + " s)...");
               const pr = await ghFetch("https://api.github.com/repos/" + own + "/" + repo + "/actions/runs/" + activeRun.id + "?_cb=" + Date.now(), tk);
               if (!pr.ok) break;
               activeRun = await pr.json();
             }
             if (activeRun && activeRun.conclusion && activeRun.conclusion !== "success") {
-              throw new Error("Poslední kompilace skončila chybou (" + activeRun.conclusion + "). Podrobnosti: " + activeRun.html_url);
+              throw new Error("Kompilace skončila chybou (" + activeRun.conclusion + "). Detail: " + activeRun.html_url);
             }
           }
         }
 
         const relRes = await ghFetch("https://api.github.com/repos/" + own + "/" + repo + "/releases/tags/exe-latest?_cb=" + Date.now(), tk);
         if (relRes.ok) {
-          const relData = await relRes.json();
-          const exeAsset = (relData.assets || []).find(a => String(a.name || "").toLowerCase().endsWith(".exe"));
+          const exeAsset = ((await relRes.json()).assets || []).find(a => String(a.name || "").toLowerCase().endsWith(".exe"));
           if (exeAsset) {
             if (!isPrivate && exeAsset.browser_download_url) {
               triggerExeUrlDownload(exeAsset.browser_download_url, exeAsset.name);
               log('🎉 Stahuji balíček projektu "' + repo + '": ' + exeAsset.name, "ok");
               return;
             }
-            try {
-              const binRes = await fetch(exeAsset.url, {
-                headers: { "Authorization": "Bearer " + tk, "Accept": "application/octet-stream" }
-              });
-              if (binRes.ok) {
-                const blob = await binRes.blob();
-                const bUrl = URL.createObjectURL(blob);
-                triggerExeUrlDownload(bUrl, exeAsset.name);
-                setTimeout(() => URL.revokeObjectURL(bUrl), 30000);
-                log('🎉 Staženo "' + repo + '": ' + exeAsset.name, "ok");
-                return;
-              }
-            } catch (_) {}
-            if (exeAsset.browser_download_url) {
-              triggerExeUrlDownload(exeAsset.browser_download_url, exeAsset.name);
-              log('🎉 Otevírám stažení pro "' + repo + '": ' + exeAsset.name, "ok");
+            const binRes = await fetch(exeAsset.url, { headers: { "Authorization": "Bearer " + tk, "Accept": "application/octet-stream" } });
+            if (binRes.ok) {
+              const bUrl = URL.createObjectURL(await binRes.blob());
+              triggerExeUrlDownload(bUrl, exeAsset.name);
+              setTimeout(() => URL.revokeObjectURL(bUrl), 30000);
+              log('🎉 Staženo "' + repo + '": ' + exeAsset.name, "ok");
               return;
             }
           }
         }
-
-        const artRes = await ghFetch("https://api.github.com/repos/" + own + "/" + repo + "/actions/artifacts?per_page=15&_cb=" + Date.now(), tk);
-        const validArts = artRes.ok ? (((await artRes.json()).artifacts || []).filter(a => !a.expired)) : [];
-        const winArt = validArts.find(a => /windows|exe/i.test(a.name));
-        if (!winArt) {
-          throw new Error('V projektu "' + repo + '" zatím není sestavený žádný Windows balíček.');
-        }
-
-        const zipRes = await fetch(winArt.archive_download_url, {
-          headers: { "Authorization": "Bearer " + tk, "Accept": "application/vnd.github+json" }
-        });
-        if (!zipRes.ok) throw new Error("Nelze stáhnout artefakt z GitHubu (HTTP " + zipRes.status + ").");
-        const extracted = await extractExeFromZipBuffer(await zipRes.arrayBuffer());
-        const bUrl = URL.createObjectURL(new Blob([extracted.bytes], { type: "application/vnd.microsoft.portable-executable" }));
-        triggerExeUrlDownload(bUrl, extracted.name);
-        setTimeout(() => URL.revokeObjectURL(bUrl), 30000);
-        log('🎉 Staženo "' + repo + '": ' + extracted.name, "ok");
+        throw new Error('V projektu "' + repo + '" zatím není sestavený žádný balíček Setup.exe.');
       } catch (err) {
-        log("❌ Chyba při stahování .EXE: " + err.message, "err");
+        log("❌ Chyba při stahování: " + err.message, "err");
       } finally {
         setBtn(false);
       }
     };
 
-    // 10. Automatické přepínání při výběru projektu v roletce
     const projSel = document.getElementById("projectSelect");
-    if (projSel && !projSel.__winExeV2Bound) {
-      projSel.__winExeV2Bound = true;
+    if (projSel && !projSel.__winExeV3Bound) {
+      projSel.__winExeV3Bound = true;
       projSel.addEventListener("change", () => {
         updateExeBtnLabel();
         const repo = getSelectedRepoClean();
         if (!repo) return;
         const isWin = getWinProjectsSet().has(repo);
         const curMode = document.getElementById("cmPublishMode")?.value || "";
-        if (isWin && curMode !== "windows_exe") {
-          window.selectBuildMode("windows_exe");
-        } else if (!isWin && curMode === "windows_exe") {
-          window.selectBuildMode(localStorage.getItem(LAST_MOB_MODE_KEY) || "build_only");
-        }
+        if (isWin && curMode !== "windows_exe") window.selectBuildMode("windows_exe");
+        else if (!isWin && curMode === "windows_exe") window.selectBuildMode(localStorage.getItem(LAST_MOB_MODE_KEY) || "build_only");
       });
       new MutationObserver(updateExeBtnLabel).observe(projSel, { childList: true });
     }
 
-    // Odstranění starého přepínače z V1 (pokud byl v DOMu) a montáž V2
     document.getElementById("winPackageTogglesBox")?.remove();
     mountWindowsModeCard();
     mountExeDownloadButton();
-    const savedMode = localStorage.getItem("stavitel_cm_publish_mode");
-    if (savedMode === "windows_exe") window.selectBuildMode("windows_exe");
+    if (localStorage.getItem("stavitel_cm_publish_mode") === "windows_exe") window.selectBuildMode("windows_exe");
     else refreshWinPkgUi();
   })();
 </script>
