@@ -5928,6 +5928,92 @@ jobs:
     };
   }
 
+  /* === HUAWEI_PUSH_HANDLER_START === */
+  window.publishLatestApkToHuawei = async function() {
+    const auth = getAuthPair();
+    if (!auth.own || !auth.tk) {
+      document.getElementById('ghSettingsSection')?.classList.remove('hidden');
+      alert('Nejprve vyplň a ulož své GitHub jméno a Personal Access Token nahoře.');
+      return;
+    }
+    const repo = getSelectedMobileRepo();
+    if (!repo) {
+      alert('Nejprve v Kroku 1 vyber existující projekt z roletky.');
+      return;
+    }
+    if (!window.confirm('Chceš vytáhnout poslední sestavené .APK projektu "' + repo + '" a odeslat ho přímo do Huawei AppGallery Connect?')) {
+      return;
+    }
+    const btn = document.getElementById('btnPublishLatestHuawei');
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+      btn.textContent = '⏳ Odesílám do Huawei (' + repo + ')...';
+    }
+    try {
+      const lb = document.getElementById('logBox');
+      if (lb) lb.style.display = 'block';
+      if (typeof window.log === 'function') {
+        window.log('🌺 Spouštím odeslání posledního .APK projektu "' + repo + '" do Huawei AppGallery...', 'warn');
+      }
+      if (typeof ensureRepoVaultSecret === 'function') {
+        await ensureRepoVaultSecret(auth.own, 'ios-keys', auth.tk);
+      }
+      const vRes = await ghFetch('https://api.github.com/repos/' + auth.own + '/ios-keys?_cb=' + Date.now(), auth.tk);
+      if (!vRes.ok) throw new Error('Nelze načíst trezor ios-keys (HTTP ' + vRes.status + ').');
+      const vBr = ((await vRes.json()).default_branch) || 'main';
+      const preRes = await ghFetch('https://api.github.com/repos/' + auth.own + '/ios-keys/actions/workflows/huawei_push.yml/runs?per_page=6&_cb=' + Date.now(), auth.tk);
+      const oldIds = new Set(preRes.ok ? (((await preRes.json()).workflow_runs || []).map(function(r) { return r.id; })) : []);
+      const reqId = 'hw_' + Date.now();
+      const dRes = await ghFetch('https://api.github.com/repos/' + auth.own + '/ios-keys/actions/workflows/huawei_push.yml/dispatches', auth.tk, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ref: vBr, inputs: { target_repo: repo, request_id: reqId } })
+      });
+      if (!dRes.ok && dRes.status !== 204) {
+        throw new Error('Nepodařilo se spustit huawei_push.yml (HTTP ' + dRes.status + ').');
+      }
+      let doneRun = null;
+      for (let i = 0; i !== 60; i++) {
+        await new Promise(function(r) { setTimeout(r, 4000); });
+        const pRes = await ghFetch('https://api.github.com/repos/' + auth.own + '/ios-keys/actions/workflows/huawei_push.yml/runs?per_page=6&_cb=' + Date.now(), auth.tk);
+        if (!pRes.ok) continue;
+        const cand = ((await pRes.json()).workflow_runs || []).find(function(r) { return !oldIds.has(r.id); });
+        if (cand && cand.status === 'completed') {
+          doneRun = cand;
+          break;
+        }
+      }
+      if (!doneRun) {
+        throw new Error('Vypršel časový limit při čekání na huawei_push.yml.');
+      }
+      await new Promise(function(r) { setTimeout(r, 1200); });
+      const repRes = await ghFetch('https://api.github.com/repos/' + auth.own + '/ios-keys/contents/huawei_push_report.txt?ref=' + encodeURIComponent(vBr) + '&_cb=' + Date.now(), auth.tk);
+      if (repRes.ok) {
+        const repTxt = decUtf8B64((await repRes.json()).content || '');
+        repTxt.split(/\r?\n/).forEach(function(ln) {
+          const s = ln.trim();
+          if (!s || s.indexOf('REQ_ID:') === 0 || s.indexOf('REPO:') === 0) return;
+          const lvl = s.indexOf('❌') !== -1 ? 'err' : (s.indexOf('⚠️') !== -1 ? 'warn' : 'ok');
+          if (typeof window.log === 'function') window.log(s, lvl);
+        });
+      }
+      try {
+        await ghFetch('https://api.github.com/repos/' + auth.own + '/ios-keys/actions/runs/' + doneRun.id, auth.tk, { method: 'DELETE' });
+      } catch (_) {}
+    } catch (err) {
+      if (typeof window.log === 'function') window.log('❌ Chyba při odesílání do Huawei: ' + err.message, 'err');
+      else alert('Chyba při odesílání do Huawei: ' + err.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+      updateDynamicRepoButtons();
+    }
+  };
+  /* === HUAWEI_PUSH_HANDLER_END === */
+
   function mountHuaweiBottomButton() {
     const apkBtn = document.getElementById('btnDownloadLatestApkLeft');
     const container = apkBtn && apkBtn.parentElement;
